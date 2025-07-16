@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrendPulse - Predict & Vote on Trends</title>
+    
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23A100FF'/%3E%3Cpath d='M10 50 H30 L40 30 L60 70 L70 50 H90' stroke='%23FFFFFF' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #0F1021;
+            --card-dark: #191A2E;
+            --accent-purple: #A100FF;
+            --accent-purple-hover: #b54cff;
+            --text-white: #F5F5F5;
+            --text-gray: #8A8D9F;
+            --border-color: #2a2d5a;
+            --header-height: 70px;
+        }
+        html { scroll-behavior: smooth; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg-dark); color: var(--text-white); line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .hidden { display: none !important; }
+
+        /* Header & Navigation */
+        header { background: rgba(15, 16, 33, 0.85); backdrop-filter: blur(10px); height: var(--header-height); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
+        nav { display: flex; justify-content: space-between; align-items: center; height: 100%; }
+        .logo { font-size: 1.75rem; font-weight: 700; color: var(--accent-purple); text-decoration: none; }
+        .logo span { color: var(--text-white); font-weight: 500; }
+        .nav-links { display: flex; list-style: none; gap: 35px; align-items: center; }
+        .nav-links a { color: var(--text-gray); text-decoration: none; font-weight: 500; transition: color 0.3s; }
+        .nav-links a:hover { color: var(--text-white); }
+        .auth-button { background-color: var(--accent-purple); color: var(--text-white); border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: background-color 0.3s; }
+        .auth-button:hover { background-color: var(--accent-purple-hover); }
+        
+        /* Main Content Layout */
+        main { padding: 40px 0; }
+        .app-layout { display: grid; grid-template-columns: 1fr; gap: 30px; }
+        @media (min-width: 992px) { .app-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); } }
+        
+        /* Demo Mode Banner */
+        .demo-banner { background-color: var(--card-dark); padding: 15px 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid var(--border-color); }
+        .demo-banner h3 { font-size: 1.2rem; font-weight: 600; }
+        .demo-banner p { color: var(--text-gray); }
+
+        /* Section Card & Form */
+        .section-card { background: var(--card-dark); padding: 25px; border-radius: 12px; }
+        .section-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--text-white); font-size: 1rem; font-family: 'Outfit', sans-serif; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-gray); }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--accent-purple); }
+        
+        /* Category Filters */
+        .category-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; }
+        .category-filter-btn { background: var(--bg-dark); color: var(--text-gray); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: 500; transition: all 0.3s; }
+        .category-filter-btn.active { background: var(--accent-purple); color: var(--text-white); border-color: var(--accent-purple); }
+
+        /* Trend Card */
+        .trend-card-link { display: block; text-decoration: none; color: inherit; }
+        .trend-card { border-left: 4px solid var(--accent-purple); padding: 20px; background: var(--card-dark); margin-bottom: 20px; border-radius: 0 10px 10px 0; transition: background-color 0.2s; }
+        .trend-card:hover { background-color: #20223a; }
+        .trend-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 10px; }
+        .trend-title { font-size: 1.25rem; font-weight: 600; cursor: pointer; }
+        .trend-title:hover { color: var(--accent-purple); }
+        .trend-meta { font-size: 0.8rem; color: var(--text-gray); text-align: right; white-space: nowrap; }
+        .trend-description { color: var(--text-gray); margin-bottom: 15px; }
+        .trend-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .tag { background: var(--bg-dark); color: var(--accent-purple); padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 500; }
+        a.tag { cursor: pointer; transition: all 0.2s; }
+        a.tag:hover { background-color: var(--accent-purple); color: var(--text-white); }
+        .trend-footer { display: flex; justify-content: space-between; align-items: center; }
+        .vote-count { font-weight: 600; font-size: 1.1rem; }
+        .vote-btn { background: var(--card-dark); color: var(--accent-purple); border: 1px solid var(--accent-purple); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s; }
+        .vote-btn:hover { background: var(--accent-purple); color: var(--text-white); }
+        
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 16, 33, 0.7); backdrop-filter: blur(5px); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s; padding: 20px; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background: var(--card-dark); padding: 30px; border-radius: 12px; max-width: 700px; width: 100%; position: relative; border: 1px solid var(--border-color); text-align: left; max-height: 90vh; overflow-y: auto; }
+        .modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-white); font-size: 2rem; cursor: pointer; line-height: 1; }
+        .modal-content h2 { color: var(--accent-purple); margin-bottom: 15px; font-size: 1.75rem; }
+        .modal-content p { color: var(--text-gray); }
+        #ai-prediction-content { white-space: pre-wrap; line-height: 1.7; font-family: 'Outfit', sans-serif; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <a href="?" class="logo">Trend<span>Pulse</span></a>
+            <div class="nav-links">
+                <a href="#trends-section">Top Trends</a>
+                <a href="#submit-section">Submit</a>
+                <a href="#" id="trending-board-link">Trending Board</a>
+                <a href="#" id="about-link">About</a>
+            </div>
+            <button class="auth-button" id="auth-button">Sign In</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="demo-banner" class="demo-banner hidden">
+            <h3>Demo Mode</h3>
+            <p>Firebase configuration is missing. Displaying mock data.</p>
+        </div>
+
+        <div class="app-layout">
+            <div id="submit-section">
+                <div class="section-card">
+                    <h2 class="section-title"><span data-feather="plus-circle"></span>Submit a New Trend</h2>
+                    <form id="trend-form">
+                        <div class="form-group"><input type="text" id="trend-title" placeholder="Trend Title" required></div>
+                        <div class="form-group"><textarea id="trend-description" placeholder="Why is this a growing trend?" required></textarea></div>
+                        <div class="form-group"><input type="url" id="trend-source" placeholder="https://example.com/source-article" required></div>
+                        <div class="form-group"><select id="trend-category" required><option value="">Select a Category...</option></select></div>
+                        <div class="form-group"><input type="text" id="trend-tags" placeholder="Tags (comma-separated, e.g. ai, web3)"></div>
+                        <button type="submit" class="auth-button" style="width: 100%; justify-content: center;">Pulse It!</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="trends-section">
+                <div class="section-card">
+                     <h2 class="section-title"><span data-feather="zap"></span>Trending Now</h2>
+                     <div id="category-filters" class="category-filters"></div>
+                    <div id="trends-list"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="trending-board-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-board-modal">×</button>
+            <h2>Trending Board</h2>
+            <p>Count of trends by category.</p>
+            <canvas id="trends-chart"></canvas>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="ai-prediction-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-ai-modal">×</button>
+            <h2 id="ai-prediction-title">AI Insights</h2>
+            <p id="ai-prediction-content">Generating prediction...</p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="about-modal">
+        <div class="modal-content"><button class="modal-close" id="close-about-modal">×</button><h2>About TrendPulse</h2><p>A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.</p></div>
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+
+    <script>
+        // --- GLOBAL STATE & CONFIG ---
+        let db;
+        let allTrends = [];
+        let trendChart;
+        const CATEGORIES = ['All', 'Technology', 'Fashion', 'Climate', 'Gaming', 'Education', 'Design'];
+        const GEMINI_API_KEY = "AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc";
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        const seedTrends = [
+            { title: 'AI-Generated Game Assets', description: 'Artists and developers use AI to rapidly create textures, models, and environments.', category: 'Gaming', tags: ['ai', 'gamedev'], sourceUrl: 'https://example.com' },
+            { title: 'Circular Fashion Economy', description: 'Brands focusing on recycling, upcycling, and clothing rental services to reduce waste.', category: 'Fashion', tags: ['sustainability', 'clothing'], sourceUrl: 'https://example.com' },
+            { title: 'Direct Air Capture (DAC)', description: 'Technologies that pull CO2 directly from the atmosphere are becoming more viable.', category: 'Climate', tags: ['carbon', 'cleantech'], sourceUrl: 'https://example.com' },
+            { title: 'The Revival of Brutalism in Web Design', description: 'A raw, minimalist web design trend focusing on function over form.', category: 'Design', tags: ['webdesign', 'uiux'], sourceUrl: 'https://example.com' },
+            { title: 'Quantum Computing Accessibility', description: 'Cloud platforms are making quantum computers available to researchers and businesses.', category: 'Technology', tags: ['quantum', 'cloud'], sourceUrl: 'https://example.com' }
+        ];
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // FIX: Create DOM elements FIRST, then initialize the app that uses them.
+            populateCategoryDropdown();
+            initApp();
+            initEventListeners();
+            feather.replace();
+        });
+
+        function initApp() {
+            if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("YOUR_")) {
+                console.warn("Firebase config missing. Running in Demo Mode.");
+                document.getElementById('demo-banner').classList.remove('hidden');
+                allTrends = seedTrends.map((t, i) => ({ ...t, id: `mock-${i}`, voteCount: Math.floor(Math.random() * 100), createdAt: { toDate: () => new Date() } }));
+                filterAndRenderTrends();
+            } else {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                fetchAllTrends();
+            }
+        }
+
+        function initEventListeners() {
+            document.getElementById('trending-board-link').addEventListener('click', showTrendingBoard);
+            document.getElementById('about-link').addEventListener('click', () => document.getElementById('about-modal').classList.add('active'));
+            document.getElementById('close-board-modal').addEventListener('click', () => document.getElementById('trending-board-modal').classList.remove('active'));
+            document.getElementById('close-ai-modal').addEventListener('click', () => document.getElementById('ai-prediction-modal').classList.remove('active'));
+            document.getElementById('close-about-modal').addEventListener('click', () => document.getElementById('about-modal').classList.remove('active'));
+            document.getElementById('trends-list').addEventListener('click', handleTrendListClick);
+        }
+
+        // --- DATA HANDLING ---
+        async function fetchAllTrends() {
+            try {
+                const snapshot = await db.collection('trends').get();
+                allTrends = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                filterAndRenderTrends();
+            } catch (error) {
+                console.error("Error fetching trends:", error);
+            }
+        }
+
+        // --- RENDERING & FILTERING ---
+        function filterAndRenderTrends(filterType = 'category', filterValue = 'All') {
+            let trendsToRender = [];
+            document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('active'));
+            
+            if (filterType === 'category') {
+                const activeBtn = document.querySelector(`.category-filter-btn[data-category="${filterValue}"]`);
+                if(activeBtn) activeBtn.classList.add('active');
+                trendsToRender = filterValue === 'All' ? allTrends : allTrends.filter(t => t.category === filterValue);
+            } else if (filterType === 'tag') {
+                trendsToRender = allTrends.filter(t => t.tags && t.tags.includes(filterValue));
+            }
+
+            renderTrends(trendsToRender);
+        }
+
+        function renderTrends(trends) {
+            const listEl = document.getElementById('trends-list');
+            listEl.innerHTML = '';
+            if (trends.length === 0) {
+                listEl.innerHTML = `<p style="color: var(--text-gray);">No trends found for this filter.</p>`;
+                return;
+            }
+            trends.sort((a,b) => (b.voteCount || 0) - (a.voteCount || 0));
+            trends.forEach(trend => {
+                const date = trend.createdAt.toDate().toLocaleDateString();
+                const cardHtml = `
+                    <div class="trend-card-link" data-id="${trend.id}">
+                        <div class="trend-card">
+                            <div class="trend-header">
+                                <h3 class="trend-title">${trend.title}</h3>
+                                <div class="trend-meta">by Anonymous<br>on ${date}</div>
+                            </div>
+                            <p class="trend-description">${trend.description}</p>
+                            <div class="trend-tags">
+                                ${(trend.tags || []).map(tag => `<a class="tag" data-tag="${tag}">#${tag}</a>`).join('')}
+                            </div>
+                            <div class="trend-footer">
+                                <span class="vote-count">${trend.voteCount || 0} Votes</span>
+                                <a href="${trend.sourceUrl}" target="_blank" rel="noopener noreferrer" class="vote-btn">🔥 View Source</a>
+                            </div>
+                        </div>
+                    </div>`;
+                listEl.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+        
+        function populateCategoryDropdown() {
+            const categoryFiltersContainer = document.getElementById('category-filters');
+            const categorySelect = document.getElementById('trend-category');
+            CATEGORIES.forEach(cat => {
+                const filterBtn = document.createElement('button');
+                filterBtn.className = 'category-filter-btn';
+                filterBtn.dataset.category = cat;
+                filterBtn.textContent = cat;
+                filterBtn.addEventListener('click', () => filterAndRenderTrends('category', cat));
+                categoryFiltersContainer.appendChild(filterBtn);
+
+                if (cat !== 'All') {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    categorySelect.appendChild(option);
+                }
+            });
+            categoryFiltersContainer.firstChild.classList.add('active');
+        }
+
+        // --- EVENT HANDLERS ---
+        function handleTrendListClick(e) {
+            const target = e.target;
+            if (target.classList.contains('trend-title')) {
+                e.preventDefault();
+                const trendId = target.closest('.trend-card-link').dataset.id;
+                const trend = allTrends.find(t => t.id === trendId);
+                if (trend) showAIPrediction(trend);
+            }
+            if (target.classList.contains('tag')) {
+                e.preventDefault();
+                const tag = target.dataset.tag;
+                if (tag) filterAndRenderTrends('tag', tag);
+            }
+        }
+        
+        // --- FEATURE LOGIC (Board & AI) ---
+        function showTrendingBoard() {
+            document.getElementById('trending-board-modal').classList.add('active');
+            const categoryCounts = allTrends.reduce((acc, trend) => {
+                acc[trend.category] = (acc[trend.category] || 0) + 1;
+                return acc;
+            }, {});
+
+            const data = {
+                labels: Object.keys(categoryCounts),
+                datasets: [{
+                    label: 'Trends per Category',
+                    data: Object.values(categoryCounts),
+                    backgroundColor: 'rgba(161, 0, 255, 0.6)',
+                    borderColor: 'rgba(161, 0, 255, 1)',
+                    borderWidth: 1
+                }]
+            };
+            const ctx = document.getElementById('trends-chart').getContext('2d');
+            if (trendChart) trendChart.destroy();
+            trendChart = new Chart(ctx, { type: 'bar', data: data, options: { indexAxis: 'y', responsive: true, scales: { x: { ticks: { color: 'white', stepSize: 1 } }, y: { ticks: { color: 'white' } } }, plugins: { legend: { display: false } } } });
+        }
+
+        async function showAIPrediction(trend) {
+            const modal = document.getElementById('ai-prediction-modal');
+            const titleEl = document.getElementById('ai-prediction-title');
+            const contentEl = document.getElementById('ai-prediction-content');
+            
+            titleEl.textContent = `AI Insights for "${trend.title}"`;
+            contentEl.textContent = 'Generating prediction...';
+            modal.classList.add('active');
+
+            const prompt = `Analyze the following trend and provide a brief, insightful prediction (2-3 short paragraphs) about its potential impact and future growth. Be concise and forward-looking.
+            
+            Trend Title: "${trend.title}"
+            Description: "${trend.description}"
+            Category: ${trend.category}`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+                const data = await response.json();
+                const prediction = data.candidates[0].content.parts[0].text;
+                contentEl.textContent = prediction;
+            } catch (error) {
+                console.error("AI Prediction Error:", error);
+                contentEl.textContent = "Could not generate AI insights at this time. Please try again later.";
+            }
+        }
+    </script>
+</body>
+</html>
