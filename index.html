@@ -37,18 +37,19 @@
         .nav-links a:hover { color: var(--text-white); }
         .auth-button { background-color: var(--accent-purple); color: var(--text-white); border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: background-color 0.3s; }
         .auth-button:hover { background-color: var(--accent-purple-hover); }
+        .user-profile { display: none; align-items: center; gap: 12px; }
+        .user-profile img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--accent-purple); }
+        .user-profile .user-email { font-size: 0.9rem; color: var(--text-gray); }
+        .logout-button { background: none; border: 1px solid var(--border-color); color: var(--text-gray); padding: 8px 15px; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .logout-button:hover { background-color: var(--border-color); color: var(--text-white); }
         
         /* Main Content Layout */
         main { padding: 40px 0; }
         .app-layout { display: grid; grid-template-columns: 1fr; gap: 30px; }
         @media (min-width: 992px) { .app-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); } }
         
-        /* Demo Mode Banner */
         .demo-banner { background-color: var(--card-dark); padding: 15px 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid var(--border-color); }
-        .demo-banner h3 { font-size: 1.2rem; font-weight: 600; }
-        .demo-banner p { color: var(--text-gray); }
-
-        /* Section Card & Form */
+        
         .section-card { background: var(--card-dark); padding: 25px; border-radius: 12px; }
         .section-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; }
         .form-group { margin-bottom: 15px; }
@@ -57,13 +58,10 @@
         .form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-gray); }
         .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--accent-purple); }
         
-        /* Category Filters */
         .category-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; }
         .category-filter-btn { background: var(--bg-dark); color: var(--text-gray); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: 500; transition: all 0.3s; }
         .category-filter-btn.active { background: var(--accent-purple); color: var(--text-white); border-color: var(--accent-purple); }
 
-        /* Trend Card */
-        .trend-card-link { display: block; text-decoration: none; color: inherit; }
         .trend-card { border-left: 4px solid var(--accent-purple); padding: 20px; background: var(--card-dark); margin-bottom: 20px; border-radius: 0 10px 10px 0; transition: background-color 0.2s; }
         .trend-card:hover { background-color: #20223a; }
         .trend-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 10px; }
@@ -77,9 +75,15 @@
         a.tag:hover { background-color: var(--accent-purple); color: var(--text-white); }
         .trend-footer { display: flex; justify-content: space-between; align-items: center; }
         .vote-count { font-weight: 600; font-size: 1.1rem; }
-        .vote-btn { background: var(--card-dark); color: var(--accent-purple); border: 1px solid var(--accent-purple); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s; }
-        .vote-btn:hover { background: var(--accent-purple); color: var(--text-white); }
+        .view-source-btn { background: var(--card-dark); color: var(--accent-purple); border: 1px solid var(--accent-purple); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s; text-decoration: none; }
+        .view-source-btn:hover { background: var(--accent-purple); color: var(--text-white); }
         
+        /* Load More Button */
+        #load-more-container { text-align: center; margin-top: 20px; }
+        .load-more-btn { background-color: var(--card-dark); color: var(--text-white); border: 1px solid var(--accent-purple); padding: 10px 30px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.3s; }
+        .load-more-btn:hover:not(:disabled) { background-color: var(--accent-purple); }
+        .load-more-btn:disabled { background-color: var(--bg-dark); color: var(--text-gray); cursor: not-allowed; border-color: var(--text-gray); }
+
         /* Modals */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 16, 33, 0.7); backdrop-filter: blur(5px); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s; padding: 20px; }
         .modal-overlay.active { opacity: 1; visibility: visible; }
@@ -100,16 +104,19 @@
                 <a href="#" id="trending-board-link">Trending Board</a>
                 <a href="#" id="about-link">About</a>
             </div>
-            <button class="auth-button" id="auth-button">Sign In</button>
+            <div id="auth-container">
+                <button class="auth-button" id="auth-button">Sign In</button>
+                <div class="user-profile" id="user-profile">
+                    <img id="user-avatar" src="" alt="User Avatar">
+                    <span class="user-email" id="user-email"></span>
+                    <button class="logout-button" id="logout-button">Log Out</button>
+                </div>
+            </div>
         </nav>
     </header>
 
     <main class="container">
-        <div id="demo-banner" class="demo-banner hidden">
-            <h3>Demo Mode</h3>
-            <p>Firebase configuration is missing. Displaying mock data.</p>
-        </div>
-
+        <div id="demo-banner" class="demo-banner hidden"><h3>Demo Mode</h3><p>Firebase configuration is missing. Displaying mock data.</p></div>
         <div class="app-layout">
             <div id="submit-section">
                 <div class="section-card">
@@ -124,38 +131,21 @@
                     </form>
                 </div>
             </div>
-
             <div id="trends-section">
                 <div class="section-card">
                      <h2 class="section-title"><span data-feather="zap"></span>Trending Now</h2>
                      <div id="category-filters" class="category-filters"></div>
                     <div id="trends-list"></div>
+                    <div id="load-more-container" class="hidden"><button id="load-more-btn" class="load-more-btn">Load More</button></div>
                 </div>
             </div>
         </div>
     </main>
 
     <!-- Modals -->
-    <div class="modal-overlay" id="trending-board-modal">
-        <div class="modal-content">
-            <button class="modal-close" id="close-board-modal">×</button>
-            <h2>Trending Board</h2>
-            <p>Count of trends by category.</p>
-            <canvas id="trends-chart"></canvas>
-        </div>
-    </div>
-    
-    <div class="modal-overlay" id="ai-prediction-modal">
-        <div class="modal-content">
-            <button class="modal-close" id="close-ai-modal">×</button>
-            <h2 id="ai-prediction-title">AI Insights</h2>
-            <p id="ai-prediction-content">Generating prediction...</p>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="about-modal">
-        <div class="modal-content"><button class="modal-close" id="close-about-modal">×</button><h2>About TrendPulse</h2><p>A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.</p></div>
-    </div>
+    <div class="modal-overlay" id="trending-board-modal"><div class="modal-content"><button class="modal-close">×</button><h2>Trending Board</h2><p>Count of trends by category.</p><canvas id="trends-chart"></canvas></div></div>
+    <div class="modal-overlay" id="ai-prediction-modal"><div class="modal-content"><button class="modal-close">×</button><h2 id="ai-prediction-title">AI Insights</h2><p id="ai-prediction-content">Generating prediction...</p></div></div>
+    <div class="modal-overlay" id="about-modal"><div class="modal-content"><button class="modal-close">×</button><h2>About TrendPulse</h2><p>A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.</p></div></div>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -165,33 +155,40 @@
 
     <script>
         // --- GLOBAL STATE & CONFIG ---
-        let db;
-        let allTrends = [];
+        let auth, db;
         let trendChart;
+        let isFetching = false;
+        let lastVisibleDoc = null; // For Firebase pagination
+        let currentFilter = { type: 'category', value: 'All' };
+        
+        const INITIAL_LOAD_SIZE = 10;
+        const LOAD_MORE_SIZE = 5;
         const CATEGORIES = ['All', 'Technology', 'Fashion', 'Climate', 'Gaming', 'Education', 'Design'];
         const GEMINI_API_KEY = "AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc";
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+        const firebaseConfig = { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
         const seedTrends = [
-            { title: 'AI-Generated Game Assets', description: 'Artists and developers use AI to rapidly create textures, models, and environments.', category: 'Gaming', tags: ['ai', 'gamedev'], sourceUrl: 'https://example.com' },
-            { title: 'Circular Fashion Economy', description: 'Brands focusing on recycling, upcycling, and clothing rental services to reduce waste.', category: 'Fashion', tags: ['sustainability', 'clothing'], sourceUrl: 'https://example.com' },
-            { title: 'Direct Air Capture (DAC)', description: 'Technologies that pull CO2 directly from the atmosphere are becoming more viable.', category: 'Climate', tags: ['carbon', 'cleantech'], sourceUrl: 'https://example.com' },
+            { title: 'AI-Generated Game Assets', creatorName: 'NVIDIA Research', description: 'Artists use AI to rapidly create textures, models, and environments.', category: 'Gaming', tags: ['ai', 'gamedev'], sourceUrl: 'https://example.com' },
+            { title: 'Circular Fashion Economy', creatorName: 'Patagonia', description: 'Brands focusing on recycling, upcycling, and clothing rental services to reduce waste.', category: 'Fashion', tags: ['sustainability', 'clothing'], sourceUrl: 'https://example.com' },
+            { title: 'Direct Air Capture (DAC)', creatorName: 'Climeworks', description: 'Technologies that pull CO2 directly from the atmosphere are becoming more viable.', category: 'Climate', tags: ['carbon', 'cleantech'], sourceUrl: 'https://example.com' },
             { title: 'The Revival of Brutalism in Web Design', description: 'A raw, minimalist web design trend focusing on function over form.', category: 'Design', tags: ['webdesign', 'uiux'], sourceUrl: 'https://example.com' },
-            { title: 'Quantum Computing Accessibility', description: 'Cloud platforms are making quantum computers available to researchers and businesses.', category: 'Technology', tags: ['quantum', 'cloud'], sourceUrl: 'https://example.com' }
+            { title: 'Quantum Computing Accessibility', creatorName: 'IBM Quantum', description: 'Cloud platforms are making quantum computers available to researchers.', category: 'Technology', tags: ['quantum', 'cloud'], sourceUrl: 'https://example.com' },
+            { title: 'Generative AI in Film Pre-production', description: 'Using AI tools to generate storyboards, concept art, and script variations.', category: 'Design', tags: ['ai', 'film'], sourceUrl: 'https://example.com'},
+            { title: 'Hyper-Local Urban Farming', description: 'Vertical farms and community gardens integrated into city buildings to reduce food miles.', category: 'Climate', tags: ['agriculture', 'sustainability'], sourceUrl: 'https://example.com'},
+            { title: 'Micro-credentials for Skills', creatorName: 'Coursera', description: 'Short, certified courses are becoming a popular alternative to traditional degrees for specific job skills.', category: 'Education', tags: ['learning', 'career'], sourceUrl: 'https://example.com'},
+            { title: 'Cross-Platform Game Progression', description: 'Games that allow players to continue their progress seamlessly across PC, console, and mobile.', category: 'Gaming', tags: ['cloud', 'gamedev'], sourceUrl: 'https://example.com'},
+            { title: 'Digital Fashion and NFT Wearables', creatorName: 'The Fabricant', description: 'Virtual clothing and accessories sold as NFTs for use in metaverse platforms and social media.', category: 'Fashion', tags: ['nft', 'metaverse', 'web3'], sourceUrl: 'https://example.com'},
+            { title: 'Federated Machine Learning', description: 'Training AI models across decentralized devices without centralizing sensitive user data.', category: 'Technology', tags: ['ai', 'privacy'], sourceUrl: 'https://example.com'},
+            { title: 'Adaptive Learning Platforms', description: 'Educational software that adjusts difficulty and content based on student performance.', category: 'Education', tags: ['edtech', 'ai'], sourceUrl: 'https://example.com'},
+            { title: 'Sustainable Aviation Fuels (SAFs)', description: 'Biofuels and synthetic fuels developed to reduce the carbon footprint of air travel.', category: 'Climate', tags: ['travel', 'energy'], sourceUrl: 'https://example.com'},
+            { title: 'AI-Powered Code Assistants', creatorName: 'GitHub Copilot', description: 'Tools that suggest code and entire functions to developers in real-time.', category: 'Technology', tags: ['ai', 'development'], sourceUrl: 'https://example.com'},
+            { title: 'Thrift-Flipping and Upcycled Clothing', description: 'A social media-driven trend of buying secondhand clothes and altering them into fashionable pieces.', category: 'Fashion', tags: ['diy', 'sustainability'], sourceUrl: 'https://example.com'},
         ];
 
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            // FIX: Create DOM elements FIRST, then initialize the app that uses them.
             populateCategoryDropdown();
-            initApp();
             initEventListeners();
+            initApp();
             feather.replace();
         });
 
@@ -199,78 +196,127 @@
             if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("YOUR_")) {
                 console.warn("Firebase config missing. Running in Demo Mode.");
                 document.getElementById('demo-banner').classList.remove('hidden');
-                allTrends = seedTrends.map((t, i) => ({ ...t, id: `mock-${i}`, voteCount: Math.floor(Math.random() * 100), createdAt: { toDate: () => new Date() } }));
                 filterAndRenderTrends();
             } else {
                 firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
                 db = firebase.firestore();
-                fetchAllTrends();
+                auth.onAuthStateChanged(updateUserUI);
+                filterAndRenderTrends();
             }
         }
 
         function initEventListeners() {
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.addEventListener('click', e => { if (e.target.matches('.modal-overlay, .modal-close')) e.target.closest('.modal-overlay').classList.remove('active') });
+            });
             document.getElementById('trending-board-link').addEventListener('click', showTrendingBoard);
             document.getElementById('about-link').addEventListener('click', () => document.getElementById('about-modal').classList.add('active'));
-            document.getElementById('close-board-modal').addEventListener('click', () => document.getElementById('trending-board-modal').classList.remove('active'));
-            document.getElementById('close-ai-modal').addEventListener('click', () => document.getElementById('ai-prediction-modal').classList.remove('active'));
-            document.getElementById('close-about-modal').addEventListener('click', () => document.getElementById('about-modal').classList.remove('active'));
             document.getElementById('trends-list').addEventListener('click', handleTrendListClick);
+            document.getElementById('auth-button').addEventListener('click', signIn);
+            document.getElementById('logout-button').addEventListener('click', signOut);
+            document.getElementById('load-more-btn').addEventListener('click', () => fetchTrends(true));
         }
 
-        // --- DATA HANDLING ---
-        async function fetchAllTrends() {
-            try {
-                const snapshot = await db.collection('trends').get();
-                allTrends = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                filterAndRenderTrends();
-            } catch (error) {
-                console.error("Error fetching trends:", error);
+        // --- AUTHENTICATION ---
+        function signIn() {
+            if (!auth) return;
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(error => console.error("Sign in error", error));
+        }
+        function signOut() {
+            if (!auth) return;
+            auth.signOut().then(() => { window.location.href = '?'; });
+        }
+        function updateUserUI(user) {
+            const authButton = document.getElementById('auth-button');
+            const userProfile = document.getElementById('user-profile');
+            if (user) {
+                authButton.classList.add('hidden');
+                userProfile.style.display = 'flex';
+                document.getElementById('user-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=A100FF&color=fff`;
+                document.getElementById('user-email').textContent = user.email;
+            } else {
+                authButton.classList.remove('hidden');
+                userProfile.style.display = 'none';
             }
         }
 
-        // --- RENDERING & FILTERING ---
-        function filterAndRenderTrends(filterType = 'category', filterValue = 'All') {
-            let trendsToRender = [];
+        // --- DATA HANDLING & RENDERING ---
+        function filterAndRenderTrends(type = 'category', value = 'All') {
+            currentFilter = { type, value };
+            lastVisibleDoc = null; // Reset pagination
+            document.getElementById('trends-list').innerHTML = ''; // Clear list
             document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('active'));
+            const activeBtn = document.querySelector(`.category-filter-btn[data-category="${value}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
             
-            if (filterType === 'category') {
-                const activeBtn = document.querySelector(`.category-filter-btn[data-category="${filterValue}"]`);
-                if(activeBtn) activeBtn.classList.add('active');
-                trendsToRender = filterValue === 'All' ? allTrends : allTrends.filter(t => t.category === filterValue);
-            } else if (filterType === 'tag') {
-                trendsToRender = allTrends.filter(t => t.tags && t.tags.includes(filterValue));
-            }
-
-            renderTrends(trendsToRender);
+            fetchTrends(false);
         }
 
-        function renderTrends(trends) {
+        async function fetchTrends(isLoadMore = false) {
+            if (isFetching) return;
+            isFetching = true;
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.textContent = "Loading...";
+
+            const trendsListEl = document.getElementById('trends-list');
+            if (!isLoadMore) trendsListEl.innerHTML = '';
+            
+            let trends = [];
+            let hasMore = false;
+
+            if (db) { // Live Mode
+                try {
+                    let query = db.collection('trends').orderBy('voteCount', 'desc');
+                    if (currentFilter.type === 'category' && currentFilter.value !== 'All') query = query.where('category', '==', currentFilter.value);
+                    if (currentFilter.type === 'tag') query = query.where('tags', 'array-contains', currentFilter.value);
+                    
+                    if (isLoadMore && lastVisibleDoc) query = query.startAfter(lastVisibleDoc);
+                    
+                    const queryLimit = isLoadMore ? LOAD_MORE_SIZE : INITIAL_LOAD_SIZE;
+                    query = query.limit(queryLimit);
+
+                    const snapshot = await query.get();
+                    trends = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+                    hasMore = snapshot.size === queryLimit;
+                } catch (error) { console.error("Error fetching trends:", error); }
+            } else { // Mock Mode
+                let allMockTrends = seedTrends.map((t, i) => ({ ...t, id: `mock-${i}`, voteCount: Math.floor(Math.random() * 100) }));
+                if (currentFilter.type === 'category' && currentFilter.value !== 'All') allMockTrends = allMockTrends.filter(t => t.category === currentFilter.value);
+                if (currentFilter.type === 'tag') allMockTrends = allMockTrends.filter(t => t.tags.includes(currentFilter.value));
+                
+                const startIndex = isLoadMore ? trendsListEl.children.length : 0;
+                const endIndex = startIndex + (isLoadMore ? LOAD_MORE_SIZE : INITIAL_LOAD_SIZE);
+                trends = allMockTrends.slice(startIndex, endIndex);
+                hasMore = endIndex < allMockTrends.length;
+            }
+
+            renderTrends(trends, isLoadMore);
+            
+            const loadMoreContainer = document.getElementById('load-more-container');
+            if (hasMore) {
+                loadMoreContainer.classList.remove('hidden');
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.textContent = "Load More";
+            } else {
+                loadMoreContainer.classList.add('hidden');
+            }
+            isFetching = false;
+        }
+
+        function renderTrends(trends, append = false) {
             const listEl = document.getElementById('trends-list');
-            listEl.innerHTML = '';
-            if (trends.length === 0) {
-                listEl.innerHTML = `<p style="color: var(--text-gray);">No trends found for this filter.</p>`;
+            if (!append && trends.length === 0) {
+                listEl.innerHTML = `<p style="color: var(--text-gray);">No trends found.</p>`;
                 return;
             }
-            trends.sort((a,b) => (b.voteCount || 0) - (a.voteCount || 0));
             trends.forEach(trend => {
-                const date = trend.createdAt.toDate().toLocaleDateString();
-                const cardHtml = `
-                    <div class="trend-card-link" data-id="${trend.id}">
-                        <div class="trend-card">
-                            <div class="trend-header">
-                                <h3 class="trend-title">${trend.title}</h3>
-                                <div class="trend-meta">by Anonymous<br>on ${date}</div>
-                            </div>
-                            <p class="trend-description">${trend.description}</p>
-                            <div class="trend-tags">
-                                ${(trend.tags || []).map(tag => `<a class="tag" data-tag="${tag}">#${tag}</a>`).join('')}
-                            </div>
-                            <div class="trend-footer">
-                                <span class="vote-count">${trend.voteCount || 0} Votes</span>
-                                <a href="${trend.sourceUrl}" target="_blank" rel="noopener noreferrer" class="vote-btn">🔥 View Source</a>
-                            </div>
-                        </div>
-                    </div>`;
+                const author = trend.creatorName || 'AI Analyzed';
+                const date = trend.createdAt ? trend.createdAt.toDate().toLocaleDateString() : getRandomDate();
+                const cardHtml = `<div class="trend-card-link" data-id="${trend.id}"><div class="trend-card"><div class="trend-header"><h3 class="trend-title">${trend.title}</h3><div class="trend-meta">by ${author}<br>on ${date}</div></div><p class="trend-description">${trend.description}</p><div class="trend-tags">${(trend.tags || []).map(tag => `<a class="tag" data-tag="${tag}">#${tag}</a>`).join('')}</div><div class="trend-footer"><span class="vote-count">${trend.voteCount || 0} Votes</span><a href="${trend.sourceUrl}" target="_blank" rel="noopener noreferrer" class="view-source-btn">🔥 View Source</a></div></div></div>`;
                 listEl.insertAdjacentHTML('beforeend', cardHtml);
             });
         }
@@ -285,51 +331,37 @@
                 filterBtn.textContent = cat;
                 filterBtn.addEventListener('click', () => filterAndRenderTrends('category', cat));
                 categoryFiltersContainer.appendChild(filterBtn);
-
                 if (cat !== 'All') {
                     const option = document.createElement('option');
-                    option.value = cat;
-                    option.textContent = cat;
+                    option.value = cat; option.textContent = cat;
                     categorySelect.appendChild(option);
                 }
             });
             categoryFiltersContainer.firstChild.classList.add('active');
         }
 
-        // --- EVENT HANDLERS ---
         function handleTrendListClick(e) {
-            const target = e.target;
-            if (target.classList.contains('trend-title')) {
+            const trendLink = e.target.closest('.trend-card-link');
+            if (e.target.classList.contains('trend-title') && trendLink) {
                 e.preventDefault();
-                const trendId = target.closest('.trend-card-link').dataset.id;
-                const trend = allTrends.find(t => t.id === trendId);
+                const allData = db ? allTrends : seedTrends.map((t, i) => ({ ...t, id: `mock-${i}` }));
+                const trend = allData.find(t => t.id === trendLink.dataset.id);
                 if (trend) showAIPrediction(trend);
             }
-            if (target.classList.contains('tag')) {
+            if (e.target.classList.contains('tag')) {
                 e.preventDefault();
-                const tag = target.dataset.tag;
-                if (tag) filterAndRenderTrends('tag', tag);
+                filterAndRenderTrends('tag', e.target.dataset.tag);
             }
         }
         
-        // --- FEATURE LOGIC (Board & AI) ---
         function showTrendingBoard() {
             document.getElementById('trending-board-modal').classList.add('active');
-            const categoryCounts = allTrends.reduce((acc, trend) => {
+            const dataToChart = db ? allTrends : seedTrends;
+            const categoryCounts = dataToChart.reduce((acc, trend) => {
                 acc[trend.category] = (acc[trend.category] || 0) + 1;
                 return acc;
             }, {});
-
-            const data = {
-                labels: Object.keys(categoryCounts),
-                datasets: [{
-                    label: 'Trends per Category',
-                    data: Object.values(categoryCounts),
-                    backgroundColor: 'rgba(161, 0, 255, 0.6)',
-                    borderColor: 'rgba(161, 0, 255, 1)',
-                    borderWidth: 1
-                }]
-            };
+            const data = { labels: Object.keys(categoryCounts), datasets: [{ data: Object.values(categoryCounts), backgroundColor: 'rgba(161, 0, 255, 0.6)', borderColor: 'rgba(161, 0, 255, 1)', borderWidth: 1 }] };
             const ctx = document.getElementById('trends-chart').getContext('2d');
             if (trendChart) trendChart.destroy();
             trendChart = new Chart(ctx, { type: 'bar', data: data, options: { indexAxis: 'y', responsive: true, scales: { x: { ticks: { color: 'white', stepSize: 1 } }, y: { ticks: { color: 'white' } } }, plugins: { legend: { display: false } } } });
@@ -337,33 +369,30 @@
 
         async function showAIPrediction(trend) {
             const modal = document.getElementById('ai-prediction-modal');
-            const titleEl = document.getElementById('ai-prediction-title');
-            const contentEl = document.getElementById('ai-prediction-content');
-            
-            titleEl.textContent = `AI Insights for "${trend.title}"`;
-            contentEl.textContent = 'Generating prediction...';
             modal.classList.add('active');
-
-            const prompt = `Analyze the following trend and provide a brief, insightful prediction (2-3 short paragraphs) about its potential impact and future growth. Be concise and forward-looking.
-            
-            Trend Title: "${trend.title}"
-            Description: "${trend.description}"
-            Category: ${trend.category}`;
-
+            document.getElementById('ai-prediction-title').textContent = `AI Insights for "${trend.title}"`;
+            const contentEl = document.getElementById('ai-prediction-content');
+            contentEl.textContent = 'Generating prediction...';
+            const prompt = `Analyze the trend "${trend.title}" (${trend.description}) and provide a brief, insightful prediction (2-3 short paragraphs) about its potential impact and future growth.`;
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 if (!response.ok) throw new Error(`API error: ${response.statusText}`);
                 const data = await response.json();
-                const prediction = data.candidates[0].content.parts[0].text;
-                contentEl.textContent = prediction;
+                contentEl.textContent = data.candidates[0].content.parts[0].text;
             } catch (error) {
                 console.error("AI Prediction Error:", error);
-                contentEl.textContent = "Could not generate AI insights at this time. Please try again later.";
+                contentEl.textContent = "Could not generate AI insights at this time.";
             }
+        }
+
+        function getRandomDate() {
+            const end = new Date();
+            const start = new Date();
+            start.setFullYear(start.getFullYear() - 1);
+            return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toLocaleDateString();
         }
     </script>
 </body>
