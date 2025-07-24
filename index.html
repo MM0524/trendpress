@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrendPulse with Firebase</title>
     <style>
-        /* Minimalist Styling */
+        /* --- Minimalist Styling --- */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
         
         :root {
@@ -13,6 +13,7 @@
             --surface-color: #1e1e1e;
             --primary-color: #bb86fc;
             --text-color: #e0e0e0;
+            --text-muted: #888;
             --border-color: #333;
         }
 
@@ -26,175 +27,175 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
         }
 
-        header {
+        .header {
+            grid-column: 1 / -1;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding-bottom: 20px;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         
-        header h1 {
-            margin: 0;
-            color: var(--primary-color);
-        }
+        .logo { font-size: 2rem; font-weight: 700; color: var(--primary-color); }
+        .user-info { font-size: 0.9rem; }
+        .user-info span { font-weight: 700; }
 
-        .auth-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        button {
-            padding: 10px 15px;
+        .btn {
+            background-color: var(--primary-color);
+            color: #000;
             border: none;
+            padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 700;
             transition: background-color 0.2s;
         }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: #121212;
-        }
-        .btn-primary:hover {
-            background-color: #a764fa;
-        }
+        .btn:hover { background-color: #a765fa; }
+        .btn-secondary { background-color: #444; color: var(--text-color); }
+        .btn-secondary:hover { background-color: #555; }
         
-        .btn-secondary {
-            background-color: var(--surface-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-        }
-        .btn-secondary:hover {
-            background-color: #2c2c2c;
-        }
-
-        .form-container, .trends-container {
+        .panel {
             background-color: var(--surface-color);
             padding: 25px;
             border-radius: 8px;
-            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
         }
         
-        h2 {
-            margin-top: 0;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
+        h2 { margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
         
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-
-        input[type="text"], select {
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-muted); }
+        input, select {
             width: 100%;
             padding: 10px;
-            background-color: #2c2c2c;
+            background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 5px;
             color: var(--text-color);
             box-sizing: border-box;
         }
         
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary-color);
+        #submit-form:disabled {
+            cursor: not-allowed;
+            background-color: #333;
         }
+        #submit-form:disabled:hover { background-color: #333; }
 
-        .trend-item {
+        .disabled-overlay {
+            position: relative;
+        }
+        .disabled-overlay::after {
+            content: 'Please sign in to submit a trend';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(30, 30, 30, 0.8);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: not-allowed;
+        }
+        
+        .trend-card {
+            background-color: var(--bg-color);
             border: 1px solid var(--border-color);
-            padding: 15px;
             border-radius: 5px;
-            margin-bottom: 10px;
-            background-color: #2c2c2c;
+            padding: 15px;
+            margin-bottom: 15px;
         }
         
         .trend-title {
-            font-size: 1.2em;
+            font-size: 1.25rem;
             font-weight: 700;
             margin: 0 0 5px 0;
         }
         
         .trend-meta {
-            font-size: 0.85em;
-            color: #aaa;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .trend-category {
+            background-color: var(--primary-color);
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
         }
 
-        .hidden {
-            display: none !important;
+        #trends-list { max-height: 80vh; overflow-y: auto; }
+        
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <header>
-            <h1>TrendPulse</h1>
-            <div class="auth-container">
-                <!-- This will be populated by JS -->
-                <div id="user-info" class="hidden">
-                    <span id="user-name"></span>
-                    <button id="sign-out-btn" class="btn-secondary">Sign Out</button>
-                </div>
-                <button id="sign-in-btn" class="btn-primary">Sign In with Google</button>
+        <header class="header">
+            <div class="logo">TrendPulse</div>
+            <div id="auth-container">
+                <!-- Auth buttons will be rendered here -->
             </div>
         </header>
 
-        <main>
-            <!-- Form for uploading new trends (hidden by default) -->
-            <div id="upload-form-container" class="form-container hidden">
-                <h2>Submit a New Trend</h2>
-                <form id="trend-form">
-                    <div class="form-group">
-                        <label for="trend-title">Trend Title</label>
-                        <input type="text" id="trend-title" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="trend-category">Category</label>
-                        <select id="trend-category" required>
-                            <option value="Technology">Technology</option>
-                            <option value="Fashion">Fashion</option>
-                            <option value="Gaming">Gaming</option>
-                            <option value="Business">Business</option>
-                            <option value="Art">Art</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn-primary">Submit Trend</button>
-                </form>
-            </div>
-
-            <!-- Container for displaying trends -->
-            <div class="trends-container">
-                <h2>Trending Now</h2>
-                <div id="trends-list">
-                    <p>Loading trends...</p>
+        <!-- Left Panel: Submit Trend -->
+        <div class="panel" id="form-panel">
+            <h2>Submit a New Trend</h2>
+            <form id="trend-form">
+                <div class="form-group">
+                    <label for="trend-title">Trend Title</label>
+                    <input type="text" id="trend-title" required>
                 </div>
+                <div class="form-group">
+                    <label for="trend-category">Category</label>
+                    <select id="trend-category" required>
+                        <option value="Technology">Technology</option>
+                        <option value="Fashion">Fashion</option>
+                        <option value="Gaming">Gaming</option>
+                        <option value="Business">Business</option>
+                        <option value="Culture">Culture</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn" id="submit-form">Pulse It!</button>
+            </form>
+        </div>
+
+        <!-- Right Panel: Display Trends -->
+        <div class="panel">
+            <h2>🔥 Trending Now</h2>
+            <div id="trends-list">
+                <!-- Trends from Firestore will be rendered here -->
+                <p>Loading trends...</p>
             </div>
-        </main>
+        </div>
     </div>
 
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-        // --- 1. PASTE YOUR FIREBASE CONFIG OBJECT HERE ---
-        // Get this from your Firebase project settings
+        // --- IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION HERE ---
         const firebaseConfig = {
             apiKey: "AIzaSyC0scOOxzM4Av5CDRy3iorhRmkd9q4dtHk",
             authDomain: "your-trendpulse.firebaseapp.com",
@@ -204,124 +205,115 @@
             appId: "1:301159836873:web:77535406d91f359383f118",
             measurementId: "G-ZKQPP9WQVV"
   };
+        // --- END OF FIREBASE CONFIGURATION ---
 
-        // --- 2. INITIALIZE FIREBASE & SERVICES ---
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
         const trendsCollection = db.collection('trends');
 
-        // --- 3. DOM ELEMENT REFERENCES ---
-        const signInBtn = document.getElementById('sign-in-btn');
-        const signOutBtn = document.getElementById('sign-out-btn');
-        const userInfoDiv = document.getElementById('user-info');
-        const userNameSpan = document.getElementById('user-name');
-        const uploadFormContainer = document.getElementById('upload-form-container');
+        // DOM Elements
+        const authContainer = document.getElementById('auth-container');
         const trendForm = document.getElementById('trend-form');
-        const trendTitleInput = document.getElementById('trend-title');
-        const trendCategorySelect = document.getElementById('trend-category');
-        const trendsListDiv = document.getElementById('trends-list');
+        const formPanel = document.getElementById('form-panel');
+        const submitButton = document.getElementById('submit-form');
+        const trendsList = document.getElementById('trends-list');
 
-        // --- 4. AUTHENTICATION LOGIC ---
-        
+        // --- AUTHENTICATION ---
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+        function signInWithGoogle() {
+            auth.signInWithPopup(googleProvider)
+                .catch(error => console.error("Error during sign-in:", error));
+        }
+
+        function signOut() {
+            auth.signOut()
+                .catch(error => console.error("Error during sign-out:", error));
+        }
+
         // Listen for authentication state changes
         auth.onAuthStateChanged(user => {
             if (user) {
                 // User is signed in
-                console.log('User signed in:', user);
-                userNameSpan.textContent = user.displayName || user.email;
-                userInfoDiv.classList.remove('hidden');
-                signInBtn.classList.add('hidden');
-                uploadFormContainer.classList.remove('hidden');
+                authContainer.innerHTML = `
+                    <div class="user-info">
+                        Logged in as <span>${user.displayName || user.email}</span>
+                        <button class="btn btn-secondary" id="sign-out-btn" style="margin-left: 10px;">Sign Out</button>
+                    </div>
+                `;
+                formPanel.classList.remove('disabled-overlay');
+                submitButton.disabled = false;
+                document.getElementById('sign-out-btn').addEventListener('click', signOut);
             } else {
                 // User is signed out
-                console.log('User signed out');
-                userInfoDiv.classList.add('hidden');
-                signInBtn.classList.remove('hidden');
-                uploadFormContainer.classList.add('hidden');
+                authContainer.innerHTML = `<button class="btn" id="sign-in-btn">Sign in with Google</button>`;
+                formPanel.classList.add('disabled-overlay');
+                submitButton.disabled = true;
+                document.getElementById('sign-in-btn').addEventListener('click', signInWithGoogle);
             }
         });
 
-        // Sign in with Google
-        signInBtn.addEventListener('click', () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .catch(error => console.error('Sign in error', error));
-        });
+        // --- FIRESTORE ---
 
-        // Sign out
-        signOutBtn.addEventListener('click', () => {
-            auth.signOut()
-                .catch(error => console.error('Sign out error', error));
-        });
-
-
-        // --- 5. FIRESTORE LOGIC ---
-
-        // Upload a new trend
+        // 1. Upload a new trend
         trendForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            
+
             const currentUser = auth.currentUser;
             if (!currentUser) {
-                alert('You must be logged in to submit a trend.');
+                alert("You must be logged in to submit a trend.");
                 return;
             }
 
-            const title = trendTitleInput.value;
-            const category = trendCategorySelect.value;
-            
+            const title = document.getElementById('trend-title').value;
+            const category = document.getElementById('trend-category').value;
+
             trendsCollection.add({
                 title: title,
                 category: category,
                 authorName: currentUser.displayName,
-                authorId: currentUser.uid,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                authorEmail: currentUser.email,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                votes: 0
             })
             .then(() => {
-                console.log('Trend successfully added!');
-                trendForm.reset();
+                console.log("Trend successfully added!");
+                trendForm.reset(); // Clear the form
             })
             .catch(error => {
-                console.error('Error adding trend: ', error);
+                console.error("Error adding trend: ", error);
             });
         });
 
-
-        // Read and display trends in real-time
+        // 2. Read and display trends in real-time
         trendsCollection.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-            trendsListDiv.innerHTML = ''; // Clear current list
-
+            trendsList.innerHTML = ''; // Clear the list before re-rendering
             if (snapshot.empty) {
-                trendsListDiv.innerHTML = '<p>No trends submitted yet. Be the first!</p>';
+                trendsList.innerHTML = '<p>No trends yet. Be the first to submit one!</p>';
                 return;
             }
-
             snapshot.forEach(doc => {
                 const trend = doc.data();
+                const trendCard = document.createElement('div');
+                trendCard.className = 'trend-card';
                 
-                const trendEl = document.createElement('div');
-                trendEl.className = 'trend-item';
-                
-                // Format the timestamp
-                let dateString = 'Just now';
-                if (trend.createdAt && trend.createdAt.toDate) {
-                    dateString = trend.createdAt.toDate().toLocaleString();
-                }
+                // Format timestamp
+                const date = trend.createdAt ? trend.createdAt.toDate().toLocaleString() : 'Just now';
 
-                trendEl.innerHTML = `
+                trendCard.innerHTML = `
                     <h3 class="trend-title">${trend.title}</h3>
                     <div class="trend-meta">
-                        <span>Category: ${trend.category}</span> | 
-                        <span>By: ${trend.authorName || 'Anonymous'}</span> |
-                        <span>On: ${dateString}</span>
+                        <div>by ${trend.authorName || 'Anonymous'} on ${date}</div>
+                        <span class="trend-category">${trend.category}</span>
                     </div>
                 `;
-                trendsListDiv.appendChild(trendEl);
+                trendsList.appendChild(trendCard);
             });
         }, error => {
             console.error("Error fetching trends: ", error);
-            trendsListDiv.innerHTML = '<p>Could not load trends. Please try again later.</p>';
+            trendsList.innerHTML = '<p>Could not load trends. Please check the console.</p>';
         });
 
     </script>
