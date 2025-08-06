@@ -227,14 +227,11 @@
           apiKey: "AIzaSyD7Tmo8AF9lwmLo_I9WAuWHwg0W8jw9oYI",
           authDomain: "trend-pulse-new.firebaseapp.com",
           projectId: "trend-pulse-new",
-          storageBucket: "trend-pulse-new.firebasestorage.app",
+          storageBucket: "trend-pulse-new.appspot.com",
           messagingSenderId: "342759464672",
           appId: "1:342759464672:web:a0b1992d5c99d8368b7a85",
           measurementId: "G-S30JCQCRRM"
 };
-
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
 
         // --- STATE & DATA ---
         let user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, votesToday: 0, voteLimit: 0, lastVoteDate: null };
@@ -387,10 +384,13 @@
         document.addEventListener('click', (e) => { if(DOM.userMenu && !DOM.userMenu.contains(e.target)) { DOM.userDropdown.classList.remove('show'); }});
 
         // --- INITIALIZATION ---
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
         populateCategoryFilters();
         updateAuthUI();
     });
     </script>
 </body>
 </html>
+
 
