@@ -20,12 +20,13 @@ exports.handler = async (event) => {
     const [hackerNews, googleNews, tiktok, instagram] = await Promise.all([
       fetchHackerNewsFrontPage(),
       fetchGoogleNewsTop(),
+      fetchVnExpressInternational(),
       fetchTikTokTrends(),
       fetchInstagramTrends()
     ]);
 
     // Normalize metrics: prefer views/engagement, fallback votes
-    let trends = [...hackerNews, ...googleNews, ...tiktok, ...instagram]
+    let trends = [...hackerNews, ...googleNews, ...vnexpressIntl, ...tiktok, ...instagram]
       .filter(Boolean)
       .map(t => ({
         ...t,
@@ -111,6 +112,40 @@ async function fetchGoogleNewsTop() {
     return items;
   } catch (e) {
     console.warn('Google News fetch failed', e.message);
+    return [];
+  }
+}
+
+async function fetchVnExpressInternational() {
+  try {
+    const url = 'https://e.vnexpress.net/rss/news.rss';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`VnExpress HTTP ${res.status}`);
+    const xml = await res.text();
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let rank = 200; // cao hơn Google News để ưu tiên
+    while ((match = itemRegex.exec(xml)) && items.length < 25) {
+      const block = match[1];
+      const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'VnExpress News';
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
+      const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
+      items.push({
+        title,
+        description,
+        category: 'News',
+        tags: ['VnExpressInternational'],
+        votes: rank--,
+        source: link,
+        date: new Date(pubDate).toLocaleDateString('en-US'),
+        submitter: 'VnExpress International'
+      });
+    }
+    return items;
+  } catch (e) {
+    console.warn('VnExpress International fetch failed', e.message);
     return [];
   }
 }
