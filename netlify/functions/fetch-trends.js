@@ -2,7 +2,7 @@
 // Returns a unified list matching the app's trend schema
 
 // Require environment variable in production; no hard-coded default
-const RAPIDAPI_KEY = 4099b92c57msh32fb147bf5b546ep1e4db8jsna17c9d8a8d8e;
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 
 exports.handler = async (event) => {
   const headers = {
@@ -156,7 +156,7 @@ async function fetchTikTokTrends() {
     // Example RapidAPI endpoint (may vary based on the subscription used)
     const res = await fetch('https://tiktok-scraper7.p.rapidapi.com/trending', {
       headers: {
-        'x-rapidapi-key': 4099b92c57msh32fb147bf5b546ep1e4db8jsna17c9d8a8d8e,
+        'x-rapidapi-key': RAPIDAPI_KEY,
         'x-rapidapi-host': 'tiktok-scraper7.p.rapidapi.com'
       }
     });
@@ -186,7 +186,7 @@ async function fetchInstagramTrends() {
     // Example RapidAPI endpoint for Instagram post search/trending (placeholder, may differ based on provider)
     const res = await fetch('https://instagram-scraper-api2.p.rapidapi.com/v1/trending', {
       headers: {
-        'x-rapidapi-key': 4099b92c57msh32fb147bf5b546ep1e4db8jsna17c9d8a8d8e,
+        'x-rapidapi-key': RAPIDAPI_KEY,
         'x-rapidapi-host': 'instagram-scraper-api2.p.rapidapi.com'
       }
     });
@@ -209,5 +209,3 @@ async function fetchInstagramTrends() {
     return [];
   }
 }
-
-
