@@ -60,53 +60,71 @@ exports.handler = async (event) => {
 
 // Removed Reddit: we only keep TikTok, Instagram, and hot news
 
-async function fetchHackerNewsFrontPage() {
+async function fetchHackerNewsFrontpage() {
   try {
-    const res = await fetch('https://hn.algolia.com/api/v1/search?tags=front_page');
-    if (!res.ok) throw new Error(`HN HTTP ${res.status}`);
-    const json = await res.json();
-    const items = (json?.hits || []).map((hit) => ({
-      title: hit.title || hit.story_title,
-      description: hit.url || hit.story_url || 'Hacker News front page',
-      category: 'News',
-      tags: ['HackerNews'],
-      votes: hit.points || 0,
-      source: hit.url || hit.story_url || `https://news.ycombinator.com/item?id=${hit.objectID}`,
-      date: new Date(hit.created_at).toLocaleDateString('en-US'),
-      submitter: hit.author ? `hn/${hit.author}` : 'hn'
-    }));
+    const url = 'https://hnrss.org/frontpage';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HackerNews HTTP ${res.status}`);
+    const xml = await res.text();
+
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let rank = 500; // ưu tiên thấp hơn VnExpress
+
+    while ((match = itemRegex.exec(xml)) && items.length < 25) {
+      const block = match[1];
+      const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'Hacker News';
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
+      const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
+
+      items.push({
+        title,
+        description,
+        category: 'Tech',
+        tags: ['HackerNews'],
+        votes: rank--,
+        source: link,
+        date: new Date(pubDate).toLocaleDateString('en-US'),
+        submitter: 'Hacker News Frontpage'
+      });
+    }
     return items;
   } catch (e) {
-    console.warn('HN fetch failed', e.message);
+    console.warn('Hacker News fetch failed', e.message);
     return [];
   }
 }
 
 async function fetchGoogleNewsTop() {
   try {
-    const url = 'https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi';
+    const url = 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en';
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Google News HTTP ${res.status}`);
     const xml = await res.text();
-    // Very simple RSS parsing
+
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
-    let rank = 100; // pseudo votes decreasing by rank
+    let rank = 300; // giữa VnExpress và Hacker News
+
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
-      const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'News';
+      const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'Google News';
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
+      const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
+
       items.push({
         title,
-        description: title,
+        description,
         category: 'News',
         tags: ['GoogleNews'],
-        votes: rank--, // decreasing score so earlier items rank higher
+        votes: rank--,
         source: link,
         date: new Date(pubDate).toLocaleDateString('en-US'),
-        submitter: 'GoogleNews'
+        submitter: 'Google News Top Stories'
       });
     }
     return items;
