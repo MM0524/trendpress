@@ -1,0 +1,57 @@
+A2
+
+Create a complete, single HTML file for a web app called "TrendPulse" that allows users to predict and vote on trends.
+
+Requirements:
+
+🔧 General:
+- All code must be in one single .html file (no external files).
+- Use embedded CSS (<style>) and JavaScript (<script>).
+- The app must be fully responsive and mobile-friendly.
+- Color scheme: neon purple (#A100FF), dark navy (#0F1021), and white (#F5F5F5).
+- Use Google Fonts (Inter or Outfit).
+
+🌐 Use CDNs for the following:
+- Firebase SDK (Authentication and Firestore)
+- Chart.js for vote visualization
+- Google Fonts
+- Optional: Feather Icons or Heroicons via CDN
+
+⚙️ Core Functionality:
+1. Google Sign-in using Firebase Authentication
+2. Form to submit a new trend (title, description, tags)
+3. Display list of existing trends from Firestore, sorted by vote count
+4. Each trend has a "Vote" button (limit: 3 votes per user per day)
+5. Real-time update of vote count when voted
+6. Leaderboard or chart section using Chart.js
+7. Show creator name and created date
+8. All data stored and retrieved from Firebase Firestore
+9. Store user’s voted trend IDs per day to prevent duplicate voting
+
+📌 Notes:
+- Include Firebase project initialization via <script> tag
+- Use Firestore in test mode or mock data if Firebase config is missing
+- Output must work directly when opened in the browser
+- No Python or server-side code – only client-side JS
+- Keep the HTML organized and readable
+
+👉 The final output should be a single HTML file that I can open in Chrome or upload to static hosting (like Firebase Hosting or Namecheap) and use it immediately.
+
+Use this api, no need for security, I am developing locally on my WIN PC VS Code 
+API Key: AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc
+
+curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent" \
+  -H 'Content-Type: application/json' \
+  -H 'X-goog-api-key: GEMINI_API_KEY' \
+  -X POST \
+  -d '{
+    "contents": [
+      {
+        "parts": [
+          {
+            "text": "Explain how AI works in a few words"
+          }
+        ]
+      }
+    ]
+  }'
