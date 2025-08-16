@@ -58,8 +58,6 @@ exports.handler = async (event) => {
   }
 };
 
-// Removed Reddit: we only keep TikTok, Instagram, and hot news
-
 async function fetchHackerNewsFrontpage() {
   try {
     const url = 'https://hnrss.org/frontpage';
@@ -70,7 +68,7 @@ async function fetchHackerNewsFrontpage() {
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
-    let rank = 500; // ưu tiên thấp hơn VnExpress
+    let rank = 500;
 
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
@@ -107,7 +105,7 @@ async function fetchGoogleNewsTop() {
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
-    let rank = 300; // giữa VnExpress và Hacker News
+    let rank = 300; 
 
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
