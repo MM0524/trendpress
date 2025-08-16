@@ -120,8 +120,7 @@ async function fetchBBCWorld() {
       items.push({
         title,
         description,
-        category: 'News',
-        subcategory: 'World',
+        category: 'Worlds',
         tags: ['BBCWorld'],
         votes: rank--,
         source: link,
@@ -160,7 +159,6 @@ async function fetchVnExpressInternational() {
         title,
         description,
         category: 'News',
-        subcategory: 'VN',
         tags: ['VnExpressInternational'],
         votes: rank--,
         source: link,
