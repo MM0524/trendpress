@@ -40,6 +40,8 @@ exports.handler = async (event) => {
       headers,
       body: JSON.stringify({ success: true, trends, sources: {
         hackerNews: hackerNews.length,
+        bbcWorld: bbcWorld.length,
+        vnexpressIntl: vnexpressIntl.length,
         tiktok: tiktok.length,
         instagram: instagram.length
       } })
@@ -82,7 +84,9 @@ async function fetchHackerNewsFrontpage() {
         tags: ['HackerNews'],
         votes: rank--,
         source: link,
-        date: new Date(pubDate).toLocaleDateString('en-US'),
+        date: isNaN(new Date(pubDate)) 
+              ? new Date().toLocaleDateString('en-US') 
+              : new Date(pubDate).toLocaleDateString('en-US'),
         submitter: 'Hacker News Frontpage'
       });
     }
@@ -96,7 +100,7 @@ async function fetchHackerNewsFrontpage() {
 // Fetch BBC World News RSS
 async function fetchBBCWorld() {
   try {
-    const url = 'http://feeds.bbci.co.uk/news/world/rss.xml';
+    const url = 'https://feeds.bbci.co.uk/news/world/rss.xml';
     const res = await fetch(url);
     if (!res.ok) throw new Error(`BBC HTTP ${res.status}`);
     const xml = await res.text();
@@ -116,11 +120,14 @@ async function fetchBBCWorld() {
       items.push({
         title,
         description,
-        category: 'News', 'Worlds',
+        category: 'News',
+        subcategory: 'World',
         tags: ['BBCWorld'],
         votes: rank--,
         source: link,
-        date: new Date(pubDate).toLocaleDateString('en-US'),
+        date: isNaN(new Date(pubDate)) 
+              ? new Date().toLocaleDateString('en-US') 
+              : new Date(pubDate).toLocaleDateString('en-US'),
         submitter: 'BBC World News'
       });
     }
@@ -152,11 +159,14 @@ async function fetchVnExpressInternational() {
       items.push({
         title,
         description,
-        category: 'News', 'VN'
+        category: 'News',
+        subcategory: 'VN',
         tags: ['VnExpressInternational'],
         votes: rank--,
         source: link,
-        date: new Date(pubDate).toLocaleDateString('en-US'),
+        date: isNaN(new Date(pubDate)) 
+              ? new Date().toLocaleDateString('en-US') 
+              : new Date(pubDate).toLocaleDateString('en-US'),
         submitter: 'VnExpress International'
       });
     }
