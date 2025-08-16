@@ -13,16 +13,16 @@ exports.handler = async (event) => {
   }
 
   try {
-    const [hackerNews, googleNews, vnexpressIntl, tiktok, instagram] = await Promise.all([
+    const [hackerNews, BBCNews, vnexpressIntl, tiktok, instagram] = await Promise.all([
       fetchHackerNewsFrontpage(),
-      fetchGoogleNewsTop(),
+      fetchBBCNewsTop(),
       fetchVnExpressInternational(),
       fetchTikTokTrends(),
       fetchInstagramTrends()
     ]);
 
     // Normalize metrics: prefer views/engagement, fallback votes
-    let trends = [...hackerNews, ...googleNews, ...vnexpressIntl, ...tiktok, ...instagram]
+    let trends = [...hackerNews, ...BBCNews, ...vnexpressIntl, ...tiktok, ...instagram]
       .filter(Boolean)
       .map(t => ({
         ...t,
@@ -93,39 +93,41 @@ async function fetchHackerNewsFrontpage() {
   }
 }
 
-async function fetchGoogleNewsTop() {
+// Fetch BBC World News RSS
+async function fetchBBCWorld() {
   try {
-    const url = 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en';
+    const url = 'http://feeds.bbci.co.uk/news/world/rss.xml';
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Google News HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`BBC HTTP ${res.status}`);
     const xml = await res.text();
 
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
-    let rank = 300; // giữa VnExpress và Hacker News
+    let rank = 180; // nhỏ hơn VnExpress để không đè ưu tiên
 
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
-      const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'Google News';
+      const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'BBC News';
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
-      const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
+      const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [] )[1] || "";
 
       items.push({
         title,
         description,
-        category: 'News',
-        tags: ['GoogleNews'],
+        category: 'News', 'Worlds',
+        tags: ['BBCWorld'],
         votes: rank--,
         source: link,
-        date: new Date(pubDate).toLocaleDateString('en-US'),
-        submitter: 'Google News Top Stories'
+        date: new Date(pubDate).toLocaleDateString("en-US"),
+        submitter: 'BBC World News'
       });
     }
+
     return items;
   } catch (e) {
-    console.warn('Google News fetch failed', e.message);
+    console.warn('BBC World fetch failed', e.message);
     return [];
   }
 }
@@ -139,7 +141,8 @@ async function fetchVnExpressInternational() {
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
-    let rank = 200; // cao hơn Google News để ưu tiên
+    let rank = 200; 
+    
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
       const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'VnExpress News';
@@ -149,7 +152,7 @@ async function fetchVnExpressInternational() {
       items.push({
         title,
         description,
-        category: 'News',
+        category: 'News', 'VN'
         tags: ['VnExpressInternational'],
         votes: rank--,
         source: link,
