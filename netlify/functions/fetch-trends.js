@@ -111,7 +111,7 @@ async function fetchBBCWorld() {
       const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'BBC News';
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
-      const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [] )[1] || "";
+      const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [] )[1] || '';
 
       items.push({
         title,
@@ -120,7 +120,7 @@ async function fetchBBCWorld() {
         tags: ['BBCWorld'],
         votes: rank--,
         source: link,
-        date: new Date(pubDate).toLocaleDateString("en-US"),
+        date: new Date(pubDate).toLocaleDateString('en-US'),
         submitter: 'BBC World News'
       });
     }
