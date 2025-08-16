@@ -76,7 +76,8 @@ async function fetchHackerNewsFrontPage() {
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
       const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
-
+      const cleanDescription = description.replace(/<[^>]*>/g, '').trim();
+      
       items.push({
         title,
         description,
@@ -112,14 +113,9 @@ async function fetchGoogleNewsTop() {
       const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'Google News';
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
-      const description = (
-            block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-            block.match(/<description>(.*?)<\/description>/) ||
-          []
-        )[1] || '';
-
+      const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
       const cleanDescription = description.replace(/<[^>]*>/g, '').trim();
-
+      
       items.push({
         title,
         description,
@@ -154,6 +150,8 @@ async function fetchVnExpressInternational() {
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
       const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
+      const cleanDescription = description.replace(/<[^>]*>/g, '').trim();
+      
       items.push({
         title,
         description,
