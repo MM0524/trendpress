@@ -13,16 +13,16 @@ exports.handler = async (event) => {
   }
 
   try {
-    const [hackerNews, BBCNews, vnexpressIntl, tiktok, instagram] = await Promise.all([
+    const [hackerNews, bbcWorld, vnexpressIntl, tiktok, instagram] = await Promise.all([
       fetchHackerNewsFrontpage(),
-      fetchBBCNewsTop(),
+      fetchBBCWorld(),
       fetchVnExpressInternational(),
       fetchTikTokTrends(),
       fetchInstagramTrends()
     ]);
 
     // Normalize metrics: prefer views/engagement, fallback votes
-    let trends = [...hackerNews, ...BBCNews, ...vnexpressIntl, ...tiktok, ...instagram]
+    let trends = [...hackerNews, ...bbcWorld, ...vnexpressIntl, ...tiktok, ...instagram]
       .filter(Boolean)
       .map(t => ({
         ...t,
