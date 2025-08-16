@@ -68,6 +68,7 @@ async function fetchHackerNewsFrontpage() {
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
+    let rank = 50;
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
       const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'Hacker News';
@@ -106,6 +107,7 @@ async function fetchBBCWorld() {
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
+    let rank = 100;
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
       const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'BBC News';
@@ -142,7 +144,8 @@ async function fetchVnExpressInternational() {
     const xml = await res.text();
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;    
+    let match;   
+    let rank = 200;
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
       const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'VnExpress News';
