@@ -58,7 +58,7 @@ exports.handler = async (event) => {
   }
 };
 
-async function fetchHackerNewsFrontpage() {
+async function fetchHackerNewsFrontPage() {
   try {
     const url = 'https://hnrss.org/frontpage';
     const res = await fetch(url);
