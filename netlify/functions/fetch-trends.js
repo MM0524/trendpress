@@ -173,61 +173,68 @@ async function fetchVnExpressInternational() {
 }
 
 async function fetchTikTokTrends() {
-  if (!RAPIDAPI_KEY) return [];
   try {
-    // Example RapidAPI endpoint (may vary based on the subscription used)
-    const res = await fetch('https://tiktok-scraper7.p.rapidapi.com/trending', {
+    const res = await fetch('https://tiktok-api23.p.rapidapi.com/api/trending/top-products/metrics?product_id=601226', {
       headers: {
         'x-rapidapi-key': RAPIDAPI_KEY,
-        'x-rapidapi-host': 'tiktok-scraper7.p.rapidapi.com'
+        'x-rapidapi-host': 'tiktok-api23.p.rapidapi.com'
       }
     });
-    if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
-    const json = await res.json();
-    const list = json?.data || json?.videos || [];
-    return list.slice(0, 15).map((v) => ({
-      title: v.title || v.desc || `TikTok by @${v?.author?.uniqueId || v?.author || 'creator'}`,
-      description: v.desc || 'Trending on TikTok',
-      category: 'TikTok',
-      tags: (v?.hashtags || v?.challenges || []).map(h => typeof h === 'string' ? h : (h?.title || h?.name)).filter(Boolean),
-      engagement: v.stats?.diggCount || v.diggCount || 0,
-      views: v.stats?.playCount || v.playCount || undefined,
-      source: v.webVideoUrl || v.shareUrl || `https://www.tiktok.com/@${v?.author?.uniqueId || ''}/video/${v?.id || v?.video_id || ''}`,
-      date: new Date((v.createTime || v?.timestamp || Date.now()) * 1000).toLocaleDateString('en-US'),
-      submitter: v?.author?.uniqueId ? `@${v.author.uniqueId}` : 'tiktok'
-    }));
-  } catch (e) {
-    console.warn('TikTok fetch failed', e.message);
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`TikTok HTTP ${res.status}: ${errText}`);
+    }
+
+    const data = await res.json();
+    const items = [];
+
+    if (data?.data) {
+      items.push(...data.data.map((item, i) => ({
+        id: `tiktok-${i}`,
+        title: item.title || item.desc || 'No title',
+        source: 'TikTok',
+        url: item.url || '#',
+        views: item.playCount || 0,
+        engagement: item.diggCount || 0,
+        votes: 0,
+        date: new Date(item.createTime * 1000).toLocaleDateString('en-US')
+      })));
+    }
+
+    return items; 
+  } catch (err) {
+    console.warn('TikTok fetch error:', err.message);
     return [];
   }
 }
 
+
 async function fetchInstagramTrends() {
-  if (!RAPIDAPI_KEY) return [];
   try {
-    // Example RapidAPI endpoint for Instagram post search/trending (placeholder, may differ based on provider)
-    const res = await fetch('https://instagram-scraper-api2.p.rapidapi.com/v1/trending', {
+    const res = await fetch('https://instagram-scraper-20231.p.rapidapi.com/top-posts?hashtag=trending', {
+      method: 'GET',
       headers: {
-        'x-rapidapi-key': RAPIDAPI_KEY,
-        'x-rapidapi-host': 'instagram-scraper-api2.p.rapidapi.com'
+        'x-rapidapi-host': 'instagram-scraper-20231.p.rapidapi.com',
+        'x-rapidapi-key': process.env.RAPIDAPI_KEY
       }
     });
+
     if (!res.ok) throw new Error(`Instagram HTTP ${res.status}`);
-    const json = await res.json();
-    const list = json?.data || json?.items || [];
-    return list.slice(0, 15).map((p) => ({
-      title: p.caption || p.title || `Instagram by @${p?.username || p?.owner_username || 'creator'}`,
-      description: p.caption || 'Trending on Instagram',
-      category: 'Instagram',
-      tags: (p.hashtags || []).map((h) => (typeof h === 'string' ? h : h?.name)).filter(Boolean),
-      engagement: p.like_count || p.likes || 0,
-      views: p.view_count || p.play_count || undefined,
-      source: p.permalink || p.link || (p.code ? `https://www.instagram.com/p/${p.code}` : '#'),
-      date: new Date(p.taken_at_timestamp ? p.taken_at_timestamp * 1000 : Date.now()).toLocaleDateString('en-US'),
-      submitter: p.username ? `@${p.username}` : 'instagram'
+    const data = await res.json();
+
+    // Normalize
+    return (data.data || []).map((item, i) => ({
+      source: 'Instagram',
+      title: item.caption || 'Instagram Post',
+      url: `https://www.instagram.com/p/${item.shortcode}`,
+      views: item.play_count || item.view_count || 0,   
+      engagement: item.like_count || item.comments_count || 0,
+      votes: 0,
+      date: new Date(item.taken_at_timestamp * 1000).toLocaleDateString('en-US')
     }));
-  } catch (e) {
-    console.warn('Instagram fetch failed', e.message);
+  } catch (err) {
+    console.warn("Instagram fetch failed", err.message);
     return [];
   }
 }
