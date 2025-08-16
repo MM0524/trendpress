@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -135,17 +134,7 @@
 
         /* --- Main Content & Views --- */
         .main-container, .for-u-container { animation: slideInUp 0.6s ease-out; /* --- ANIMATION ADDITION --- */ }
-        
-        /* MODIFIED: Adjusted max-width and confirmed centering for the main content area */
-        .main-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-            padding: 2rem;
-            max-width: 896px; /* Equivalent to Tailwind's max-w-4xl */
-            margin: 0 auto; /* This centers the container on the page */
-        }
-
+        .main-container { display: grid; grid-template-columns: 1fr; gap: 2rem; padding: 2rem; max-width: 900px; margin: auto; }
         .for-u-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; max-width: 1400px; margin: auto; }
         .demo-banner { grid-column: 1 / -1; background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         .trending-container, .for-u-content, .leaderboard-panel { background-color: var(--surface-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
@@ -538,8 +527,6 @@
             <div></div>
         </div>
     </div>
-    
-    <!-- The rest of the HTML remains exactly the same -->
 
     <header class="header">
         <div class="logo" id="logo"><span class="logo-trend">Trend</span><span class="logo-pulse">Pulse</span></div>
@@ -654,10 +641,6 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // The entire JavaScript block from the previous step goes here.
-        // I've omitted it for brevity, as the only change is in the CSS.
-        // Please use the full JavaScript from the "Leave semi-real data on the website always" response.
-        
         // --- STATE & DATA ---
         let user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [] };
         const TRENDS_PER_PAGE = 5;
@@ -905,39 +888,51 @@
 
         // --- FUNCTION IMPLEMENTATIONS ---
         
-        // Function to call the analyze-trend API
+        // Function để gọi API analyze-trend
         analyzeTrendWithAPI = async (trend, analysisType = 'general') => {
             try {
                 const fnBase = getAnalyzeFnBase();
                 if (!fnBase) throw new Error('No analyze function base configured');
                 const response = await fetch(`${fnBase}/analyze-trend`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ trendData: trend, analysisType: analysisType })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        trendData: trend,
+                        analysisType: analysisType
+                    })
                 });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const result = await response.json();
                 return sanitizeAnalysis(result.data, trend);
             } catch (error) {
-                console.error('Error calling analyze-trend API:', error);
+                console.error('Lỗi khi gọi analyze-trend API:', error);
+                // Fallback về AI insight cũ nếu API không hoạt động
                 const fallback = await getAIInsight(trend, analysisType);
                 return sanitizeAnalysis({ type: analysisType, overallScore: computeOverallScoreFromMetric(trend), summary: fallback }, trend);
             }
         };
 
-        // MODIFIED: This function now only fetches live trends and returns them.
-        async function fetchLiveTrends() {
+        // Load live trends from serverless function and replace mock data
+        async function loadLiveTrends() {
             try {
                 const res = await fetch('/.netlify/functions/fetch-trends');
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                if (data.success && Array.isArray(data.trends)) {
-                    return data.trends;
+                if (data.success && Array.isArray(data.trends) && data.trends.length) {
+                    allTrends = data.trends;
+                    categories = Array.from(new Set(allTrends.map(t => t.category))).sort();
+                    populateCategoryFilters();
+                    applyTrendOrdering();
+                    displayTrends();
                 }
-                return []; // Return empty array if fetch was ok but data is invalid
             } catch (e) {
-                console.warn('Live trends not available, using only mock data.', e.message);
-                return []; // Return empty array on failure
+                console.warn('Live trends not available, using mock data.', e.message);
             }
         }
         
@@ -1013,7 +1008,9 @@
                 { id: 59, title: 'Ethereum L2 sử dụng tăng cuối 2024', description: 'Phí rẻ thúc đẩy hoạt động người dùng.', category: 'Crypto', tags: ['Ethereum','L2','Usage'], votes: 445, source: 'https://l2beat.com', date: '2024-12-18', submitter: 'L2Beat' },
                 { id: 60, title: 'Threads bổ sung tính năng lịch đăng 2025', description: 'Hỗ trợ lịch đăng giúp nhãn hàng duy trì tần suất.', category: 'Social', tags: ['Threads','Scheduler','Brands'], votes: 330, source: 'https://about.fb.com', date: '2025-02-02', submitter: 'Meta' }
             ];
-            // No longer calls displayTrends from here, as it's part of the main init flow.
+            categories = Array.from(new Set(allTrends.map(t => t.category))).sort();
+            populateCategoryFilters();
+            displayTrends();
         }
         
         randomizeWorkData = () => { const mockSubmitters = ['InnovatorX', 'TrendSpotter', 'FutureCast', 'AI Analyzed', 'DataDiver', 'MarketMind']; allTrends.forEach(trend => { trend.submitter = mockSubmitters[Math.floor(Math.random() * mockSubmitters.length)]; }); };
@@ -1024,29 +1021,8 @@
         switchView = (view) => { currentView = view; if (view === 'forU') { DOM.mainViewContainer.classList.add('hidden'); DOM.forUViewContainer.classList.remove('hidden'); } else { DOM.forUViewContainer.classList.add('hidden'); DOM.mainViewContainer.classList.remove('hidden'); } displayTrends(); };
         loadMoreTrends = () => { let listElement, footerButton, trendsToFilter; if (currentView === 'forU') { listElement = DOM.forUTrendsList; footerButton = DOM.forULoadMoreBtn; const uniqueTrendIds = new Set([...allTrends.filter(t => user.preferences.includes(t.category)).map(t=>t.id), ...user.followedTrends]); trendsToFilter = Array.from(uniqueTrendIds).map(id => allTrends.find(t => t.id === id)); } else { listElement = DOM.trendsList; footerButton = DOM.loadMoreBtn; if (currentFilter.type === 'category' && currentFilter.value !== 'All') { trendsToFilter = allTrends.filter(t => t.category === currentFilter.value); } else if (currentFilter.type === 'tag') { trendsToFilter = allTrends.filter(t => t.tags.includes(currentFilter.value)); } else { trendsToFilter = allTrends; } } const nextTrends = trendsToFilter.slice(displayedTrends[currentView], displayedTrends[currentView] + TRENDS_PER_PAGE); nextTrends.forEach(trend => { listElement.appendChild(createTrendCard(trend)); try { saveSeenTrendKey(makeTrendKey(trend)); } catch(_){} }); displayedTrends[currentView] += nextTrends.length; footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length); };
         updateUIForFilter = () => { if (currentFilter.type === 'tag') { DOM.trendingHeaderText.textContent = `${t('Trends for')} #${currentFilter.value}`; DOM.clearFilterBtn.classList.remove('hidden'); DOM.filterButtonsContainer.classList.add('hidden'); } else { DOM.trendingHeaderText.textContent = t('Trending Now'); DOM.clearFilterBtn.classList.add('hidden'); DOM.filterButtonsContainer.classList.remove('hidden'); document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value)); } displayTrends(); };
-        populateCategoryFilters = () => { 
-            categories = Array.from(new Set(allTrends.map(t => t.category))).sort();
-            const allCats = ['All', ...categories]; 
-            DOM.filterButtonsContainer.innerHTML = ''; 
-            allCats.forEach(category => { 
-                const button = document.createElement('button'); 
-                button.className = 'filter-btn'; 
-                button.textContent = category; 
-                button.dataset.filter = category; 
-                if (category === currentFilter.value) button.classList.add('active'); 
-                DOM.filterButtonsContainer.appendChild(button); 
-            }); 
-        };
-        populatePreferenceCheckboxes = () => { 
-            categories = Array.from(new Set(allTrends.map(t => t.category))).sort();
-            DOM.preferencesGrid.innerHTML = ''; 
-            categories.forEach(category => { 
-                const item = document.createElement('div'); 
-                item.className = 'preference-item'; 
-                item.innerHTML = `<label><input type="checkbox" name="preference" value="${category}"> ${category}</label>`; 
-                DOM.preferencesGrid.appendChild(item); 
-            }); 
-        };
+        populateCategoryFilters = () => { const allCats = ['All', ...categories.filter(c => c !== 'All').sort()]; DOM.filterButtonsContainer.innerHTML = ''; allCats.forEach(category => { const button = document.createElement('button'); button.className = 'filter-btn'; button.textContent = category; button.dataset.filter = category; if (category === currentFilter.value) button.classList.add('active'); DOM.filterButtonsContainer.appendChild(button); }); };
+        populatePreferenceCheckboxes = () => { DOM.preferencesGrid.innerHTML = ''; categories.sort().forEach(category => { const item = document.createElement('div'); item.className = 'preference-item'; item.innerHTML = `<label><input type="checkbox" name="preference" value="${category}"> ${category}</label>`; DOM.preferencesGrid.appendChild(item); }); };
         updateAuthUI = () => { DOM.body.className = ''; if (user.isLoggedIn) { DOM.body.classList.add('logged-in'); DOM.signInBtn.classList.add('hidden'); DOM.userMenu.classList.remove('hidden'); DOM.userEmailBtn.textContent = user.email; DOM.dropdownHeader.textContent = user.email; DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType === 'work'); if (user.accountType === 'work') { DOM.body.classList.add('work-account-view'); randomizeWorkData(); } else if (user.accountType === 'personal') { DOM.body.classList.add('personal-account-view'); } } else { DOM.signInBtn.classList.remove('hidden'); DOM.userMenu.classList.add('hidden'); DOM.navForU.classList.add('hidden'); } allTrends.forEach(t => t.isFollowed = false); displayTrends(); };
         signIn = (type) => { user = { isLoggedIn: true, accountType: type, email: type === 'personal' ? 'privatemail@gmail.com' : 'pro@company.com', preferences: [], hasSetPreferences: false, followedTrends: [] }; closeModal('login-choice-modal'); updateAuthUI(); if (type === 'work' && !user.hasSetPreferences) { populatePreferenceCheckboxes(); openModal('preferences-modal'); } };
         generateCategoryLeaderboards = (containerId, categoriesToShow) => { const container = document.getElementById(containerId); container.innerHTML = ''; categoriesToShow.sort().forEach(category => { const topTrends = allTrends.filter(t => t.category === category).sort((a,b) => (user.followedTrends.includes(b.id) - user.followedTrends.includes(a.id)) || b.votes - a.votes).slice(0,3); if(topTrends.length > 0) { const leaderboardDiv = document.createElement('div'); leaderboardDiv.className = 'leaderboard-widget'; let listItems = topTrends.map(t => `<li><span>${t.title}</span><span class=\"vote-display\">${t.votes} 🔥</span></li>`).join(''); leaderboardDiv.innerHTML = `<h4>Top in ${category}</h4><ol>${listItems}</ol>`; container.appendChild(leaderboardDiv); } }); };
@@ -1523,7 +1499,7 @@
             return base.concat(extra);
         };
         
-        // Create a mini data series for the analysis modal chart
+        // Tạo chuỗi dữ liệu nhỏ cho line chart trong modal phân tích
         generateMiniSeries = (trend, analysis) => {
             const parseDate = (d) => d ? new Date(d) : null;
             const endDate = parseDate(trend.endDate) || new Date();
@@ -1547,7 +1523,7 @@
             return { labels, series };
         };
 
-        // Render the compact line chart in the analysis modal
+        // Vẽ line chart gọn trong modal phân tích
         renderInlineTrendLineChart = (containerEl, labels, series) => {
             try {
                 const chartWrap = document.createElement('div');
@@ -1596,14 +1572,19 @@
                 const promptType = currentView === 'forU' ? 'viral' : 'general'; 
                 getAIInsight(trend, promptType).then(insight => { 
                     modalBody.innerHTML = `<div class="ai-insight-content">${insight.replace(/\n/g, '<br>')}</div>`; 
+                    // Thêm line chart mini theo mốc thời gian trend
                     const gen = generateMiniSeries(trend, { growthRate: 0.05 });
                     renderInlineTrendLineChart(modalBody, gen.labels, gen.series);
                 }).catch(err => { 
-                    modalBody.innerHTML = `<div style="text-align: center; color: #ff6b6b;"><p>${t('Unable to analyze trend.')}</p><p style="font-size: 0.9rem; margin-top: 0.5rem;">${err.message}</p></div>`; 
+                    modalBody.innerHTML = `<div style="text-align: center; color: #ff6b6b;">
+                        <p>${t('Unable to analyze trend.')}</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">${err.message}</p>
+                    </div>`; 
                     console.error(err); 
                 }); 
             } 
             
+            // Xử lý button analyze trend
             const analyzeButton = e.target.closest('.analyze-trend-btn');
             if (analyzeButton) {
                 if (!user.isLoggedIn || user.accountType !== 'work') return;
@@ -1616,32 +1597,45 @@
                 modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align: center; margin-top: 1rem; color: var(--text-muted-color);">${t('Analyzing trend with API...')}</p>`;
                 openModal('ai-insight-modal');
                 
+                // Gọi API analyze-trend
                 analyzeTrendWithAPI(trend, analysisType).then(analysis => {
                     let analysisHTML = '<div class="ai-insight-content">';
                     const typeMap = { sentiment: currentLanguage==='vi' ? 'cảm xúc' : 'sentiment', engagement: currentLanguage==='vi' ? 'tương tác' : 'engagement', growth: currentLanguage==='vi' ? 'tăng trưởng' : 'growth', general: currentLanguage==='vi' ? 'tổng quan' : 'general' };
                     analysisHTML += `<h4>${t('Analysis')} ${typeMap[analysis.type] || analysis.type}</h4>`;
                     
                     if (analysis.type === 'sentiment') {
-                        analysisHTML += `<p><strong>${t('Score')}:</strong> ${(analysis.score * 100).toFixed(1)}%</p><p><strong>${t('Confidence')}:</strong> ${(analysis.confidence * 100).toFixed(1)}%</p><p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
+                        analysisHTML += `<p><strong>${t('Score')}:</strong> ${(analysis.score * 100).toFixed(1)}%</p>`;
+                        analysisHTML += `<p><strong>${t('Confidence')}:</strong> ${(analysis.confidence * 100).toFixed(1)}%</p>`;
+                        analysisHTML += `<p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
                     } else if (analysis.type === 'engagement') {
-                        analysisHTML += `<p><strong>${t('Score')}:</strong> ${(analysis.score * 100).toFixed(1)}%</p><p><strong>${t('Reach')}:</strong> ${analysis.reach}</p><p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
+                        analysisHTML += `<p><strong>${t('Score')}:</strong> ${(analysis.score * 100).toFixed(1)}%</p>`;
+                        analysisHTML += `<p><strong>${t('Reach')}:</strong> ${analysis.reach}</p>`;
+                        analysisHTML += `<p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
                     } else if (analysis.type === 'growth') {
-                        analysisHTML += `<p><strong>${t('Growth Rate')}:</strong> ${(analysis.growthRate * 100).toFixed(1)}%</p><p><strong>${t('Trend')}:</strong> ${analysis.trend}</p><p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
+                        analysisHTML += `<p><strong>${t('Growth Rate')}:</strong> ${(analysis.growthRate * 100).toFixed(1)}%</p>`;
+                        analysisHTML += `<p><strong>${t('Trend')}:</strong> ${analysis.trend}</p>`;
+                        analysisHTML += `<p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
                     } else {
                         analysisHTML += `<p><strong>${t('Overall Score')}:</strong> ${(analysis.overallScore * 100).toFixed(1)}%</p>`;
                         const recs = (analysis.recommendations || []).slice(0, 3);
                         if (recs.length) {
-                            analysisHTML += `<p><strong>${t('Recommendations')}:</strong></p><ul>${recs.map(rec => `<li>${rec}</li>`).join('')}</ul>`;
+                        analysisHTML += `<p><strong>${t('Recommendations')}:</strong></p><ul>`;
+                            recs.forEach(rec => { analysisHTML += `<li>${rec}</li>`; });
+                        analysisHTML += `</ul>`;
                         }
                         analysisHTML += `<p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
                     }
                     
                     analysisHTML += '</div>';
                     modalBody.innerHTML = analysisHTML;
+                    // Thêm line chart mini dựa trên phân tích và mốc thời gian trend
                     const gen = generateMiniSeries(trend, analysis);
                     renderInlineTrendLineChart(modalBody, gen.labels, gen.series);
                 }).catch(err => {
-                    modalBody.innerHTML = `<div style="text-align: center; color: #ff6b6b;"><p>Không thể phân tích trend.</p><p style="font-size: 0.9rem; margin-top: 0.5rem;">${err.message}</p></div>`; 
+                    modalBody.innerHTML = `<div style="text-align: center; color: #ff6b6b;">
+                        <p>Không thể phân tích trend.</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">${err.message}</p>
+                    </div>`; 
                     console.error(err); 
                 }); 
             } 
@@ -1706,57 +1700,28 @@
             localStorage.setItem('lang', currentLanguage);
             applyTranslations();
             updateLanguageToggleUI();
+            // Re-render lists to update card buttons
             displayTrends();
+            // Cập nhật lại chart Trending Board nếu đang mở để hiển thị nhãn theo ngôn ngữ
             if (document.getElementById('trending-board-modal')?.classList.contains('show')) {
                 createHotTrendsChart();
             }
         });
         
         // --- INITIALIZATION ---
-        // NEW: Encapsulated initialization in an async function to handle data loading flow.
-        async function initializeApp() {
-            // 1. Always load the mock data first as a baseline.
-            loadMockTrends();
-
-            // 2. Fetch live trends. This will return an array, empty on failure.
-            const liveTrends = await fetchLiveTrends();
-
-            // 3. Merge live trends into the mock data. Live data overwrites mock data on title conflict.
-            if (liveTrends.length > 0) {
-                const combinedTrends = new Map();
-                // Use lowercase title as the key for de-duplication
-                const getKey = (trend) => (trend.title || '').trim().toLowerCase();
-
-                // Add all mock trends to the map first
-                allTrends.forEach(trend => combinedTrends.set(getKey(trend), trend));
-                
-                // Add live trends, overwriting any mock trends with the same title
-                liveTrends.forEach(trend => combinedTrends.set(getKey(trend), trend));
-                
-                // Convert the map's values back to the final array
-                allTrends = Array.from(combinedTrends.values());
-                console.log(`Successfully merged ${liveTrends.length} live trends. Total unique trends: ${allTrends.length}`);
-            }
-
-            // 4. Continue with the rest of the app setup using the final `allTrends` array.
-            ensureMinTrendsPerHashtagUnique(10);
-            applyTrendOrdering();
-            populateCategoryFilters();
-            updateAuthUI();
-            applyTranslations();
-            updateLanguageToggleUI();
-            
-            // 5. Check AI status.
-            setTimeout(checkAIStatus, 1000);
-
-            // 6. Hide the page loader.
-            const loader = document.getElementById('loader');
-            if (loader) {
-                loader.classList.add('loader-hidden');
-                setTimeout(() => { loader.style.display = 'none'; }, 500); // Remove from DOM after fade out
-            }
-        }
+        // Load mock data first for instant UI; live data (if available) will replace it
+        loadMockTrends();
+        // Bổ sung thêm trends độc lập để đạt tối thiểu 10 trends mỗi hashtag (không nhân bản)
+        ensureMinTrendsPerHashtagUnique(10);
+        applyTrendOrdering();
+        populateCategoryFilters();
+        updateAuthUI();
+        applyTranslations();
+        updateLanguageToggleUI();
+        // Load live data after initial render
+        loadLiveTrends();
         
+        // Kiểm tra trạng thái AI khi khởi động
         async function checkAIStatus() {
             try {
                 const geminiManager = new GeminiAPIManager('AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc');
@@ -1781,8 +1746,17 @@
             }
         }
         
-        // Start the application
-        initializeApp();
+        // Kiểm tra trạng thái AI sau khi trang load
+        setTimeout(checkAIStatus, 1000);
+
+        // --- Hide Loader ---
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.classList.add('loader-hidden');
+            // Optional: remove from DOM after transition
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }
+
     });
     </script>
 </body>
