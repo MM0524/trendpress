@@ -65,6 +65,7 @@ async function fetchHackerNewsFrontpage() {
       votes: s.score,
       source: "Hacker News",
       platform: "tech",
+      category: "Technology",
       date: safeDateStr(s.time * 1000),
       tags: ["Tech"],
     }));
@@ -90,6 +91,7 @@ async function fetchBBCWorld() {
       url: it.querySelector("link")?.textContent,
       source: "BBC World",
       platform: "news",
+      category: "World News",
       date: safeDateStr(it.querySelector("pubDate")?.textContent),
       tags: ["World"],
     }));
@@ -115,6 +117,7 @@ async function fetchVnExpressInternational() {
       url: it.querySelector("link")?.textContent,
       source: "VNExpress",
       platform: "news",
+      category: "World News",
       date: safeDateStr(it.querySelector("pubDate")?.textContent),
       tags: ["Vietnam", "World"],
     }));
@@ -140,6 +143,7 @@ async function fetchNasdaqNews() {
       url: it.querySelector("link")?.textContent,
       source: "Nasdaq",
       platform: "finance",
+      category: "Finance",
       date: safeDateStr(it.querySelector("pubDate")?.textContent),
       tags: ["Finance"],
     }));
@@ -159,6 +163,7 @@ async function fetchTikTokTrends() {
       url: "https://www.tiktok.com/",
       source: "TikTok",
       platform: "social",
+      category: "Entertainment",
       date: safeDateStr(Date.now()),
       views: 1200000,
       tags: ["TikTok", "Trend"],
@@ -176,6 +181,7 @@ async function fetchInstagramTrends() {
       url: "https://www.instagram.com/",
       source: "Instagram",
       platform: "social",
+      category: "Entertainment",
       date: safeDateStr(Date.now()),
       engagement: 540000,
       tags: ["Instagram", "Fashion"],
