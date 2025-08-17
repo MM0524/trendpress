@@ -43,12 +43,12 @@ exports.handler = async (event) => {
           success: true, 
           trends, 
           sources: {
-            hackerNews: hackerNews?.length || 0,
-            bbcWorld: bbcWorld?.length || 0,
-            vnexpressIntl: vnexpressIntl?.length || 0,
-            nasdaqNews: nasdaqNews?.length || 0,
-            tiktok: tiktok?.length || 0,
-            instagram: instagram?.length || 0
+            hackerNews: hackerNews.length,
+            bbcWorld: bbcWorld.length,
+            vnexpressIntl: vnexpressIntl.length,
+            nasdaqNews: nasdaqNews.length,
+            tiktok: tiktok.length,
+            instagram: instagram.length
           } 
       })
 
@@ -81,11 +81,7 @@ async function fetchHackerNewsFrontpage() {
       const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'Hacker News';
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
-     const description = (
-            block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) 
-            || block.match(/<description>(.*?)<\/description>/) 
-            || []
-      )[1] || '';
+     const description = ( block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)  || block.match(/<description>(.*?)<\/description>/)  || [] )[1] || '';
 
       items.push({
         title,
