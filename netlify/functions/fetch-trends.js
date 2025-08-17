@@ -13,10 +13,11 @@ exports.handler = async (event) => {
   }
 
   try {
-    const [hackerNews, bbcWorld, vnexpressIntl, tiktok, instagram] = await Promise.all([
+    const [hackerNews, bbcWorld, vnexpressIntl,  nasdaqNews, tiktok, instagram] = await Promise.all([
       fetchHackerNewsFrontpage(),
       fetchBBCWorld(),
       fetchVnExpressInternational(),
+      fetchNasdaqNews(),
       fetchTikTokTrends(),
       fetchInstagramTrends()
     ]);
@@ -172,6 +173,59 @@ async function fetchVnExpressInternational() {
     return items;
   } catch (e) {
     console.warn('VnExpress International fetch failed', e.message);
+    return [];
+  }
+}
+
+async function fetchNasdaqNews() {
+  try {
+    const url = 'https://www.nasdaq.com/feed/rssoutbound';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`NASDAQ HTTP ${res.status}`);
+    const xml = await res.text();
+
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let rank = 100; // số điểm vote giả định
+
+    while ((match = itemRegex.exec(xml)) && items.length < 25) {
+      const block = match[1];
+
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) ||
+          [])[1] || 'NASDAQ News';
+
+      const link =
+        (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+
+      const pubDate =
+        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
+        new Date().toUTCString();
+
+      const description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
+
+      items.push({
+        title,
+        description,
+        category: 'Stock Market',
+        tags: ['NASDAQ'],
+        votes: rank--,
+        source: link,
+        date: isNaN(new Date(pubDate))
+          ? new Date().toLocaleDateString('en-US')
+          : new Date(pubDate).toLocaleDateString('en-US'),
+        submitter: 'NASDAQ RSS Feed'
+      });
+    }
+
+    return items;
+  } catch (e) {
+    console.warn('NASDAQ fetch failed', e.message);
     return [];
   }
 }
