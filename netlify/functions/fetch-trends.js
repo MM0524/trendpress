@@ -1,279 +1,383 @@
-// ===============================
-// fetch-trends.js (FULL)
-// ===============================
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 
-// ---- BACKEND PART (Node/Serverless) ----
-const RAPIDAPI_KEY = typeof process !== "undefined" ? process.env.RAPIDAPI_KEY : null;
-import { GEMINI_KEY } from "./analyze-trend.js"; 
-import fetch from "node-fetch";
-import { XMLParser } from "fast-xml-parser";
+exports.handler = async (event) => {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Content-Type': 'application/json'
+  };
 
-// Safe fetch wrapper
-async function defaultFetch(url, options = {}) {
-  const res = await fetch(url, options);
-  if (!res.ok) throw new Error(`Failed to fetch ${url}`);
-  return res;
-}
-
-// Helper: safe text from RSS
-function safeText(obj, field = "title") {
-  if (!obj) return "";
-  if (typeof obj[field] === "string") return obj[field];
-  if (typeof obj[field] === "object" && "#text" in obj[field]) return obj[field]["#text"];
-  return "";
-}
-
-// Helper: parse date
-function safeDateStr(d) {
-  try {
-    return new Date(d).toISOString();
-  } catch {
-    return new Date().toISOString();
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
   }
-}
 
-const parser = new XMLParser();
+  try {
+    const [
+      hackerNews,
+      googleNews,
+      vnexpressIntl,
+      bbcNews,
+      nasdaqNews,
+      tiktok,
+      instagram
+    ] = await Promise.all([
+      fetchHackerNewsFrontpage(),
+      fetchGoogleNewsTop(),
+      fetchVnExpressInternational(),
+      fetchBBCNews(),
+      fetchNasdaqNews(),
+      fetchTikTokTrends(),
+      fetchInstagramTrends()
+    ]);
 
-// ---------------------- FETCHERS ----------------------
+    let trends = [
+      ...hackerNews,
+      ...googleNews,
+      ...vnexpressIntl,
+      ...bbcNews,
+      ...nasdaqNews,
+      ...tiktok,
+      ...instagram
+    ]
+      .filter(Boolean)
+      .map(t => ({
+        ...t,
+        views: Number.isFinite(Number(t.views)) ? Number(t.views) : undefined,
+        engagement: Number.isFinite(Number(t.engagement)) ? Number(t.engagement) : undefined,
+        votes: Number.isFinite(Number(t.votes)) ? Number(t.votes) : 0
+      }))
+      .sort(
+        (a, b) =>
+          (Number(b.views) ||
+            Number(b.engagement) ||
+            Number(b.votes) ||
+            0) -
+          (Number(a.views) ||
+            Number(a.engagement) ||
+            Number(a.votes) ||
+            0)
+      );
 
-// Hacker News
+    // Assign incremental ids
+    trends = trends.map((t, i) => ({ ...t, id: i + 1 }));
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: true,
+        trends,
+        sources: {
+          hackerNews: hackerNews.length,
+          googleNews: googleNews.length,
+          vnexpressIntl: vnexpressIntl.length,
+          bbcNews: bbcNews.length,
+          nasdaqNews: nasdaqNews.length,
+          tiktok: tiktok.length,
+          instagram: instagram.length
+        }
+      })
+    };
+  } catch (error) {
+    console.error('fetch-trends error', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        success: false,
+        error: 'Failed to fetch live trends',
+        message: error.message
+      })
+    };
+  }
+};
+
+/* ---------------------------
+   RSS FETCHERS (News sources)
+----------------------------*/
+
 async function fetchHackerNewsFrontpage() {
   try {
-    const res = await defaultFetch("https://hacker-news.firebaseio.com/v0/topstories.json");
-    const ids = (await res.json()).slice(0, 10);
+    const url = 'https://hnrss.org/frontpage';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HackerNews HTTP ${res.status}`);
+    const xml = await res.text();
 
-    const items = await Promise.all(
-      ids.map(async (id) => {
-        const r = await defaultFetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
-        return await r.json();
-      })
-    );
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let rank = 500;
 
-    return items.map((it, i) => ({
-      id: `hn-${it.id}`,
-      rank: i + 1,
-      title: it.title || "(No Title)",
-      description: it.text || "",
-      url: it.url || `https://news.ycombinator.com/item?id=${it.id}`,
-      source: "Hacker News",
-      platform: "tech",
-      category: "Technology",
-      date: safeDateStr(it.time * 1000),
-      tags: ["Tech"],
-    }));
+    while ((match = itemRegex.exec(xml)) && items.length < 25) {
+      const block = match[1];
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) ||
+          [])[1] || 'Hacker News';
+      const link =
+        (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const pubDate =
+        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
+        new Date().toUTCString();
+      const description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
+
+      items.push({
+        title,
+        description,
+        category: 'Tech',
+        tags: ['HackerNews'],
+        votes: rank--,
+        source: link,
+        date: new Date(pubDate).toLocaleDateString('en-US'),
+        submitter: 'Hacker News Frontpage'
+      });
+    }
+    return items;
   } catch (e) {
-    console.error("fetchHackerNewsFrontpage failed", e);
+    console.warn('Hacker News fetch failed', e.message);
     return [];
   }
 }
 
-// BBC
-async function fetchBBCWorld() {
+async function fetchGoogleNewsTop() {
   try {
-    const res = await defaultFetch("https://feeds.bbci.co.uk/news/world/rss.xml");
-    const text = await res.text();
-    const data = parser.parse(text);
+    const url = 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Google News HTTP ${res.status}`);
+    const xml = await res.text();
 
-    const items = data.rss.channel.item.slice(0, 10);
-    return items.map((it, i) => ({
-      id: `bbc-${i}`,
-      rank: i + 1,
-      title: safeText(it, "title"),
-      description: safeText(it, "description"),
-      url: it.link,
-      source: "BBC World",
-      platform: "news",
-      category: "World News",
-      date: safeDateStr(it.pubDate),
-      tags: ["World"],
-    }));
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let rank = 300;
+
+    while ((match = itemRegex.exec(xml)) && items.length < 25) {
+      const block = match[1];
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) ||
+          [])[1] || 'Google News';
+      const link =
+        (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const pubDate =
+        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
+        new Date().toUTCString();
+      const description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
+
+      items.push({
+        title,
+        description,
+        category: 'News',
+        tags: ['GoogleNews'],
+        votes: rank--,
+        source: link,
+        date: new Date(pubDate).toLocaleDateString('en-US'),
+        submitter: 'Google News Top Stories'
+      });
+    }
+    return items;
   } catch (e) {
-    console.error("fetchBBCWorld failed", e);
+    console.warn('Google News fetch failed', e.message);
     return [];
   }
 }
 
-// VNExpress
 async function fetchVnExpressInternational() {
   try {
-    const res = await defaultFetch("https://e.vnexpress.net/rss/world.rss");
-    const text = await res.text();
-    const data = parser.parse(text);
-
-    const items = data.rss.channel.item.slice(0, 10);
-    return items.map((it, i) => ({
-      id: `vnexp-${i}`,
-      rank: i + 1,
-      title: safeText(it, "title"),
-      description: safeText(it, "description"),
-      url: it.link,
-      source: "VNExpress",
-      platform: "news",
-      category: "World News",
-      date: safeDateStr(it.pubDate),
-      tags: ["Vietnam", "World"],
-    }));
+    const url = 'https://e.vnexpress.net/rss/news.rss';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`VnExpress HTTP ${res.status}`);
+    const xml = await res.text();
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let rank = 200;
+    while ((match = itemRegex.exec(xml)) && items.length < 25) {
+      const block = match[1];
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) ||
+          [])[1] || 'VnExpress News';
+      const link =
+        (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const pubDate =
+        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
+        new Date().toUTCString();
+      const description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
+      items.push({
+        title,
+        description,
+        category: 'News',
+        tags: ['VnExpressInternational'],
+        votes: rank--,
+        source: link,
+        date: new Date(pubDate).toLocaleDateString('en-US'),
+        submitter: 'VnExpress International'
+      });
+    }
+    return items;
   } catch (e) {
-    console.error("fetchVnExpressInternational failed", e);
+    console.warn('VnExpress International fetch failed', e.message);
     return [];
   }
 }
 
-// Nasdaq
+async function fetchBBCNews() {
+  try {
+    const url = 'http://feeds.bbci.co.uk/news/rss.xml';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`BBC News HTTP ${res.status}`);
+    const xml = await res.text();
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let rank = 250;
+    while ((match = itemRegex.exec(xml)) && items.length < 25) {
+      const block = match[1];
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) ||
+          [])[1] || 'BBC News';
+      const link =
+        (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const pubDate =
+        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
+        new Date().toUTCString();
+      const description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
+
+      items.push({
+        title,
+        description,
+        category: 'News',
+        tags: ['BBC'],
+        votes: rank--,
+        source: link,
+        date: new Date(pubDate).toLocaleDateString('en-US'),
+        submitter: 'BBC News'
+      });
+    }
+    return items;
+  } catch (e) {
+    console.warn('BBC News fetch failed', e.message);
+    return [];
+  }
+}
+
 async function fetchNasdaqNews() {
   try {
-    const res = await defaultFetch("https://www.nasdaq.com/feed/rssoutbound?category=Markets");
-    const text = await res.text();
-    const data = parser.parse(text);
+    const url = 'https://www.nasdaq.com/feed/rssoutbound?category=Market%20News';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Nasdaq News HTTP ${res.status}`);
+    const xml = await res.text();
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let rank = 180;
+    while ((match = itemRegex.exec(xml)) && items.length < 25) {
+      const block = match[1];
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) ||
+          [])[1] || 'Nasdaq News';
+      const link =
+        (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const pubDate =
+        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
+        new Date().toUTCString();
+      const description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
 
-    const items = data.rss.channel.item.slice(0, 10);
-    return items.map((it, i) => ({
-      id: `nasdaq-${i}`,
-      rank: i + 1,
-      title: safeText(it, "title"),
-      description: safeText(it, "description"),
-      url: it.link,
-      source: "Nasdaq",
-      platform: "finance",
-      category: "Finance",
-      date: safeDateStr(it.pubDate),
-      tags: ["Finance"],
-    }));
+      items.push({
+        title,
+        description,
+        category: 'Finance',
+        tags: ['Nasdaq'],
+        votes: rank--,
+        source: link,
+        date: new Date(pubDate).toLocaleDateString('en-US'),
+        submitter: 'Nasdaq Market News'
+      });
+    }
+    return items;
   } catch (e) {
-    console.error("fetchNasdaqNews failed", e);
+    console.warn('Nasdaq News fetch failed', e.message);
     return [];
   }
 }
 
-// TikTok (RapidAPI)
+/* ---------------------------
+   SOCIAL FETCHERS (RapidAPI)
+----------------------------*/
+
 async function fetchTikTokTrends() {
   if (!RAPIDAPI_KEY) return [];
   try {
-    const res = await defaultFetch("https://tiktok-api23.p.rapidapi.com/api/trending/feed?count=10", {
+    const res = await fetch('https://tiktok-scraper7.p.rapidapi.com/trending', {
       headers: {
-        "x-rapidapi-host": "tiktok-api23.p.rapidapi.com",
-        "x-rapidapi-key": RAPIDAPI_KEY,
-      },
+        'x-rapidapi-key': RAPIDAPI_KEY,
+        'x-rapidapi-host': 'tiktok-scraper7.p.rapidapi.com'
+      }
     });
-    const data = await res.json();
-    const items = data.aweme_list || [];
-    return items.map((it, i) => ({
-      id: `tiktok-${it.aweme_id}`,
-      rank: i + 1,
-      title: it.desc || "(No Title)",
-      description: it.desc,
-      url: `https://www.tiktok.com/@${it.author?.unique_id}/video/${it.aweme_id}`,
-      source: "TikTok",
-      platform: "social",
-      category: "Entertainment",
-      date: safeDateStr(it.create_time * 1000),
-      tags: ["TikTok"],
+    if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
+    const json = await res.json();
+    const list = json?.data || json?.videos || [];
+    return list.slice(0, 15).map((v) => ({
+      title: v.title || v.desc || `TikTok by @${v?.author?.uniqueId || v?.author || 'creator'}`,
+      description: v.desc || 'Trending on TikTok',
+      category: 'TikTok',
+      tags: (v?.hashtags || v?.challenges || []).map(h => typeof h === 'string' ? h : (h?.title || h?.name)).filter(Boolean),
+      engagement: v.stats?.diggCount || v.diggCount || 0,
+      views: v.stats?.playCount || v.playCount || undefined,
+      source: v.webVideoUrl || v.shareUrl || `https://www.tiktok.com/@${v?.author?.uniqueId || ''}/video/${v?.id || v?.video_id || ''}`,
+      date: new Date((v.createTime || v?.timestamp || Date.now()) * 1000).toLocaleDateString('en-US'),
+      submitter: v?.author?.uniqueId ? `@${v.author.uniqueId}` : 'tiktok'
     }));
   } catch (e) {
-    console.error("fetchTikTokTrends failed", e);
+    console.warn('TikTok fetch failed', e.message);
     return [];
   }
 }
 
-// Instagram (RapidAPI)
 async function fetchInstagramTrends() {
   if (!RAPIDAPI_KEY) return [];
   try {
-    const res = await defaultFetch("https://instagram-scraper-api2.p.rapidapi.com/v1/trending", {
+    const res = await fetch('https://instagram-scraper-api2.p.rapidapi.com/v1/trending', {
       headers: {
-        "x-rapidapi-host": "instagram-scraper-api2.p.rapidapi.com",
-        "x-rapidapi-key": RAPIDAPI_KEY,
-      },
+        'x-rapidapi-key': RAPIDAPI_KEY,
+        'x-rapidapi-host': 'instagram-scraper-api2.p.rapidapi.com'
+      }
     });
-    const data = await res.json();
-    const items = data.data || [];
-    return items.map((it, i) => ({
-      id: `ig-${it.id || i}`,
-      rank: i + 1,
-      title: it.caption || "(No Title)",
-      description: it.caption || "",
-      url: `https://www.instagram.com/p/${it.code}/`,
-      source: "Instagram",
-      platform: "social",
-      category: "Entertainment",
-      date: safeDateStr(it.taken_at_timestamp * 1000),
-      tags: ["Instagram"],
+    if (!res.ok) throw new Error(`Instagram HTTP ${res.status}`);
+    const json = await res.json();
+    const list = json?.data || json?.items || [];
+    return list.slice(0, 15).map((p) => ({
+      title: p.caption || p.title || `Instagram by @${p?.username || p?.owner_username || 'creator'}`,
+      description: p.caption || 'Trending on Instagram',
+      category: 'Instagram',
+      tags: (p.hashtags || []).map((h) => (typeof h === 'string' ? h : h?.name)).filter(Boolean),
+      engagement: p.like_count || p.likes || 0,
+      views: p.view_count || p.play_count || undefined,
+      source: p.permalink || p.link || (p.code ? `https://www.instagram.com/p/${p.code}` : '#'),
+      date: new Date(p.taken_at_timestamp ? p.taken_at_timestamp * 1000 : Date.now()).toLocaleDateString('en-US'),
+      submitter: p.username ? `@${p.username}` : 'instagram'
     }));
   } catch (e) {
-    console.error("fetchInstagramTrends failed", e);
+    console.warn('Instagram fetch failed', e.message);
     return [];
   }
 }
-
-// ---------------------- GEMINI ----------------------
-async function analyzeWithGemini(text) {
-  if (!GEMINI_KEY) return "⚠️ No Gemini API key.";
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text }] }] }),
-      }
-    );
-    const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis result.";
-  } catch (e) {
-    console.error("Gemini error", e);
-    return "⚠️ Gemini analysis failed.";
-  }
-}
-
-// ---------------------- FRONTEND RENDER ----------------------
-function createTrendCard(trend) {
-  const card = document.createElement("div");
-  card.className = "trend-card";
-
-  // Title (click → alert)
-  const titleEl = document.createElement("h3");
-  titleEl.textContent = trend.title || "(No Title)";
-  titleEl.className = "trend-title";
-  titleEl.addEventListener("click", () => {
-    alert(`Trend: ${trend.title}\nSource: ${trend.source}`);
-  });
-
-  // Description
-  const descEl = document.createElement("p");
-  descEl.textContent = trend.description || "";
-
-  // Source link
-  const srcEl = document.createElement("a");
-  srcEl.href = trend.url;
-  srcEl.target = "_blank";
-  srcEl.rel = "noopener noreferrer";
-  srcEl.textContent = `Source: ${trend.source}`;
-
-  // Analyze button
-  const analyzeBtn = document.createElement("button");
-  analyzeBtn.textContent = "Analyze";
-  analyzeBtn.addEventListener("click", async () => {
-    analyzeBtn.disabled = true;
-    analyzeBtn.textContent = "Analyzing...";
-    const result = await analyzeWithGemini(trend.title + "\n" + trend.description);
-    alert(`Gemini Analysis:\n\n${result}`);
-    analyzeBtn.textContent = "Analyze";
-    analyzeBtn.disabled = false;
-  });
-
-  card.appendChild(titleEl);
-  card.appendChild(descEl);
-  card.appendChild(srcEl);
-  card.appendChild(analyzeBtn);
-  return card;
-}
-
-export {
-  fetchHackerNewsFrontpage,
-  fetchBBCWorld,
-  fetchVnExpressInternational,
-  fetchNasdaqNews,
-  fetchTikTokTrends,
-  fetchInstagramTrends,
-  createTrendCard,
-};
