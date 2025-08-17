@@ -190,25 +190,14 @@ async function fetchTikTokTrends() {
 
     console.log("TikTok RAW RESPONSE:", JSON.stringify(json, null, 2));
 
-    if (!json.data) {
-      throw new Error("TikTok API returned no data");
-    }
+    if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
+    const json = await res.json();
 
-    // ép thành mảng nếu không phải array
-    const list = Array.isArray(json.data) ? json.data : [json.data];
+    // In ra toàn bộ response để xem cấu trúc
+    console.log("==== RAW TIKTOK RESPONSE ====");
+    console.log(JSON.stringify(json, null, 2));
 
-    return list.map((v, i) => ({
-      id: `tiktok-${i}`,
-      title: v.title || "TikTok Video",
-      url: v.play || "#",
-      views: v.play_count ?? 0,
-      engagement: v.digg_count ?? 0,
-      date: v.create_time
-        ? new Date(v.create_time * 1000).toLocaleDateString("en-US")
-        : new Date().toLocaleDateString("en-US"),
-      votes: 0,
-      source: "TikTok"
-    }));
+    return []; // tạm thời trả về rỗng để không lỗi
   } catch (err) {
     console.warn("TikTok fetch error:", err.message);
     return [];
