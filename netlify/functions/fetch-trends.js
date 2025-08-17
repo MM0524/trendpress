@@ -1,4 +1,18 @@
-// fetch-trends.js
+// netlify/functions/fetch-trends.js
+
+// Helper: fetch with timeout
+async function fetchWithTimeout(url, ms = 7000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
 
 exports.handler = async (event) => {
   const headers = {
@@ -13,15 +27,21 @@ exports.handler = async (event) => {
   }
 
   try {
-    const [hackerNews, bbcWorld, vnexpressIntl, nasdaqNews] = await Promise.all([
+    // chạy song song nhưng có timeout từng nguồn
+    const [hackerNews, bbcWorld, vnexpressIntl] = await Promise.allSettled([
       fetchHackerNewsFrontpage(),
       fetchBBCWorld(),
-      fetchVnExpressInternational(),
-      fetchNasdaqNews()
+      fetchVnExpressInternational()
     ]);
 
+    let trends = [
+      ...(hackerNews.status === 'fulfilled' ? hackerNews.value : []),
+      ...(bbcWorld.status === 'fulfilled' ? bbcWorld.value : []),
+      ...(vnexpressIntl.status === 'fulfilled' ? vnexpressIntl.value : [])
+    ];
+
     // Normalize metrics
-    let trends = [...hackerNews, ...bbcWorld, ...vnexpressIntl, ...nasdaqNews]
+    trends = trends
       .filter(Boolean)
       .map(t => ({
         ...t,
@@ -29,27 +49,19 @@ exports.handler = async (event) => {
         engagement: Number.isFinite(Number(t.engagement)) ? Number(t.engagement) : undefined,
         votes: Number.isFinite(Number(t.votes)) ? Number(t.votes) : 0
       }))
-      .sort(
-        (a, b) =>
-          (Number(b.views) || Number(b.engagement) || Number(b.votes) || 0) -
-          (Number(a.views) || Number(a.engagement) || Number(a.votes) || 0)
-      );
-
-    // Assign incremental ids
-    trends = trends.map((t, i) => ({ ...t, id: i + 1 }));
+      .sort((a, b) =>
+        (Number(b.views) || Number(b.engagement) || Number(b.votes) || 0) -
+        (Number(a.views) || Number(a.engagement) || Number(a.votes) || 0)
+      )
+      .map((t, i) => ({ ...t, id: i + 1 }));
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        trends,
-        sources: {
-          hackerNews: hackerNews.length,
-          bbcWorld: bbcWorld.length,
-          vnexpressIntl: vnexpressIntl.length,
-          nasdaqNews: nasdaqNews.length
-        }
+        count: trends.length,
+        trends
       })
     };
   } catch (error) {
@@ -57,67 +69,50 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({
-        success: false,
-        error: 'Failed to fetch live trends',
-        message: error.message
-      })
+      body: JSON.stringify({ success: false, error: error.message })
     };
   }
 };
 
-// --- Helpers ---
-
-function stripHtml(str = '') {
-  return str.replace(/<[^>]+>/g, '').trim();
-}
-
-// --- Sources ---
+// ==================== SOURCES ====================
 
 // Hacker News
 async function fetchHackerNewsFrontpage() {
   try {
-    const url = 'https://hnrss.org/frontpage';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HackerNews HTTP ${res.status}`);
+    const res = await fetchWithTimeout('https://hnrss.org/frontpage');
     const xml = await res.text();
-
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
-    let rank = 500; // thấp hơn VnExpress
+    let rank = 500;
 
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
       const title =
         (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-          block.match(/<title>(.*?)<\/title>/) ||
-          [])[1] || 'Hacker News';
+          block.match(/<title>(.*?)<\/title>/) || [])[1] || 'Hacker News';
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate =
         (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
         new Date().toUTCString();
       const description =
         (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
+          block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
 
       items.push({
         title,
-        description: stripHtml(description),
+        description,
         category: 'Tech',
         tags: ['HackerNews'],
         votes: rank--,
         source: link,
-        date: isNaN(new Date(pubDate))
-          ? new Date().toLocaleDateString('en-US')
-          : new Date(pubDate).toLocaleDateString('en-US'),
+        date: new Date(pubDate).toLocaleDateString('en-US'),
         submitter: 'Hacker News Frontpage'
       });
     }
     return items;
   } catch (e) {
-    console.warn('Hacker News fetch failed', e.message);
+    console.warn('HackerNews fetch failed', e.message);
     return [];
   }
 }
@@ -125,48 +120,40 @@ async function fetchHackerNewsFrontpage() {
 // BBC World
 async function fetchBBCWorld() {
   try {
-    const url = 'https://feeds.bbci.co.uk/news/world/rss.xml';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`BBC HTTP ${res.status}`);
+    const res = await fetchWithTimeout('https://feeds.bbci.co.uk/news/world/rss.xml');
     const xml = await res.text();
-
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
-    let rank = 180; // thấp hơn VnExpress
+    let rank = 180;
 
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
       const title =
         (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-          block.match(/<title>(.*?)<\/title>/) ||
-          [])[1] || 'BBC News';
+          block.match(/<title>(.*?)<\/title>/) || [])[1] || 'BBC News';
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate =
         (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
         new Date().toUTCString();
       const description =
         (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
+          block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
 
       items.push({
         title,
-        description: stripHtml(description),
+        description,
         category: 'World',
         tags: ['BBCWorld'],
         votes: rank--,
         source: link,
-        date: isNaN(new Date(pubDate))
-          ? new Date().toLocaleDateString('en-US')
-          : new Date(pubDate).toLocaleDateString('en-US'),
+        date: new Date(pubDate).toLocaleDateString('en-US'),
         submitter: 'BBC World News'
       });
     }
-
     return items;
   } catch (e) {
-    console.warn('BBC World fetch failed', e.message);
+    console.warn('BBC fetch failed', e.message);
     return [];
   }
 }
@@ -174,9 +161,7 @@ async function fetchBBCWorld() {
 // VnExpress International
 async function fetchVnExpressInternational() {
   try {
-    const url = 'https://e.vnexpress.net/rss/news.rss';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`VnExpress HTTP ${res.status}`);
+    const res = await fetchWithTimeout('https://e.vnexpress.net/rss/news.rss');
     const xml = await res.text();
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
@@ -187,82 +172,29 @@ async function fetchVnExpressInternational() {
       const block = match[1];
       const title =
         (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-          block.match(/<title>(.*?)<\/title>/) ||
-          [])[1] || 'VnExpress News';
+          block.match(/<title>(.*?)<\/title>/) || [])[1] || 'VnExpress News';
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate =
         (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
         new Date().toUTCString();
       const description =
         (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
+          block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
 
       items.push({
         title,
-        description: stripHtml(description),
+        description,
         category: 'News',
-        tags: ['VnExpressInternational'],
+        tags: ['VnExpress'],
         votes: rank--,
         source: link,
-        date: isNaN(new Date(pubDate))
-          ? new Date().toLocaleDateString('en-US')
-          : new Date(pubDate).toLocaleDateString('en-US'),
+        date: new Date(pubDate).toLocaleDateString('en-US'),
         submitter: 'VnExpress International'
       });
     }
     return items;
   } catch (e) {
-    console.warn('VnExpress International fetch failed', e.message);
-    return [];
-  }
-}
-
-// Nasdaq News
-async function fetchNasdaqNews() {
-  try {
-    const url = 'https://www.nasdaq.com/feed/rssoutbound';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Nasdaq HTTP ${res.status}`);
-    const xml = await res.text();
-
-    const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
-    let rank = 150;
-
-    while ((match = itemRegex.exec(xml)) && items.length < 25) {
-      const block = match[1];
-      const title =
-        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-          block.match(/<title>(.*?)<\/title>/) ||
-          [])[1] || 'Nasdaq News';
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
-      const pubDate =
-        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
-        new Date().toUTCString();
-      const description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
-
-      items.push({
-        title,
-        description: stripHtml(description),
-        category: 'Finance',
-        tags: ['Nasdaq'],
-        votes: rank--,
-        source: link,
-        date: isNaN(new Date(pubDate))
-          ? new Date().toLocaleDateString('en-US')
-          : new Date(pubDate).toLocaleDateString('en-US'),
-        submitter: 'Nasdaq News'
-      });
-    }
-
-    return items;
-  } catch (e) {
-    console.warn('Nasdaq fetch failed', e.message);
+    console.warn('VnExpress fetch failed', e.message);
     return [];
   }
 }
