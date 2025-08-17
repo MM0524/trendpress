@@ -23,7 +23,7 @@ exports.handler = async (event) => {
     ]);
 
     // Normalize metrics: prefer views/engagement, fallback votes
-    let trends = [...hackerNews, ...bbcWorld, ...vnexpressIntl, ...tiktok, ...instagram]
+    let trends = [...hackerNews, ...bbcWorld, ...vnexpressIntl, ...nasdaqNews, ...tiktok, ...instagram]
       .filter(Boolean)
       .map(t => ({
         ...t,
@@ -43,6 +43,7 @@ exports.handler = async (event) => {
         hackerNews: hackerNews.length,
         bbcWorld: bbcWorld.length,
         vnexpressIntl: vnexpressIntl.length,
+        nasdaqNews: nasdaqNews.length,
         tiktok: tiktok.length,
         instagram: instagram.length
       } })
