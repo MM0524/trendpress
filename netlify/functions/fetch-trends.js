@@ -185,34 +185,30 @@ async function fetchTikTokTrends() {
       }
     });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`TikTok HTTP ${res.status}: ${errText}`);
-    }
+    if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
+    const data = await res.json();
 
-   const data = await res.json();
-const list = Array.isArray(data?.data) ? data.data
-            : Array.isArray(data?.data?.videos) ? data.data.videos
-            : Array.isArray(data?.itemList) ? data.itemList
-            : data?.data ? [data.data] 
-            : [];
+    console.log("TikTok RAW:", JSON.stringify(data, null, 2)); // 👈 log để check
 
-const items = list.map((v, i) => ({
-  id: `tiktok-${i}`,
-  title: v.title || v.desc || v.caption || 'TikTok Video',
-  source: 'TikTok',
-  url: v.url || v.share_url || '#',
-  views: v.playCount ?? v.stats?.playCount ?? 0,
-  engagement: v.diggCount ?? v.stats?.diggCount ?? 0,
-  votes: 0,
-  date: v.createTime
-    ? new Date(v.createTime * 1000).toLocaleDateString('en-US')
-    : new Date().toLocaleDateString('en-US')
-}));
-return items;
+    const list = Array.isArray(data?.data) ? data.data
+              : Array.isArray(data?.itemList) ? data.itemList
+              : Array.isArray(data?.videos) ? data.videos
+              : [];
 
+    return list.map((v, i) => ({
+      id: `tiktok-${i}`,
+      title: v.title || v.desc || "TikTok Video",
+      url: v.url || v.share_url || "#",
+      views: v.playCount ?? v.stats?.playCount ?? 0,
+      engagement: v.diggCount ?? v.stats?.diggCount ?? 0,
+      date: v.createTime
+        ? new Date(v.createTime * 1000).toLocaleDateString("en-US")
+        : new Date().toLocaleDateString("en-US"),
+      votes: 0,
+      source: "TikTok"
+    }));
   } catch (err) {
-    console.warn('TikTok fetch error:', err.message);
+    console.warn("TikTok fetch error:", err.message);
     return [];
   }
 }
