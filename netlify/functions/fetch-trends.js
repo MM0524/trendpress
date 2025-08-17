@@ -188,19 +188,11 @@ async function fetchTikTokTrends() {
     if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
     const json = await res.json();
 
-    console.log("TikTok RAW RESPONSE:", JSON.stringify(json, null, 2));
-
     if (!json.data) return [];
 
-    const list = Array.isArray(json.data)
-      ? json.data
-      : (json.data ? [json.data] : []);
-
-    return list.map((v, i) => {
-      const title = v.title || '';
+    return json.data.map((v, i) => {
+      const title = v.title || v.desc || 'TikTok Video';
       const lower = title.toLowerCase();
-
-      // auto detect category từ title
       let category = 'General';
       if (lower.includes('dance') || lower.includes('challenge')) category = 'Dance';
       else if (lower.includes('food') || lower.includes('recipe')) category = 'Food';
@@ -209,16 +201,18 @@ async function fetchTikTokTrends() {
 
       return {
         id: `tiktok-${i}`,
-        title: v.title || 'TikTok Video',
-        url: v.play || '#',
+        title,
+        description: v.desc || '',
+        url: v.share_url || v.play || '#',
         views: v.play_count ?? 0,
         engagement: v.digg_count ?? 0,
         date: v.create_time
           ? new Date(v.create_time * 1000).toLocaleDateString('en-US')
           : new Date().toLocaleDateString('en-US'),
         votes: 0,
-        source: 'TikTok',
-        category // 👈 thêm category
+        source: v.share_url || 'https://www.tiktok.com',
+        platform: 'TikTok',
+        category
       };
     });
   } catch (err) {
