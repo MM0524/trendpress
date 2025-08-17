@@ -13,7 +13,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const [hackerNews, bbcWorld, vnexpressIntl,  nasdaqNews, tiktok, instagram] = await Promise.all([
+    const [hackerNews, bbcWorld, vnexpressIntl, nasdaqNews, tiktok, instagram] = await Promise.all([
       fetchHackerNewsFrontpage(),
       fetchBBCWorld(),
       fetchVnExpressInternational(),
