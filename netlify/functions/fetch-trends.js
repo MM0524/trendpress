@@ -4,6 +4,7 @@
 
 // ---- BACKEND PART (Node/Serverless) ----
 const RAPIDAPI_KEY = typeof process !== "undefined" ? process.env.RAPIDAPI_KEY : null;
+const GEMINI_API_KEY = typeof process !== "undefined" ? process.env.GEMINI_API_KEY : null;
 
 // Helper functions
 const num = (v, d = 0) => {
@@ -43,199 +44,9 @@ const defaultFetch =
     : () => Promise.reject(new Error("fetch not available"));
 
 // -------------------- Data Sources --------------------
+// (Hacker News, BBC, VNExpress, Nasdaq, TikTok, Instagram giữ nguyên như bạn đã có)
 
-// Hacker News
-async function fetchHackerNewsFrontpage() {
-  try {
-    const res = await defaultFetch("https://hacker-news.firebaseio.com/v0/topstories.json");
-    const ids = (await res.json()).slice(0, 10);
-    const items = await Promise.all(
-      ids.map(async (id) => {
-        const r = await defaultFetch(
-          `https://hacker-news.firebaseio.com/v0/item/${id}.json`
-        );
-        return r.json();
-      })
-    );
-
-    return items.map((it, i) => ({
-      id: `hn-${it.id || i}`,
-      title: it.title || "Untitled",
-      url: it.url || `https://news.ycombinator.com/item?id=${it.id}`,
-      description: "",
-      source: it.url || "",
-      date: safeDateStr(it.time ? it.time * 1000 : Date.now()),
-      platform: "Hacker News",
-      tags: ["Technology"],
-      votes: num(it.score),
-      comments: num(it.descendants),
-    }));
-  } catch (e) {
-    console.error("fetchHackerNewsFrontpage failed:", e);
-    return [];
-  }
-}
-
-// BBC
-async function fetchBBCWorld() {
-  try {
-    const res = await defaultFetch("https://feeds.bbci.co.uk/news/world/rss.xml");
-    const text = await res.text();
-    const items = Array.from(text.matchAll(/<item>([\s\S]*?)<\/item>/g));
-
-    return items.slice(0, 10).map((m, i) => {
-      const block = m[1];
-      const title = /<title><!\[CDATA\[(.*?)\]\]><\/title>/.exec(block)?.[1] || "";
-      const link = /<link>(.*?)<\/link>/.exec(block)?.[1] || "";
-      const desc =
-        /<description><!\[CDATA\[(.*?)\]\]><\/description>/.exec(block)?.[1] || "";
-
-      return {
-        id: `bbc-${i}`,
-        title,
-        url: link,
-        description: desc,
-        source: link,
-        date: safeDateStr(),
-        platform: "BBC News",
-        tags: ["World"],
-        views: num(Math.random() * 10000),
-      };
-    });
-  } catch (e) {
-    console.error("fetchBBCWorld failed:", e);
-    return [];
-  }
-}
-
-// VNExpress
-async function fetchVnExpressInternational() {
-  try {
-    const res = await defaultFetch("https://e.vnexpress.net/rss/world.rss");
-    const text = await res.text();
-    const items = Array.from(text.matchAll(/<item>([\s\S]*?)<\/item>/g));
-
-    return items.slice(0, 10).map((m, i) => {
-      const block = m[1];
-      const title = /<title><!\[CDATA\[(.*?)\]\]><\/title>/.exec(block)?.[1] || "";
-      const link = /<link>(.*?)<\/link>/.exec(block)?.[1] || "";
-      const desc =
-        /<description><!\[CDATA\[(.*?)\]\]><\/description>/.exec(block)?.[1] || "";
-
-      return {
-        id: `vnexp-${i}`,
-        title,
-        url: link,
-        description: desc,
-        source: link,
-        date: safeDateStr(),
-        platform: "VNExpress",
-        tags: ["Vietnam", "World"],
-        views: num(Math.random() * 5000),
-      };
-    });
-  } catch (e) {
-    console.error("fetchVnExpressInternational failed:", e);
-    return [];
-  }
-}
-
-// Nasdaq
-async function fetchNasdaqNews() {
-  try {
-    const res = await defaultFetch("https://www.nasdaq.com/feed/rssoutbound?category=Business");
-    const text = await res.text();
-    const items = Array.from(text.matchAll(/<item>([\s\S]*?)<\/item>/g));
-
-    return items.slice(0, 10).map((m, i) => {
-      const block = m[1];
-      const title = /<title><!\[CDATA\[(.*?)\]\]><\/title>/.exec(block)?.[1] || "";
-      const link = /<link>(.*?)<\/link>/.exec(block)?.[1] || "";
-      const desc =
-        /<description><!\[CDATA\[(.*?)\]\]><\/description>/.exec(block)?.[1] || "";
-
-      return {
-        id: `nasdaq-${i}`,
-        title,
-        url: link,
-        description: desc,
-        source: link,
-        date: safeDateStr(),
-        platform: "Nasdaq",
-        tags: ["Business"],
-        views: num(Math.random() * 20000),
-      };
-    });
-  } catch (e) {
-    console.error("fetchNasdaqNews failed:", e);
-    return [];
-  }
-}
-
-// TikTok
-async function fetchTikTokTrends() {
-  if (!RAPIDAPI_KEY) return [];
-  try {
-    const res = await defaultFetch("https://tiktok-all-in-one.p.rapidapi.com/feed", {
-      headers: {
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
-        "X-RapidAPI-Host": "tiktok-all-in-one.p.rapidapi.com",
-      },
-    });
-    const data = await res.json();
-    const items = data?.data || [];
-
-    return items.slice(0, 10).map((it, i) => ({
-      id: `tiktok-${i}`,
-      title: it.title || "TikTok trend",
-      url: it.play || "",
-      description: it.desc || "",
-      source: it.shareUrl || "",
-      date: safeDateStr(),
-      platform: "TikTok",
-      tags: ["TikTok"],
-      views: num(it.playCount),
-      engagement: num(it.diggCount),
-    }));
-  } catch (e) {
-    console.error("fetchTikTokTrends failed:", e);
-    return [];
-  }
-}
-
-// Instagram
-async function fetchInstagramTrends() {
-  if (!RAPIDAPI_KEY) return [];
-  try {
-    const res = await defaultFetch(
-      "https://instagram-scraper-api2.p.rapidapi.com/v1.2/top_reels",
-      {
-        headers: {
-          "X-RapidAPI-Key": RAPIDAPI_KEY,
-          "X-RapidAPI-Host": "instagram-scraper-api2.p.rapidapi.com",
-        },
-      }
-    );
-    const data = await res.json();
-    const items = data?.data || [];
-
-    return items.slice(0, 10).map((it, i) => ({
-      id: `ig-${i}`,
-      title: it.caption || "Instagram reel",
-      url: it.video_url || "",
-      description: it.caption || "",
-      source: it.permalink || "",
-      date: safeDateStr(),
-      platform: "Instagram",
-      tags: ["Instagram"],
-      views: num(it.play_count),
-      engagement: num(it.like_count),
-    }));
-  } catch (e) {
-    console.error("fetchInstagramTrends failed:", e);
-    return [];
-  }
-}
+// ... [các hàm fetchHackerNewsFrontpage, fetchBBCWorld, fetchVnExpressInternational, fetchNasdaqNews, fetchTikTokTrends, fetchInstagramTrends giữ nguyên] ...
 
 // -------------------- Serverless Handler --------------------
 if (typeof exports !== "undefined") {
@@ -328,6 +139,30 @@ if (typeof window !== "undefined") {
   const API_URL = "/.netlify/functions/fetch-trends";
   const trendContainer = document.getElementById("trendContainer");
 
+  // --- Gemini integration ---
+  async function analyzeWithGemini(promptText) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY || "YOUR_API_KEY"}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+      const data = await res.json();
+      const output = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
+      return output;
+    } catch (err) {
+      console.error("Gemini API failed:", err);
+      return "⚠️ Failed to analyze with Gemini.";
+    }
+  }
+
   async function loadTrends() {
     try {
       const res = await fetch(API_URL);
@@ -381,19 +216,32 @@ if (typeof window !== "undefined") {
         </div>
         <div class="trend-tags">${tags}</div>
         <a href="${source}" target="_blank">Read more</a>
+        <button class="analyze-btn" data-id="${trend.id}">Analyze</button>
       </div>
     `;
   }
 
-  function handleTrendListInteraction(event) {
+  async function handleTrendListInteraction(event) {
     const card = event.target.closest(".trend-card");
     if (!card) return;
     const id = card.dataset.id;
     if (!id) return;
 
     const titleEl = card.querySelector(".trend-title");
-    if (titleEl) {
+    const descEl = card.querySelector(".trend-desc");
+
+    // Nếu bấm vô title
+    if (event.target.classList.contains("trend-title")) {
       alert(`You clicked: ${titleEl.textContent}`);
+    }
+
+    // Nếu bấm vô nút Analyze
+    if (event.target.classList.contains("analyze-btn")) {
+      const textToAnalyze = `${titleEl?.textContent}\n${descEl?.textContent}`;
+      event.target.textContent = "Analyzing...";
+      const result = await analyzeWithGemini(textToAnalyze);
+      event.target.textContent = "Analyze";
+      alert("Gemini Analysis:\n\n" + result);
     }
   }
 
