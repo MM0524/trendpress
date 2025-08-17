@@ -190,16 +190,39 @@ async function fetchTikTokTrends() {
 
     console.log("TikTok RAW RESPONSE:", JSON.stringify(json, null, 2));
 
-    if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
-    const json = await res.json();
+    if (!json.data) return [];
 
-    // In ra toàn bộ response để xem cấu trúc
-    console.log("==== RAW TIKTOK RESPONSE ====");
-    console.log(JSON.stringify(json, null, 2));
+    const list = Array.isArray(json.data)
+      ? json.data
+      : (json.data ? [json.data] : []);
 
-    return []; // tạm thời trả về rỗng để không lỗi
+    return list.map((v, i) => {
+      const title = v.title || '';
+      const lower = title.toLowerCase();
+
+      // auto detect category từ title
+      let category = 'General';
+      if (lower.includes('dance') || lower.includes('challenge')) category = 'Dance';
+      else if (lower.includes('food') || lower.includes('recipe')) category = 'Food';
+      else if (lower.includes('fashion') || lower.includes('outfit')) category = 'Fashion';
+      else if (lower.includes('music') || lower.includes('song')) category = 'Music';
+
+      return {
+        id: `tiktok-${i}`,
+        title: v.title || 'TikTok Video',
+        url: v.play || '#',
+        views: v.play_count ?? 0,
+        engagement: v.digg_count ?? 0,
+        date: v.create_time
+          ? new Date(v.create_time * 1000).toLocaleDateString('en-US')
+          : new Date().toLocaleDateString('en-US'),
+        votes: 0,
+        source: 'TikTok',
+        category // 👈 thêm category
+      };
+    });
   } catch (err) {
-    console.warn("TikTok fetch error:", err.message);
+    console.warn('TikTok fetch error:', err.message);
     return [];
   }
 }
