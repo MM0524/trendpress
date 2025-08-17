@@ -186,7 +186,8 @@ async function fetchTikTokTrends() {
     });
 
    if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
-    const json = await res.json();
+   const json = await res.json();
+console.log("TikTok RAW RESPONSE:", JSON.stringify(json, null, 2));
 
     console.log("TikTok RAW:", json);
 
