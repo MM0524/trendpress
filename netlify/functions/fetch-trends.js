@@ -185,24 +185,22 @@ async function fetchTikTokTrends() {
       }
     });
 
-    if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
-    const data = await res.json();
+   if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
+    const json = await res.json();
 
-    console.log("TikTok RAW:", JSON.stringify(data, null, 2)); // 👈 log để check
+    console.log("TikTok RAW:", json);
 
-    const list = Array.isArray(data?.data) ? data.data
-              : Array.isArray(data?.itemList) ? data.itemList
-              : Array.isArray(data?.videos) ? data.videos
-              : [];
+    // nếu data là array thì dùng luôn
+    const list = Array.isArray(json.data) ? json.data : [json.data];
 
     return list.map((v, i) => ({
       id: `tiktok-${i}`,
-      title: v.title || v.desc || "TikTok Video",
-      url: v.url || v.share_url || "#",
-      views: v.playCount ?? v.stats?.playCount ?? 0,
-      engagement: v.diggCount ?? v.stats?.diggCount ?? 0,
-      date: v.createTime
-        ? new Date(v.createTime * 1000).toLocaleDateString("en-US")
+      title: v.title || "TikTok Video",
+      url: v.play || "#",
+      views: v.play_count ?? 0,
+      engagement: v.digg_count ?? 0,
+      date: v.create_time
+        ? new Date(v.create_time * 1000).toLocaleDateString("en-US")
         : new Date().toLocaleDateString("en-US"),
       votes: 0,
       source: "TikTok"
