@@ -39,14 +39,19 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, trends, sources: {
-        hackerNews: hackerNews.length,
-        bbcWorld: bbcWorld.length,
-        vnexpressIntl: vnexpressIntl.length,
-        nasdaqNews: nasdaqNews.length,
-        tiktok: tiktok.length,
-        instagram: instagram.length
-      } })
+        body: JSON.stringify({ 
+          success: true, 
+          trends, 
+          sources: {
+            hackerNews: hackerNews?.length || 0,
+            bbcWorld: bbcWorld?.length || 0,
+            vnexpressIntl: vnexpressIntl?.length || 0,
+            nasdaqNews: nasdaqNews?.length || 0,
+            tiktok: tiktok?.length || 0,
+            instagram: instagram?.length || 0
+          } 
+      })
+
     };
   } catch (error) {
     console.error('fetch-trends error', error);
