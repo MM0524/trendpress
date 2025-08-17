@@ -23,7 +23,6 @@ exports.handler = async (event) => {
       instagram
     ] = await Promise.all([
       fetchHackerNewsFrontpage(),
-      fetchGoogleNewsTop(),
       fetchVnExpressInternational(),
       fetchBBCNews(),
       fetchNasdaqNews(),
@@ -33,7 +32,6 @@ exports.handler = async (event) => {
 
     let trends = [
       ...hackerNews,
-      ...googleNews,
       ...vnexpressIntl,
       ...bbcNews,
       ...nasdaqNews,
@@ -70,7 +68,6 @@ exports.handler = async (event) => {
         trends,
         sources: {
           hackerNews: hackerNews.length,
-          googleNews: googleNews.length,
           vnexpressIntl: vnexpressIntl.length,
           bbcNews: bbcNews.length,
           nasdaqNews: nasdaqNews.length,
@@ -151,56 +148,6 @@ async function fetchHackerNewsFrontpage() {
     return items;
   } catch (e) {
     console.warn('Hacker News fetch failed', e.message);
-    return [];
-  }
-}
-
-async function fetchGoogleNewsTop() {
-  try {
-    const url = 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Google News HTTP ${res.status}`);
-    const xml = await res.text();
-
-    const items = [];
-    const itemRegex = /<item[\s\S]*?>([\s\S]*?)<\/item>/g;
-    let match;
-    let rank = 300;
-
-    while ((match = itemRegex.exec(xml)) && items.length < 25) {
-      const block = match[1];
-      let title =
-        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-          block.match(/<title>(.*?)<\/title>/) ||
-          [])[1] || 'Google News';
-      title = decodeHtmlEntities(title);
-
-      let description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
-      description = decodeHtmlEntities(description);
-
-      const link =
-        (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
-      const pubDate =
-        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
-        new Date().toUTCString();
-
-      items.push({
-        title,
-        description,
-        category: 'News',
-        tags: ['GoogleNews'],
-        votes: rank--,
-        source: link,
-        date: new Date(pubDate).toLocaleDateString('en-US'),
-        submitter: 'Google News Top Stories'
-      });
-    }
-    return items;
-  } catch (e) {
-    console.warn('Google News fetch failed', e.message);
     return [];
   }
 }
