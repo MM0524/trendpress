@@ -117,7 +117,7 @@ async function fetchVnExpressInternational() {
       url: it.querySelector("link")?.textContent,
       source: "VNExpress",
       platform: "news",
-      category: "World News",
+      category: "News",
       date: safeDateStr(it.querySelector("pubDate")?.textContent),
       tags: ["Vietnam", "World"],
     }));
