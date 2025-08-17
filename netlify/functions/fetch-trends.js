@@ -174,10 +174,10 @@ async function fetchVnExpressInternational() {
 
 async function fetchTikTokTrends() {
   try {
-    const res = await fetch('https://tiktok-api23.p.rapidapi.com/api/trending/top-products/metrics?product_id=601226', {
+    const res = await fetch('https://tiktok-scraper7.p.rapidapi.com/?url=https%3A%2F%2Fwww.tiktok.com%2F%40tiktok%2Fvideo%2F7516594811734854943&hd=1'; {
       headers: {
         'x-rapidapi-key': RAPIDAPI_KEY,
-        'x-rapidapi-host': 'tiktok-api23.p.rapidapi.com'
+        'x-rapidapi-host': 'tiktok-scraper7.p.rapidapi.com'
       }
     });
 
