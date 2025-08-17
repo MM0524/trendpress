@@ -43,10 +43,145 @@ const defaultFetch =
         )
     : () => Promise.reject(new Error("fetch not available"));
 
-// -------------------- Data Sources --------------------
-// (Hacker News, BBC, VNExpress, Nasdaq, TikTok, Instagram giữ nguyên như bạn đã có)
 
-// ... [các hàm fetchHackerNewsFrontpage, fetchBBCWorld, fetchVnExpressInternational, fetchNasdaqNews, fetchTikTokTrends, fetchInstagramTrends giữ nguyên] ...
+// Hacker News API
+async function fetchHackerNewsFrontpage() {
+  try {
+    const res = await defaultFetch("https://hacker-news.firebaseio.com/v0/topstories.json");
+    const ids = await res.json();
+    const top10 = ids.slice(0, 10);
+
+    const stories = await Promise.all(
+      top10.map(async (id) => {
+        const r = await defaultFetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+        return r.json();
+      })
+    );
+
+    return stories.map((s) => ({
+      id: s.id,
+      title: s.title,
+      url: s.url || `https://news.ycombinator.com/item?id=${s.id}`,
+      votes: s.score,
+      source: "Hacker News",
+      platform: "tech",
+      date: safeDateStr(s.time * 1000),
+      tags: ["Tech"],
+    }));
+  } catch (e) {
+    console.error("fetchHackerNewsFrontpage failed", e);
+    return [];
+  }
+}
+
+// BBC World RSS
+async function fetchBBCWorld() {
+  try {
+    const res = await defaultFetch("https://feeds.bbci.co.uk/news/world/rss.xml");
+    const text = await res.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, "application/xml");
+    const items = Array.from(xml.querySelectorAll("item")).slice(0, 10);
+
+    return items.map((it, i) => ({
+      id: `bbc-${i}`,
+      title: it.querySelector("title")?.textContent,
+      description: it.querySelector("description")?.textContent,
+      url: it.querySelector("link")?.textContent,
+      source: "BBC World",
+      platform: "news",
+      date: safeDateStr(it.querySelector("pubDate")?.textContent),
+      tags: ["World"],
+    }));
+  } catch (e) {
+    console.error("fetchBBCWorld failed", e);
+    return [];
+  }
+}
+
+// VNExpress RSS
+async function fetchVnExpressInternational() {
+  try {
+    const res = await defaultFetch("https://e.vnexpress.net/rss/world.rss");
+    const text = await res.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, "application/xml");
+    const items = Array.from(xml.querySelectorAll("item")).slice(0, 10);
+
+    return items.map((it, i) => ({
+      id: `vnexp-${i}`,
+      title: it.querySelector("title")?.textContent,
+      description: it.querySelector("description")?.textContent,
+      url: it.querySelector("link")?.textContent,
+      source: "VNExpress",
+      platform: "news",
+      date: safeDateStr(it.querySelector("pubDate")?.textContent),
+      tags: ["Vietnam", "World"],
+    }));
+  } catch (e) {
+    console.error("fetchVnExpressInternational failed", e);
+    return [];
+  }
+}
+
+// Nasdaq News API (sử dụng RSS)
+async function fetchNasdaqNews() {
+  try {
+    const res = await defaultFetch("https://www.nasdaq.com/feed/rssoutbound?category=Markets");
+    const text = await res.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, "application/xml");
+    const items = Array.from(xml.querySelectorAll("item")).slice(0, 10);
+
+    return items.map((it, i) => ({
+      id: `nasdaq-${i}`,
+      title: it.querySelector("title")?.textContent,
+      description: it.querySelector("description")?.textContent,
+      url: it.querySelector("link")?.textContent,
+      source: "Nasdaq",
+      platform: "finance",
+      date: safeDateStr(it.querySelector("pubDate")?.textContent),
+      tags: ["Finance"],
+    }));
+  } catch (e) {
+    console.error("fetchNasdaqNews failed", e);
+    return [];
+  }
+}
+
+// Fake TikTok Trends (vì API chính thức cần auth)
+async function fetchTikTokTrends() {
+  return [
+    {
+      id: "tiktok-1",
+      title: "Dance Challenge XYZ",
+      description: "New viral dance challenge",
+      url: "https://www.tiktok.com/",
+      source: "TikTok",
+      platform: "social",
+      date: safeDateStr(Date.now()),
+      views: 1200000,
+      tags: ["TikTok", "Trend"],
+    },
+  ];
+}
+
+// Fake Instagram Trends
+async function fetchInstagramTrends() {
+  return [
+    {
+      id: "ig-1",
+      title: "New Fashion Hashtag",
+      description: "Trending fashion on Instagram",
+      url: "https://www.instagram.com/",
+      source: "Instagram",
+      platform: "social",
+      date: safeDateStr(Date.now()),
+      engagement: 540000,
+      tags: ["Instagram", "Fashion"],
+    },
+  ];
+}
 
 // -------------------- Serverless Handler --------------------
 if (typeof exports !== "undefined") {
