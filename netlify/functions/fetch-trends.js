@@ -94,8 +94,16 @@ exports.handler = async (event) => {
 };
 
 /* ---------------------------
-   RSS FETCHERS (News sources)
+   Helper
 ----------------------------*/
+function decodeHtmlEntities(str = '') {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
 
 async function fetchHackerNewsFrontpage() {
   try {
@@ -105,25 +113,29 @@ async function fetchHackerNewsFrontpage() {
     const xml = await res.text();
 
     const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    const itemRegex = /<item[\s\S]*?>([\s\S]*?)<\/item>/g;
     let match;
     let rank = 500;
 
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
-      const title =
+      let title =
         (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
           block.match(/<title>(.*?)<\/title>/) ||
           [])[1] || 'Hacker News';
+      title = decodeHtmlEntities(title);
+
+      let description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
+      description = decodeHtmlEntities(description);
+
       const link =
         (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate =
         (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
         new Date().toUTCString();
-      const description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
 
       items.push({
         title,
@@ -151,25 +163,29 @@ async function fetchGoogleNewsTop() {
     const xml = await res.text();
 
     const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    const itemRegex = /<item[\s\S]*?>([\s\S]*?)<\/item>/g;
     let match;
     let rank = 300;
 
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
-      const title =
+      let title =
         (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
           block.match(/<title>(.*?)<\/title>/) ||
           [])[1] || 'Google News';
+      title = decodeHtmlEntities(title);
+
+      let description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
+      description = decodeHtmlEntities(description);
+
       const link =
         (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate =
         (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
         new Date().toUTCString();
-      const description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
 
       items.push({
         title,
@@ -196,24 +212,28 @@ async function fetchVnExpressInternational() {
     if (!res.ok) throw new Error(`VnExpress HTTP ${res.status}`);
     const xml = await res.text();
     const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    const itemRegex = /<item[\s\S]*?>([\s\S]*?)<\/item>/g;
     let match;
     let rank = 200;
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
-      const title =
+      let title =
         (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
           block.match(/<title>(.*?)<\/title>/) ||
           [])[1] || 'VnExpress News';
+      title = decodeHtmlEntities(title);
+
+      let description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
+      description = decodeHtmlEntities(description);
+
       const link =
         (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate =
         (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
         new Date().toUTCString();
-      const description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
       items.push({
         title,
         description,
@@ -234,29 +254,33 @@ async function fetchVnExpressInternational() {
 
 async function fetchBBCNews() {
   try {
-    const url = 'http://feeds.bbci.co.uk/news/rss.xml';
+    const url = 'https://feeds.bbci.co.uk/news/rss.xml';
     const res = await fetch(url);
     if (!res.ok) throw new Error(`BBC News HTTP ${res.status}`);
     const xml = await res.text();
     const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    const itemRegex = /<item[\s\S]*?>([\s\S]*?)<\/item>/g;
     let match;
     let rank = 250;
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
-      const title =
+      let title =
         (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
           block.match(/<title>(.*?)<\/title>/) ||
           [])[1] || 'BBC News';
+      title = decodeHtmlEntities(title);
+
+      let description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
+      description = decodeHtmlEntities(description);
+
       const link =
         (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate =
         (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
         new Date().toUTCString();
-      const description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
 
       items.push({
         title,
@@ -283,24 +307,28 @@ async function fetchNasdaqNews() {
     if (!res.ok) throw new Error(`Nasdaq News HTTP ${res.status}`);
     const xml = await res.text();
     const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    const itemRegex = /<item[\s\S]*?>([\s\S]*?)<\/item>/g;
     let match;
     let rank = 180;
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
-      const title =
+      let title =
         (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
           block.match(/<title>(.*?)<\/title>/) ||
           [])[1] || 'Nasdaq News';
+      title = decodeHtmlEntities(title);
+
+      let description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) ||
+          [])[1] || '';
+      description = decodeHtmlEntities(description);
+
       const link =
         (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate =
         (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
         new Date().toUTCString();
-      const description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
 
       items.push({
         title,
@@ -319,10 +347,6 @@ async function fetchNasdaqNews() {
     return [];
   }
 }
-
-/* ---------------------------
-   SOCIAL FETCHERS (RapidAPI)
-----------------------------*/
 
 async function fetchTikTokTrends() {
   if (!RAPIDAPI_KEY) return [];
