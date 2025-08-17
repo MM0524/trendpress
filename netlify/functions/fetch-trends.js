@@ -24,25 +24,19 @@ exports.handler = async (event) => {
       hackerNews,
       vnexpressIntl,
       bbcNews,
-      nasdaqNews,
-      tiktok,
-      instagram
+      nasdaqNews
     ] = await Promise.all([
       fetchHackerNewsFrontpage(),
       fetchVnExpressInternational(),
       fetchBBCNews(),
-      fetchNasdaqNews(),
-      fetchTikTokTrends(),
-      fetchInstagramTrends()
+      fetchNasdaqNews()
     ]);
 
     let trends = [
       ...hackerNews,
       ...vnexpressIntl,
       ...bbcNews,
-      ...nasdaqNews,
-      ...tiktok,
-      ...instagram
+      ...nasdaqNews
     ]
       .filter(Boolean)
       .map((t) => ({
@@ -76,9 +70,7 @@ exports.handler = async (event) => {
           hackerNews: hackerNews.length,
           vnexpressIntl: vnexpressIntl.length,
           bbcNews: bbcNews.length,
-          nasdaqNews: nasdaqNews.length,
-          tiktok: tiktok.length,
-          instagram: instagram.length
+          nasdaqNews: nasdaqNews.length
         }
       })
     };
@@ -258,7 +250,9 @@ async function fetchBBCNews() {
 async function fetchNasdaqNews() {
   try {
     const url = 'https://www.nasdaq.com/feed/rssoutbound';
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" }
+    });
     if (!res.ok) throw new Error(`Nasdaq News HTTP ${res.status}`);
     const xml = await res.text();
 
@@ -307,82 +301,3 @@ async function fetchNasdaqNews() {
   }
 }
 
-async function fetchTikTokTrends() {
-  if (!RAPIDAPI_KEY) return [];
-  try {
-    const res = await fetch('https://tiktok-scraper7.p.rapidapi.com/trending', {
-      headers: {
-        'x-rapidapi-key': RAPIDAPI_KEY,
-        'x-rapidapi-host': 'tiktok-scraper7.p.rapidapi.com'
-      }
-    });
-    if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
-    const json = await res.json();
-    const list = json?.data || json?.videos || [];
-    return list.slice(0, 15).map((v) => ({
-      title: v.title || v.desc || `TikTok by @${v?.author?.uniqueId || v?.author || 'creator'}`,
-      description: v.desc || 'Trending on TikTok',
-      category: 'TikTok',
-      tags: (v?.hashtags || v?.challenges || [])
-        .map((h) => (typeof h === 'string' ? h : h?.title || h?.name))
-        .filter(Boolean),
-      engagement: v.stats?.diggCount || v.diggCount || 0,
-      views: v.stats?.playCount || v.playCount || undefined,
-      source:
-        v.webVideoUrl ||
-        v.shareUrl ||
-        `https://www.tiktok.com/@${v?.author?.uniqueId || ''}/video/${
-          v?.id || v?.video_id || ''
-        }`,
-      date: new Date(
-        (v.createTime || v?.timestamp || Date.now()) * 1000
-      ).toLocaleDateString('en-US'),
-      submitter: v?.author?.uniqueId ? `@${v.author.uniqueId}` : 'tiktok'
-    }));
-  } catch (e) {
-    console.warn('TikTok fetch failed', e.message);
-    return [];
-  }
-}
-
-async function fetchInstagramTrends() {
-  if (!RAPIDAPI_KEY) return [];
-  try {
-    const res = await fetch(
-      'https://instagram-scraper-api2.p.rapidapi.com/v1/trending',
-      {
-        headers: {
-          'x-rapidapi-key': RAPIDAPI_KEY,
-          'x-rapidapi-host': 'instagram-scraper-api2.p.rapidapi.com'
-        }
-      }
-    );
-    if (!res.ok) throw new Error(`Instagram HTTP ${res.status}`);
-    const json = await res.json();
-    const list = json?.data || json?.items || [];
-    return list.slice(0, 15).map((p) => ({
-      title:
-        p.caption ||
-        p.title ||
-        `Instagram by @${p?.username || p?.owner_username || 'creator'}`,
-      description: p.caption || 'Trending on Instagram',
-      category: 'Instagram',
-      tags: (p.hashtags || [])
-        .map((h) => (typeof h === 'string' ? h : h?.name))
-        .filter(Boolean),
-      engagement: p.like_count || p.likes || 0,
-      views: p.view_count || p.play_count || undefined,
-      source:
-        p.permalink ||
-        p.link ||
-        (p.code ? `https://www.instagram.com/p/${p.code}` : '#'),
-      date: new Date(
-        p.taken_at_timestamp ? p.taken_at_timestamp * 1000 : Date.now()
-      ).toLocaleDateString('en-US'),
-      submitter: p.username ? `@${p.username}` : 'instagram'
-    }));
-  } catch (e) {
-    console.warn('Instagram fetch failed', e.message);
-    return [];
-  }
-}
