@@ -114,7 +114,6 @@ async function fetchBBCWorld() {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`BBC HTTP ${res.status}`);
     const xml = await res.text();
-
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
@@ -125,11 +124,10 @@ async function fetchBBCWorld() {
       const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
       const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
       const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [] )[1] || '';
-
       items.push({
         title,
         description,
-        category: 'Worlds',
+        category: 'World',
         tags: ['BBCWorld'],
         votes: rank--,
         source: link,
@@ -189,32 +187,16 @@ async function fetchNasdaqNews() {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`NASDAQ HTTP ${res.status}`);
     const xml = await res.text();
-
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
-    let rank = 100; // số điểm vote giả định
-
+    let rank = 150; 
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
-
-      const title =
-        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-          block.match(/<title>(.*?)<\/title>/) ||
-          [])[1] || 'NASDAQ News';
-
-      const link =
-        (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
-
-      const pubDate =
-        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
-        new Date().toUTCString();
-
-      const description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || '';
-
+      const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || 'NASDAQ News';
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const pubDate = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
+      const description = (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
       items.push({
         title,
         description,
@@ -228,7 +210,6 @@ async function fetchNasdaqNews() {
         submitter: 'NASDAQ RSS Feed'
       });
     }
-
     return items;
   } catch (e) {
     console.warn('NASDAQ fetch failed', e.message);
