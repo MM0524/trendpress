@@ -1,10 +1,10 @@
 // ===============================
-// fetch-trends.js
+// fetch-trends.js (FULL)
 // ===============================
 
 // ---- BACKEND PART (Node/Serverless) ----
 const RAPIDAPI_KEY = typeof process !== "undefined" ? process.env.RAPIDAPI_KEY : null;
-const GEMINI_API_KEY = typeof process !== "undefined" ? process.env.GEMINI_API_KEY : null;
+const GEMINI_KEY = typeof process !== "undefined" ? process.env.GEMINI_KEY : null;
 
 // Helper functions
 const num = (v, d = 0) => {
@@ -43,150 +43,205 @@ const defaultFetch =
         )
     : () => Promise.reject(new Error("fetch not available"));
 
+// -------------------- Data Sources --------------------
 
-// Hacker News API
+// Hacker News
 async function fetchHackerNewsFrontpage() {
   try {
     const res = await defaultFetch("https://hacker-news.firebaseio.com/v0/topstories.json");
-    const ids = await res.json();
-    const top10 = ids.slice(0, 10);
-
-    const stories = await Promise.all(
-      top10.map(async (id) => {
-        const r = await defaultFetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+    const ids = (await res.json()).slice(0, 10);
+    const items = await Promise.all(
+      ids.map(async (id) => {
+        const r = await defaultFetch(
+          `https://hacker-news.firebaseio.com/v0/item/${id}.json`
+        );
         return r.json();
       })
     );
 
-    return stories.map((s) => ({
-      id: s.id,
-      title: s.title,
-      url: s.url || `https://news.ycombinator.com/item?id=${s.id}`,
-      votes: s.score,
-      source: "Hacker News",
-      platform: "tech",
+    return items.map((it, i) => ({
+      id: `hn-${it.id || i}`,
+      title: it.title || "Untitled",
+      url: it.url || `https://news.ycombinator.com/item?id=${it.id}`,
+      description: "",
+      source: it.url || `https://news.ycombinator.com/item?id=${it.id}`,
+      date: safeDateStr(it.time ? it.time * 1000 : Date.now()),
+      platform: "Hacker News",
       category: "Technology",
-      date: safeDateStr(s.time * 1000),
-      tags: ["Tech"],
+      tags: ["Technology"],
+      votes: num(it.score),
+      comments: num(it.descendants),
     }));
   } catch (e) {
-    console.error("fetchHackerNewsFrontpage failed", e);
+    console.error("fetchHackerNewsFrontpage failed:", e);
     return [];
   }
 }
 
-// BBC World RSS
+// BBC
 async function fetchBBCWorld() {
   try {
     const res = await defaultFetch("https://feeds.bbci.co.uk/news/world/rss.xml");
     const text = await res.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, "application/xml");
-    const items = Array.from(xml.querySelectorAll("item")).slice(0, 10);
+    const items = Array.from(text.matchAll(/<item>([\s\S]*?)<\/item>/g));
 
-    return items.map((it, i) => ({
-      id: `bbc-${i}`,
-      title: it.querySelector("title")?.textContent,
-      description: it.querySelector("description")?.textContent,
-      url: it.querySelector("link")?.textContent,
-      source: "BBC World",
-      platform: "news",
-      category: "World News",
-      date: safeDateStr(it.querySelector("pubDate")?.textContent),
-      tags: ["World"],
-    }));
+    return items.slice(0, 10).map((m, i) => {
+      const block = m[1];
+      const title = /<title><!\[CDATA\[(.*?)\]\]><\/title>/.exec(block)?.[1] || "";
+      const link = /<link>(.*?)<\/link>/.exec(block)?.[1] || "";
+      const desc =
+        /<description><!\[CDATA\[(.*?)\]\]><\/description>/.exec(block)?.[1] || "";
+
+      return {
+        id: `bbc-${i}`,
+        title,
+        url: link,
+        description: desc,
+        source: link,
+        date: safeDateStr(),
+        platform: "BBC News",
+        category: "World",
+        tags: ["World"],
+        views: num(Math.random() * 10000),
+      };
+    });
   } catch (e) {
-    console.error("fetchBBCWorld failed", e);
+    console.error("fetchBBCWorld failed:", e);
     return [];
   }
 }
 
-// VNExpress RSS
+// VNExpress
 async function fetchVnExpressInternational() {
   try {
     const res = await defaultFetch("https://e.vnexpress.net/rss/world.rss");
     const text = await res.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, "application/xml");
-    const items = Array.from(xml.querySelectorAll("item")).slice(0, 10);
+    const items = Array.from(text.matchAll(/<item>([\s\S]*?)<\/item>/g));
 
-    return items.map((it, i) => ({
-      id: `vnexp-${i}`,
-      title: it.querySelector("title")?.textContent,
-      description: it.querySelector("description")?.textContent,
-      url: it.querySelector("link")?.textContent,
-      source: "VNExpress",
-      platform: "news",
-      category: "News",
-      date: safeDateStr(it.querySelector("pubDate")?.textContent),
-      tags: ["Vietnam", "World"],
-    }));
+    return items.slice(0, 10).map((m, i) => {
+      const block = m[1];
+      const title = /<title><!\[CDATA\[(.*?)\]\]><\/title>/.exec(block)?.[1] || "";
+      const link = /<link>(.*?)<\/link>/.exec(block)?.[1] || "";
+      const desc =
+        /<description><!\[CDATA\[(.*?)\]\]><\/description>/.exec(block)?.[1] || "";
+
+      return {
+        id: `vnexp-${i}`,
+        title,
+        url: link,
+        description: desc,
+        source: link,
+        date: safeDateStr(),
+        platform: "VNExpress",
+        category: "World",
+        tags: ["Vietnam", "World"],
+        views: num(Math.random() * 5000),
+      };
+    });
   } catch (e) {
-    console.error("fetchVnExpressInternational failed", e);
+    console.error("fetchVnExpressInternational failed:", e);
     return [];
   }
 }
 
-// Nasdaq News API (sử dụng RSS)
+// Nasdaq
 async function fetchNasdaqNews() {
   try {
-    const res = await defaultFetch("https://www.nasdaq.com/feed/rssoutbound?category=Markets");
+    const res = await defaultFetch("https://www.nasdaq.com/feed/rssoutbound?category=Business");
     const text = await res.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, "application/xml");
-    const items = Array.from(xml.querySelectorAll("item")).slice(0, 10);
+    const items = Array.from(text.matchAll(/<item>([\s\S]*?)<\/item>/g));
 
-    return items.map((it, i) => ({
-      id: `nasdaq-${i}`,
-      title: it.querySelector("title")?.textContent,
-      description: it.querySelector("description")?.textContent,
-      url: it.querySelector("link")?.textContent,
-      source: "Nasdaq",
-      platform: "finance",
-      category: "Finance",
-      date: safeDateStr(it.querySelector("pubDate")?.textContent),
-      tags: ["Finance"],
-    }));
+    return items.slice(0, 10).map((m, i) => {
+      const block = m[1];
+      const title = /<title><!\[CDATA\[(.*?)\]\]><\/title>/.exec(block)?.[1] || "";
+      const link = /<link>(.*?)<\/link>/.exec(block)?.[1] || "";
+      const desc =
+        /<description><!\[CDATA\[(.*?)\]\]><\/description>/.exec(block)?.[1] || "";
+
+      return {
+        id: `nasdaq-${i}`,
+        title,
+        url: link,
+        description: desc,
+        source: link,
+        date: safeDateStr(),
+        platform: "Nasdaq",
+        category: "Business",
+        tags: ["Business"],
+        views: num(Math.random() * 20000),
+      };
+    });
   } catch (e) {
-    console.error("fetchNasdaqNews failed", e);
+    console.error("fetchNasdaqNews failed:", e);
     return [];
   }
 }
 
-// Fake TikTok Trends (vì API chính thức cần auth)
+// TikTok
 async function fetchTikTokTrends() {
-  return [
-    {
-      id: "tiktok-1",
-      title: "Dance Challenge XYZ",
-      description: "New viral dance challenge",
-      url: "https://www.tiktok.com/",
-      source: "TikTok",
-      platform: "social",
+  if (!RAPIDAPI_KEY) return [];
+  try {
+    const res = await defaultFetch("https://tiktok-all-in-one.p.rapidapi.com/feed", {
+      headers: {
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Host": "tiktok-all-in-one.p.rapidapi.com",
+      },
+    });
+    const data = await res.json();
+    const items = data?.data || [];
+
+    return items.slice(0, 10).map((it, i) => ({
+      id: `tiktok-${i}`,
+      title: it.title || "TikTok trend",
+      url: it.play || "",
+      description: it.desc || "",
+      source: it.shareUrl || "",
+      date: safeDateStr(),
+      platform: "TikTok",
       category: "Entertainment",
-      date: safeDateStr(Date.now()),
-      views: 1200000,
-      tags: ["TikTok", "Trend"],
-    },
-  ];
+      tags: ["TikTok"],
+      views: num(it.playCount),
+      engagement: num(it.diggCount),
+    }));
+  } catch (e) {
+    console.error("fetchTikTokTrends failed:", e);
+    return [];
+  }
 }
 
-// Fake Instagram Trends
+// Instagram
 async function fetchInstagramTrends() {
-  return [
-    {
-      id: "ig-1",
-      title: "New Fashion Hashtag",
-      description: "Trending fashion on Instagram",
-      url: "https://www.instagram.com/",
-      source: "Instagram",
-      platform: "social",
+  if (!RAPIDAPI_KEY) return [];
+  try {
+    const res = await defaultFetch(
+      "https://instagram-scraper-api2.p.rapidapi.com/v1.2/top_reels",
+      {
+        headers: {
+          "X-RapidAPI-Key": RAPIDAPI_KEY,
+          "X-RapidAPI-Host": "instagram-scraper-api2.p.rapidapi.com",
+        },
+      }
+    );
+    const data = await res.json();
+    const items = data?.data || [];
+
+    return items.slice(0, 10).map((it, i) => ({
+      id: `ig-${i}`,
+      title: it.caption || "Instagram reel",
+      url: it.video_url || "",
+      description: it.caption || "",
+      source: it.permalink || "",
+      date: safeDateStr(),
+      platform: "Instagram",
       category: "Entertainment",
-      date: safeDateStr(Date.now()),
-      engagement: 540000,
-      tags: ["Instagram", "Fashion"],
-    },
-  ];
+      tags: ["Instagram"],
+      views: num(it.play_count),
+      engagement: num(it.like_count),
+    }));
+  } catch (e) {
+    console.error("fetchInstagramTrends failed:", e);
+    return [];
+  }
 }
 
 // -------------------- Serverless Handler --------------------
@@ -203,6 +258,43 @@ if (typeof exports !== "undefined") {
       return { statusCode: 200, headers, body: "" };
     }
 
+    // === Gemini API handler ===
+    if (event.path.endsWith("/analyze") && event.httpMethod === "POST") {
+      try {
+        if (!GEMINI_KEY) throw new Error("Missing GEMINI_KEY");
+        const body = JSON.parse(event.body || "{}");
+        const text = body.text || "";
+        if (!text) throw new Error("No text provided for analysis");
+
+        const geminiRes = await defaultFetch(
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" +
+            GEMINI_KEY,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text }] }],
+            }),
+          }
+        );
+        const data = await geminiRes.json();
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ success: true, analysis: data }),
+        };
+      } catch (err) {
+        console.error("Gemini analyze error", err);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, error: err.message }),
+        };
+      }
+    }
+
+    // === Fetch trends handler ===
     try {
       const [hackerNews, bbcWorld, vnexpressIntl, nasdaqNews, tiktok, instagram] =
         await Promise.all([
@@ -226,37 +318,22 @@ if (typeof exports !== "undefined") {
         .map((t) => ({
           ...t,
           views: Number.isFinite(Number(t.views)) ? Number(t.views) : undefined,
-          engagement: Number.isFinite(Number(t.engagement)) ? Number(t.engagement) : undefined,
+          engagement: Number.isFinite(Number(t.engagement))
+            ? Number(t.engagement)
+            : undefined,
           votes: Number.isFinite(Number(t.votes)) ? Number(t.votes) : 0,
         }))
         .sort(
           (a, b) =>
             (Number(b.views) || Number(b.engagement) || Number(b.votes) || 0) -
             (Number(a.views) || Number(a.engagement) || Number(a.votes) || 0)
-        );
-
-      trends = trends.map((t, i) => ({
-        ...t,
-        id:
-          t.id ||
-          `${(t.platform || t.tags?.[0] || "item").toString().toLowerCase()}-${i + 1}`,
-      }));
+        )
+        .map((t, i) => ({ ...t, rank: i + 1 }));
 
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({
-          success: true,
-          trends,
-          sources: {
-            hackerNews: hackerNews?.length || 0,
-            bbcWorld: bbcWorld?.length || 0,
-            vnexpressIntl: vnexpressIntl?.length || 0,
-            nasdaqNews: nasdaqNews?.length || 0,
-            tiktok: tiktok?.length || 0,
-            instagram: instagram?.length || 0,
-          },
-        }),
+        body: JSON.stringify({ success: true, trends }),
       };
     } catch (error) {
       console.error("fetch-trends error", error);
@@ -279,30 +356,6 @@ if (typeof exports !== "undefined") {
 if (typeof window !== "undefined") {
   const API_URL = "/.netlify/functions/fetch-trends";
   const trendContainer = document.getElementById("trendContainer");
-
-  // --- Gemini integration ---
-  async function analyzeWithGemini(promptText) {
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY || "YOUR_API_KEY"}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }],
-          }),
-        }
-      );
-
-      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
-      const data = await res.json();
-      const output = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
-      return output;
-    } catch (err) {
-      console.error("Gemini API failed:", err);
-      return "⚠️ Failed to analyze with Gemini.";
-    }
-  }
 
   async function loadTrends() {
     try {
@@ -339,16 +392,18 @@ if (typeof window !== "undefined") {
     const date = trend.date || "";
     const views = trend.views ?? trend.votes ?? 0;
     const engagement = trend.engagement ?? 0;
+    const category = trend.category || "General";
 
     const tags = (trend.tags || [])
       .map((tag) => `<span class="tag">${tag}</span>`)
       .join(" ");
 
     return `
-      <div class="trend-card" data-id="${trend.id}">
-        <h3 class="trend-title">${title}</h3>
+      <div class="trend-card" data-id="${trend.id}" data-title="${title}">
+        <h3 class="trend-title" style="cursor:pointer">${trend.rank}. ${title}</h3>
         <p class="trend-desc">${description}</p>
         <div class="trend-meta">
+          <span>Category: ${category}</span> | 
           <span>${platform}</span> | 
           <span>${date}</span>
         </div>
@@ -356,8 +411,8 @@ if (typeof window !== "undefined") {
           👁 ${views} | ❤️ ${engagement}
         </div>
         <div class="trend-tags">${tags}</div>
-        <a href="${source}" target="_blank">Read more</a>
-        <button class="analyze-btn" data-id="${trend.id}">Analyze</button>
+        <a href="${source}" target="_blank">Source</a>
+        <button class="analyze-btn">Analyze</button>
       </div>
     `;
   }
@@ -365,24 +420,26 @@ if (typeof window !== "undefined") {
   async function handleTrendListInteraction(event) {
     const card = event.target.closest(".trend-card");
     if (!card) return;
-    const id = card.dataset.id;
-    if (!id) return;
+    const title = card.dataset.title || "Untitled";
 
-    const titleEl = card.querySelector(".trend-title");
-    const descEl = card.querySelector(".trend-desc");
-
-    // Nếu bấm vô title
     if (event.target.classList.contains("trend-title")) {
-      alert(`You clicked: ${titleEl.textContent}`);
+      alert(`You clicked: ${title}`);
     }
 
-    // Nếu bấm vô nút Analyze
     if (event.target.classList.contains("analyze-btn")) {
-      const textToAnalyze = `${titleEl?.textContent}\n${descEl?.textContent}`;
-      event.target.textContent = "Analyzing...";
-      const result = await analyzeWithGemini(textToAnalyze);
-      event.target.textContent = "Analyze";
-      alert("Gemini Analysis:\n\n" + result);
+      try {
+        const res = await fetch(API_URL + "/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: title }),
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error);
+        alert("Gemini Analysis:\n" + JSON.stringify(json.analysis, null, 2));
+      } catch (err) {
+        console.error("Analyze failed", err);
+        alert("Analyze failed: " + err.message);
+      }
     }
   }
 
