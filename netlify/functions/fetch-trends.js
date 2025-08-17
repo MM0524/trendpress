@@ -185,13 +185,16 @@ async function fetchTikTokTrends() {
       }
     });
 
-   if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
-   const json = await res.json();
-console.log("TikTok RAW RESPONSE:", JSON.stringify(json, null, 2));
+    if (!res.ok) throw new Error(`TikTok HTTP ${res.status}`);
+    const json = await res.json();
 
-    console.log("TikTok RAW:", json);
+    console.log("TikTok RAW RESPONSE:", JSON.stringify(json, null, 2));
 
-    // nếu data là array thì dùng luôn
+    if (!json.data) {
+      throw new Error("TikTok API returned no data");
+    }
+
+    // ép thành mảng nếu không phải array
     const list = Array.isArray(json.data) ? json.data : [json.data];
 
     return list.map((v, i) => ({
@@ -211,7 +214,6 @@ console.log("TikTok RAW RESPONSE:", JSON.stringify(json, null, 2));
     return [];
   }
 }
-
 
 async function fetchInstagramTrends() {
   try {
