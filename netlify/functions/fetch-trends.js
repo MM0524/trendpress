@@ -27,17 +27,21 @@ exports.handler = async (event) => {
   }
 
   try {
-    // chạy song song nhưng có timeout từng nguồn
-    const [hackerNews, bbcWorld, vnexpressIntl] = await Promise.allSettled([
+    // chạy song song tất cả nguồn
+    const [hackerNews, bbcWorld, vnexpressIntl, nasdaqFinance, aiNews] = await Promise.allSettled([
       fetchHackerNewsFrontpage(),
       fetchBBCWorld(),
-      fetchVnExpressInternational()
+      fetchVnExpressInternational(),
+      fetchNasdaqFinance(),
+      fetchAINews()
     ]);
 
     let trends = [
       ...(hackerNews.status === 'fulfilled' ? hackerNews.value : []),
       ...(bbcWorld.status === 'fulfilled' ? bbcWorld.value : []),
-      ...(vnexpressIntl.status === 'fulfilled' ? vnexpressIntl.value : [])
+      ...(vnexpressIntl.status === 'fulfilled' ? vnexpressIntl.value : []),
+      ...(nasdaqFinance.status === 'fulfilled' ? nasdaqFinance.value : []),
+      ...(aiNews.status === 'fulfilled' ? aiNews.value : [])
     ];
 
     // Normalize metrics
@@ -195,6 +199,88 @@ async function fetchVnExpressInternational() {
     return items;
   } catch (e) {
     console.warn('VnExpress fetch failed', e.message);
+    return [];
+  }
+}
+
+// Nasdaq Finance
+async function fetchNasdaqFinance() {
+  try {
+    const res = await fetchWithTimeout('https://www.nasdaq.com/feed/rssoutbound?category=Finance');
+    const xml = await res.text();
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let rank = 150;
+
+    while ((match = itemRegex.exec(xml)) && items.length < 25) {
+      const block = match[1];
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) || [])[1] || 'Nasdaq Finance';
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const pubDate =
+        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
+        new Date().toUTCString();
+      const description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
+
+      items.push({
+        title,
+        description,
+        category: 'Finance',
+        tags: ['Nasdaq'],
+        votes: rank--,
+        source: link,
+        date: new Date(pubDate).toLocaleDateString('en-US'),
+        submitter: 'Nasdaq Finance'
+      });
+    }
+    return items;
+  } catch (e) {
+    console.warn('Nasdaq fetch failed', e.message);
+    return [];
+  }
+}
+
+// AI News (VentureBeat AI)
+async function fetchAINews() {
+  try {
+    const res = await fetchWithTimeout('https://venturebeat.com/category/ai/feed/');
+    const xml = await res.text();
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let rank = 250;
+
+    while ((match = itemRegex.exec(xml)) && items.length < 25) {
+      const block = match[1];
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) || [])[1] || 'AI News';
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const pubDate =
+        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] ||
+        new Date().toUTCString();
+      const description =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          block.match(/<description>(.*?)<\/description>/) || [])[1] || '';
+
+      items.push({
+        title,
+        description,
+        category: 'AI',
+        tags: ['Artificial Intelligence'],
+        votes: rank--,
+        source: link,
+        date: new Date(pubDate).toLocaleDateString('en-US'),
+        submitter: 'VentureBeat AI'
+      });
+    }
+    return items;
+  } catch (e) {
+    console.warn('AI News fetch failed', e.message);
     return [];
   }
 }
