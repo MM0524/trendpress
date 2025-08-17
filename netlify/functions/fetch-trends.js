@@ -190,23 +190,27 @@ async function fetchTikTokTrends() {
       throw new Error(`TikTok HTTP ${res.status}: ${errText}`);
     }
 
-    const data = await res.json();
-    const items = [];
+   const data = await res.json();
+const list = Array.isArray(data?.data) ? data.data
+            : Array.isArray(data?.data?.videos) ? data.data.videos
+            : Array.isArray(data?.itemList) ? data.itemList
+            : data?.data ? [data.data] 
+            : [];
 
-    if (data?.data) {
-      items.push(...data.data.map((item, i) => ({
-        id: `tiktok-${i}`,
-        title: item.title || item.desc || 'No title',
-        source: 'TikTok',
-        url: item.url || '#',
-        views: item.playCount || 0,
-        engagement: item.diggCount || 0,
-        votes: 0,
-        date: new Date(item.createTime * 1000).toLocaleDateString('en-US')
-      })));
-    }
+const items = list.map((v, i) => ({
+  id: `tiktok-${i}`,
+  title: v.title || v.desc || v.caption || 'TikTok Video',
+  source: 'TikTok',
+  url: v.url || v.share_url || '#',
+  views: v.playCount ?? v.stats?.playCount ?? 0,
+  engagement: v.diggCount ?? v.stats?.diggCount ?? 0,
+  votes: 0,
+  date: v.createTime
+    ? new Date(v.createTime * 1000).toLocaleDateString('en-US')
+    : new Date().toLocaleDateString('en-US')
+}));
+return items;
 
-    return items; 
   } catch (err) {
     console.warn('TikTok fetch error:', err.message);
     return [];
