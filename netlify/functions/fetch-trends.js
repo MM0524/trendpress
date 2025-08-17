@@ -211,7 +211,7 @@ async function fetchAINews() {
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
-    let rank = 250;
+    let rank = 300;
 
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
@@ -259,7 +259,7 @@ async function fetchYahooFinance() {
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
-    let rank = 300; // ưu tiên vừa phải cho finance
+    let rank = 250; // ưu tiên vừa phải cho finance
 
     while ((match = itemRegex.exec(xml)) && items.length < 25) {
       const block = match[1];
