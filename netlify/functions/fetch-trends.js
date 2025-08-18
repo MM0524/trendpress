@@ -14,16 +14,18 @@ async function fetchWithTimeout(url, ms = 7000) {
   }
 }
 
-export const handler = async (event) => {
+const fetch = require("node-fetch");
+
+exports.handler = async (event) => {
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Content-Type': 'application/json'
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Content-Type": "application/json",
   };
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers, body: "" };
   }
 
   try {
@@ -33,37 +35,56 @@ export const handler = async (event) => {
       vnexpressIntl,
       yahooFinance,
       appleMusic,
-      varietyMedia,
-      ignGaming,
-      vbAI
+      variety,
+      ign,
+      ventureBeatAI,
+      reddit,
+      youtube,
     ] = await Promise.all([
       fetchHackerNewsFrontpage(),
       fetchBBCWorld(),
       fetchVnExpressInternational(),
       fetchYahooFinance(),
-      fetchAppleMusic(),
-      fetchVarietyMedia(),
-      fetchIGNGaming(),
-      fetchVentureBeatAI()
+      fetchAppleMusicTop(),
+      fetchVariety(),
+      fetchIGN(),
+      fetchVentureBeatAI(),
+      fetchReddit(),
+      fetchYouTubeTrending(),
     ]);
 
+    // Merge & normalize
     let trends = [
       ...hackerNews,
       ...bbcWorld,
       ...vnexpressIntl,
       ...yahooFinance,
       ...appleMusic,
-      ...varietyMedia,
-      ...ignGaming,
-      ...vbAI
+      ...variety,
+      ...ign,
+      ...ventureBeatAI,
+      ...reddit,
+      ...youtube,
     ]
       .filter(Boolean)
-      .map(t => ({
+      .map((t) => ({
         ...t,
-        votes: Number.isFinite(Number(t.votes)) ? Number(t.votes) : 0
+        views: Number.isFinite(Number(t.views)) ? Number(t.views) : undefined,
+        engagement: Number.isFinite(Number(t.engagement))
+          ? Number(t.engagement)
+          : undefined,
+        votes: Number.isFinite(Number(t.votes)) ? Number(t.votes) : 0,
       }))
-      .sort((a, b) => (b.votes || 0) - (a.votes || 0));
+      .sort(
+        (a, b) =>
+          (Number(b.views) ||
+            Number(b.engagement) ||
+            Number(b.votes) ||
+            0) -
+          (Number(a.views) || Number(a.engagement) || Number(a.votes) || 0)
+      );
 
+    // assign id
     trends = trends.map((t, i) => ({ ...t, id: i + 1 }));
 
     return {
@@ -71,238 +92,321 @@ export const handler = async (event) => {
       headers,
       body: JSON.stringify({
         success: true,
+        count: trends.length,
         trends,
-        sources: {
-          hackerNews: hackerNews.length,
-          bbcWorld: bbcWorld.length,
-          vnexpressIntl: vnexpressIntl.length,
-          yahooFinance: yahooFinance.length,
-          appleMusic: appleMusic.length,
-          varietyMedia: varietyMedia.length,
-          ignGaming: ignGaming.length,
-          ventureBeatAI: vbAI.length
-        }
-      })
+      }),
     };
   } catch (error) {
-    console.error('fetch-trends error', error);
+    console.error("fetch-trends error", error);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         success: false,
-        error: 'Failed to fetch live trends',
-        message: error.message
-      })
+        error: "Failed to fetch live trends",
+        message: error.message,
+      }),
     };
   }
 };
 
-// ============================== SOURCES ==============================
+// =============== FETCHERS ===============
 
-// Tech: Hacker News
+// Hacker News
 async function fetchHackerNewsFrontpage() {
   try {
-    const res = await fetch('https://hnrss.org/frontpage');
-    if (!res.ok) throw new Error(`HN HTTP ${res.status}`);
+    const url = "https://hnrss.org/frontpage";
+    const res = await fetch(url);
     const xml = await res.text();
 
     const items = [];
     const regex = /<item>([\s\S]*?)<\/item>/g;
-    let match, rank = 500;
+    let match;
+    let rank = 500;
     while ((match = regex.exec(xml)) && items.length < 20) {
       const block = match[1];
-      const title = (block.match(/<title><!\[CDATA\[(.*?)\]\]>/) || [])[1] || '';
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
-      const desc = (block.match(/<description><!\[CDATA\[(.*?)\]\]>/) || [])[1] || '';
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) ||
+          [])[1] || "Hacker News";
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
       items.push({
-        title, description: desc,
-        category: 'Tech', tags: ['HackerNews'],
-        votes: rank--, source: link,
-        date: new Date().toLocaleDateString('en-US'),
-        submitter: 'Hacker News'
+        title,
+        description: "",
+        category: "Tech",
+        tags: ["HackerNews"],
+        votes: rank--,
+        source: link,
+        date: new Date().toLocaleDateString("en-US"),
+        submitter: "Hacker News",
       });
     }
     return items;
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
-// World: BBC
+// BBC
 async function fetchBBCWorld() {
   try {
-    const res = await fetch('https://feeds.bbci.co.uk/news/world/rss.xml');
-    if (!res.ok) throw new Error(`BBC HTTP ${res.status}`);
+    const res = await fetch("https://feeds.bbci.co.uk/news/world/rss.xml");
     const xml = await res.text();
-
     const items = [];
     const regex = /<item>([\s\S]*?)<\/item>/g;
-    let match, rank = 300;
+    let match;
+    let rank = 400;
     while ((match = regex.exec(xml)) && items.length < 20) {
       const block = match[1];
-      const title = (block.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1];
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
-      const desc = (block.match(/<description>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/description>/) || [])[1] || '';
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) ||
+          [])[1] || "BBC News";
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
+      const desc =
+        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
+          [])[1] || "";
       items.push({
-        title, description: desc,
-        category: 'World', tags: ['BBC'],
-        votes: rank--, source: link,
-        date: new Date().toLocaleDateString('en-US'),
-        submitter: 'BBC News'
+        title,
+        description: desc,
+        category: "World",
+        tags: ["BBC"],
+        votes: rank--,
+        source: link,
+        date: new Date().toLocaleDateString("en-US"),
+        submitter: "BBC World",
       });
     }
     return items;
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
-// News: VnExpress International
+// VnExpress
 async function fetchVnExpressInternational() {
   try {
-    const res = await fetch('https://e.vnexpress.net/rss/news.rss');
-    if (!res.ok) throw new Error(`VNE HTTP ${res.status}`);
+    const res = await fetch("https://e.vnexpress.net/rss/news.rss");
     const xml = await res.text();
-
     const items = [];
     const regex = /<item>([\s\S]*?)<\/item>/g;
-    let match, rank = 400;
+    let match;
+    let rank = 300;
     while ((match = regex.exec(xml)) && items.length < 20) {
       const block = match[1];
-      const title = (block.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1];
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
-      const desc = (block.match(/<description>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/description>/) || [])[1] || '';
+      const title =
+        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+          block.match(/<title>(.*?)<\/title>/) ||
+          [])[1] || "VnExpress";
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
       items.push({
-        title, description: desc,
-        category: 'News', tags: ['VnExpress'],
-        votes: rank--, source: link,
-        date: new Date().toLocaleDateString('en-US'),
-        submitter: 'VnExpress'
+        title,
+        description: "",
+        category: "News",
+        tags: ["VnExpress"],
+        votes: rank--,
+        source: link,
+        date: new Date().toLocaleDateString("en-US"),
+        submitter: "VnExpress",
       });
     }
     return items;
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
-// Finance: Yahoo Finance
+// Yahoo Finance
 async function fetchYahooFinance() {
   try {
-    const res = await fetch('https://feeds.finance.yahoo.com/rss/2.0/headline?s=AAPL,MSFT,GOOG,AMZN,TSLA&region=US&lang=en-US');
-    if (!res.ok) throw new Error(`Yahoo HTTP ${res.status}`);
+    const res = await fetch("https://finance.yahoo.com/rss/");
     const xml = await res.text();
-
     const items = [];
     const regex = /<item>([\s\S]*?)<\/item>/g;
-    let match, rank = 250;
+    let match;
+    let rank = 250;
     while ((match = regex.exec(xml)) && items.length < 20) {
       const block = match[1];
-      const title = (block.match(/<title>(.*?)<\/title>/) || [])[1];
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const title =
+        (block.match(/<title>(.*?)<\/title>/) || [])[1] || "Yahoo Finance";
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
       items.push({
-        title, description: '',
-        category: 'Finance', tags: ['YahooFinance'],
-        votes: rank--, source: link,
-        date: new Date().toLocaleDateString('en-US'),
-        submitter: 'Yahoo Finance'
+        title,
+        description: "",
+        category: "Finance",
+        tags: ["Finance"],
+        votes: rank--,
+        source: link,
+        date: new Date().toLocaleDateString("en-US"),
+        submitter: "Yahoo Finance",
       });
     }
     return items;
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
-// Music: Apple Music Top Songs
-async function fetchAppleMusic() {
+// Apple Music Top Songs (via RSS)
+async function fetchAppleMusicTop() {
   try {
-    const res = await fetch('https://rss.applemarketingtools.com/api/v2/us/music/most-played/10/songs.json');
-    if (!res.ok) throw new Error(`Apple HTTP ${res.status}`);
-    const data = await res.json();
-    return data.feed.results.map((s, i) => ({
-      title: s.name,
-      description: `${s.artistName}`,
-      category: 'Music',
-      tags: ['AppleMusic'],
-      votes: 150 - i,
+    const res = await fetch(
+      "https://rss.applemarketingtools.com/api/v2/us/music/most-played/10/songs.json"
+    );
+    const json = await res.json();
+    return json.feed.results.map((s, i) => ({
+      title: s.name + " - " + s.artistName,
+      description: "",
+      category: "Music",
+      tags: ["AppleMusic"],
+      votes: 200 - i,
       source: s.url,
-      date: new Date().toLocaleDateString('en-US'),
-      submitter: 'Apple Music'
+      date: new Date().toLocaleDateString("en-US"),
+      submitter: "Apple Music",
     }));
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
-// Media: Variety
-async function fetchVarietyMedia() {
+// Variety
+async function fetchVariety() {
   try {
-    const res = await fetch('https://variety.com/feed/');
-    if (!res.ok) throw new Error(`Variety HTTP ${res.status}`);
+    const res = await fetch("https://variety.com/feed/");
     const xml = await res.text();
-
     const items = [];
     const regex = /<item>([\s\S]*?)<\/item>/g;
-    let match, rank = 200;
-    while ((match = regex.exec(xml)) && items.length < 20) {
+    let match;
+    let rank = 180;
+    while ((match = regex.exec(xml)) && items.length < 15) {
       const block = match[1];
       const title = (block.match(/<title>(.*?)<\/title>/) || [])[1];
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1];
       items.push({
-        title, description: '',
-        category: 'Media',
-        tags: ['Variety'],
-        votes: rank--, source: link,
-        date: new Date().toLocaleDateString('en-US'),
-        submitter: 'Variety'
+        title,
+        description: "",
+        category: "Media",
+        tags: ["Variety"],
+        votes: rank--,
+        source: link,
+        date: new Date().toLocaleDateString("en-US"),
+        submitter: "Variety",
       });
     }
     return items;
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
-// Gaming: IGN
-async function fetchIGNGaming() {
+// IGN Gaming
+async function fetchIGN() {
   try {
-    const res = await fetch('https://feeds.feedburner.com/ign/all');
-    if (!res.ok) throw new Error(`IGN HTTP ${res.status}`);
+    const res = await fetch("https://feeds.ign.com/ign/all");
     const xml = await res.text();
-
     const items = [];
     const regex = /<item>([\s\S]*?)<\/item>/g;
-    let match, rank = 100;
-    while ((match = regex.exec(xml)) && items.length < 20) {
+    let match;
+    let rank = 150;
+    while ((match = regex.exec(xml)) && items.length < 15) {
       const block = match[1];
       const title = (block.match(/<title>(.*?)<\/title>/) || [])[1];
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1];
       items.push({
-        title, description: '',
-        category: 'Gaming',
-        tags: ['IGN'],
-        votes: rank--, source: link,
-        date: new Date().toLocaleDateString('en-US'),
-        submitter: 'IGN'
+        title,
+        description: "",
+        category: "Gaming",
+        tags: ["IGN"],
+        votes: rank--,
+        source: link,
+        date: new Date().toLocaleDateString("en-US"),
+        submitter: "IGN",
       });
     }
     return items;
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
-// AI: VentureBeat AI
+// VentureBeat AI
 async function fetchVentureBeatAI() {
   try {
-    const res = await fetch('https://venturebeat.com/category/ai/feed/');
-    if (!res.ok) throw new Error(`VB HTTP ${res.status}`);
+    const res = await fetch("https://venturebeat.com/category/ai/feed/");
     const xml = await res.text();
-
     const items = [];
     const regex = /<item>([\s\S]*?)<\/item>/g;
-    let match, rank = 120;
-    while ((match = regex.exec(xml)) && items.length < 20) {
+    let match;
+    let rank = 130;
+    while ((match = regex.exec(xml)) && items.length < 15) {
       const block = match[1];
       const title = (block.match(/<title>(.*?)<\/title>/) || [])[1];
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '#';
+      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1];
       items.push({
-        title, description: '',
-        category: 'AI',
-        tags: ['VentureBeatAI'],
-        votes: rank--, source: link,
-        date: new Date().toLocaleDateString('en-US'),
-        submitter: 'VentureBeat'
+        title,
+        description: "",
+        category: "AI",
+        tags: ["VentureBeat"],
+        votes: rank--,
+        source: link,
+        date: new Date().toLocaleDateString("en-US"),
+        submitter: "VentureBeat AI",
       });
     }
     return items;
-  } catch { return []; }
+  } catch {
+    return [];
+  }
+}
+
+// Reddit (r/news)
+async function fetchReddit() {
+  try {
+    const res = await fetch("https://www.reddit.com/r/news/top.json?limit=10");
+    const json = await res.json();
+    return json.data.children.map((p, i) => ({
+      title: p.data.title,
+      description: "",
+      category: "Social",
+      tags: ["Reddit"],
+      votes: 100 - i,
+      source: "https://reddit.com" + p.data.permalink,
+      date: new Date(p.data.created_utc * 1000).toLocaleDateString("en-US"),
+      submitter: p.data.author,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// YouTube Trending
+async function fetchYouTubeTrending() {
+  try {
+    const res = await fetch(
+      "https://www.youtube.com/feeds/videos.xml?playlist_id=PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-"
+    );
+    const xml = await res.text();
+    const items = [];
+    const regex = /<entry>([\s\S]*?)<\/entry>/g;
+    let match;
+    let rank = 90;
+    while ((match = regex.exec(xml)) && items.length < 10) {
+      const block = match[1];
+      const title = (block.match(/<title>(.*?)<\/title>/) || [])[1];
+      const link = (block.match(/<link rel="alternate" href="(.*?)"/) || [])[1];
+      items.push({
+        title,
+        description: "",
+        category: "Video",
+        tags: ["YouTube"],
+        votes: rank--,
+        source: link,
+        date: new Date().toLocaleDateString("en-US"),
+        submitter: "YouTube Trending",
+      });
+    }
+    return items;
+  } catch {
+    return [];
+  }
 }
