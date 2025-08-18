@@ -37,7 +37,8 @@ exports.handler = async (event) => {
       variety,
       ventureBeatAI,
       youtube,
-      redditTrends
+      redditTrends, 
+      twitterVietnam
     ] = await Promise.all([
       fetchHackerNewsFrontpage(),
       fetchBBCWorld(),
@@ -47,7 +48,8 @@ exports.handler = async (event) => {
       fetchVariety(),
       fetchVentureBeatAI(),
       fetchYouTubeTrending(),
-      fetchRedditTrends()
+      fetchRedditTrends(),
+      fetchTwitterTrendsVietnam()
     ]);
 
     let trends = [
@@ -59,7 +61,8 @@ exports.handler = async (event) => {
       ...variety,
       ...ventureBeatAI,
       ...youtube,
-      ...redditTrends
+      ...redditTrends,
+      ...twitterVietnam
     ]
       .filter(Boolean)
       .map((t) => ({
@@ -91,7 +94,8 @@ exports.handler = async (event) => {
           appleMusic: appleMusic.length,
           variety: variety.length,
           ventureBeatAI: ventureBeatAI.length,
-          reddit: redditTrends.length
+          reddit: redditTrends.length,
+          twitterVietnam: twitterVietnam.length
         }
       })
     };
@@ -441,6 +445,33 @@ async function fetchRedditTrends() {
     }));
   } catch (e) {
     console.warn("Reddit fetch failed:", e.message);
+    return [];
+  }
+}
+
+async function fetchTwitterTrendsVietnam() {
+  try {
+    const url = "https://api.getdaytrends.com/trending/now/vietnam.json";
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`GetDayTrends Vietnam HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (!data || !data.trends) return [];
+
+    return data.trends.slice(0, 20).map((trend, i) => ({
+      title: trend.name,
+      description: trend.tweet_volume 
+        ? `${trend.tweet_volume.toLocaleString()} tweets`
+        : "Trending in Vietnam now",
+      category: "Social",
+      tags: ["TwitterVN"],
+      votes: 100 - i,
+      source: trend.url || `https://twitter.com/search?q=${encodeURIComponent(trend.name)}`,
+      date: new Date().toLocaleDateString("en-US"),
+      submitter: "Twitter Trending Vietnam (via GetDayTrends)"
+    }));
+  } catch (e) {
+    console.warn("Twitter Vietnam trends fetch failed", e.message);
     return [];
   }
 }
