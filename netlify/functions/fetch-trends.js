@@ -14,7 +14,6 @@ async function fetchWithTimeout(url, ms = 7000) {
   }
 }
 
-// fetch-trends.js
 
 exports.handler = async (event) => {
   const headers = {
@@ -36,8 +35,8 @@ exports.handler = async (event) => {
       yahooFinance,
       appleMusic,
       variety,
-      ignGaming,
       ventureBeatAI,
+      youtube,
       redditTrends
     ] = await Promise.all([
       fetchHackerNewsFrontpage(),
@@ -46,8 +45,8 @@ exports.handler = async (event) => {
       fetchYahooFinance(),
       fetchAppleMusic(),
       fetchVariety(),
-      fetchIGNGaming(),
       fetchVentureBeatAI(),
+      fetchYouTubeTrending(),
       fetchRedditTrends()
     ]);
 
@@ -58,8 +57,8 @@ exports.handler = async (event) => {
       ...yahooFinance,
       ...appleMusic,
       ...variety,
-      ...ignGaming,
       ...ventureBeatAI,
+      ...youtube,
       ...redditTrends
     ]
       .filter(Boolean)
@@ -91,7 +90,6 @@ exports.handler = async (event) => {
           yahooFinance: yahooFinance.length,
           appleMusic: appleMusic.length,
           variety: variety.length,
-          ignGaming: ignGaming.length,
           ventureBeatAI: ventureBeatAI.length,
           reddit: redditTrends.length
         }
@@ -349,40 +347,34 @@ async function fetchVariety() {
   }
 }
 
-// IGN Gaming
-async function fetchIGNGaming() {
+// YouTube Trending
+async function fetchYouTubeTrending() {
   try {
-    const url = "https://feeds.feedburner.com/ign/all";
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`IGN HTTP ${res.status}`);
+    const res = await fetch(
+      "https://www.youtube.com/feeds/videos.xml?playlist_id=PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-"
+    );
     const xml = await res.text();
     const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    const regex = /<entry>([\s\S]*?)<\/entry>/g;
     let match;
-    let rank = 120;
-
-    while ((match = itemRegex.exec(xml)) && items.length < 15) {
+    let rank = 90;
+    while ((match = regex.exec(xml)) && items.length < 10) {
       const block = match[1];
-      const title =
-        (block.match(/<title>(.*?)<\/title>/) || [])[1] || "IGN Gaming";
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
-      const description =
-        (block.match(/<description>(.*?)<\/description>/) || [])[1] || "";
-
+      const title = (block.match(/<title>(.*?)<\/title>/) || [])[1];
+      const link = (block.match(/<link rel="alternate" href="(.*?)"/) || [])[1];
       items.push({
         title,
-        description,
-        category: "Gaming",
-        tags: ["IGN"],
+        description: "",
+        category: "Video",
+        tags: ["YouTube"],
         votes: rank--,
         source: link,
         date: new Date().toLocaleDateString("en-US"),
-        submitter: "IGN Gaming"
+        submitter: "YouTube Trending",
       });
     }
     return items;
-  } catch (e) {
-    console.warn("IGN Gaming fetch failed", e.message);
+  } catch {
     return [];
   }
 }
