@@ -408,7 +408,7 @@
         </div>
     </footer>
 
-    <script>
+   <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- STATE & DATA ---
         let user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [] };
@@ -624,7 +624,7 @@
             }
         }
         
-        function randomizeWorkData() { const mockSubmitters = ['InnovatorX', 'TrendSpotter', 'FutureCast', 'AI Analyzed', 'DataDiver', 'MarketMind']; allTrends.forEach(trend => { trend.submitter = mockSubmitters[Math.floor(Math.random() * mockSubmitters.length)]; }); };
+        function randomizeWorkData() { /* This function can be kept for potential future use or removed if not needed */ }
         function createTrendCard(trend) { const trendCard = document.createElement('div'); trendCard.className = 'trend-card'; trendCard.dataset.trendId = trend.id; const { title: localizedTitle, description: localizedDesc } = getLocalizedTrendText(trend); const simpleInsight = getSimpleDateInsight(trend.date); const isFollowed = user.followedTrends.includes(trend.id); const pastStatus = getTrendPastStatus(trend.date); const pastBadge = pastStatus ? `<span class="tag status past">${currentLanguage==='vi' ? 'Đã qua thời' : 'Past'}</span>` : ''; trendCard.innerHTML = ` <div class="trend-card-header"> <h3 class="trend-title" data-title="${localizedTitle}">${localizedTitle}</h3> <div class="trend-meta"> <span class="trend-meta-submitter">by ${trend.submitter}</span> <span class="trend-meta-date"><br>on ${trend.date}</span> </div> </div> <p class="trend-description">${localizedDesc}</p> <div class="trend-ai-insight">${simpleInsight}</div> <div class="trend-footer"> <div class="trend-tags"> <span class="tag category">${trend.category}</span> ${pastBadge} ${trend.tags.map(tag => `<span class=\"tag hashtag\" data-tag=\"${tag}\">#${tag}</span>`).join('')} </div> <div class="trend-actions"> <a href="${trend.source}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a> <button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}" data-analysis-type="general">${t('🔍 Analyze')}</button> <button class="btn btn-follow ${isFollowed ? 'followed' : ''}" data-id="${trend.id}">${isFollowed ? t('Following') : t('❤️ Follow')}</button> </div> </div>`; return trendCard; };
         function getSimpleDateInsight(dateString) { if (!dateString) return ''; const trendDate = new Date(dateString); const may2025 = new Date('2025-05-01'); const jan2025 = new Date('2025-01-01'); if (trendDate >= may2025) { return 'This trend is currently rising and expected to grow.'; } else if (trendDate < jan2025) { return 'This trend has already peaked and is considered part of a past wave.'; } return ''; };
         function getTrendPastStatus(dateString) { if (!dateString) return false; const trendDate = new Date(dateString); const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 3); return trendDate < cutoff; };
@@ -634,7 +634,7 @@
         function updateUIForFilter() { if (currentFilter.type === 'tag') { DOM.trendingHeaderText.textContent = `${t('Trends for')} #${currentFilter.value}`; DOM.clearFilterBtn.classList.remove('hidden'); DOM.filterButtonsContainer.classList.add('hidden'); } else { DOM.trendingHeaderText.textContent = t('Trending Now'); DOM.clearFilterBtn.classList.add('hidden'); DOM.filterButtonsContainer.classList.remove('hidden'); document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value)); } displayTrends(); };
         function populateCategoryFilters() { categories = Array.from(new Set(allTrends.map(t => t.category))).sort(); const allCats = ['All', ...categories]; DOM.filterButtonsContainer.innerHTML = ''; allCats.forEach(category => { const button = document.createElement('button'); button.className = 'filter-btn'; button.textContent = category; button.dataset.filter = category; if (category === currentFilter.value) button.classList.add('active'); DOM.filterButtonsContainer.appendChild(button); }); };
         function populatePreferenceCheckboxes() { categories = Array.from(new Set(allTrends.map(t => t.category))).sort(); DOM.preferencesGrid.innerHTML = ''; categories.forEach(category => { const item = document.createElement('div'); item.className = 'preference-item'; item.innerHTML = `<label><input type="checkbox" name="preference" value="${category}"> ${category}</label>`; DOM.preferencesGrid.appendChild(item); }); };
-        function updateAuthUI() { DOM.body.className = ''; if (user.isLoggedIn) { DOM.body.classList.add('logged-in'); DOM.signInBtn.classList.add('hidden'); DOM.userMenu.classList.remove('hidden'); DOM.userEmailBtn.textContent = user.email; DOM.dropdownHeader.textContent = user.email; DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType === 'work'); if (user.accountType === 'work') { DOM.body.classList.add('work-account-view'); randomizeWorkData(); } else if (user.accountType === 'personal') { DOM.body.classList.add('personal-account-view'); } } else { DOM.signInBtn.classList.remove('hidden'); DOM.userMenu.classList.add('hidden'); DOM.navForU.classList.add('hidden'); } displayTrends(); };
+        function updateAuthUI() { DOM.body.className = ''; if (user.isLoggedIn) { DOM.body.classList.add('logged-in'); DOM.signInBtn.classList.add('hidden'); DOM.userMenu.classList.remove('hidden'); DOM.userEmailBtn.textContent = user.email; DOM.dropdownHeader.textContent = user.email; DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType === 'work'); if (user.accountType === 'work') { DOM.body.classList.add('work-account-view'); } else if (user.accountType === 'personal') { DOM.body.classList.add('personal-account-view'); } } else { DOM.signInBtn.classList.remove('hidden'); DOM.userMenu.classList.add('hidden'); DOM.navForU.classList.add('hidden'); } displayTrends(); };
         function signIn(type) { user = { isLoggedIn: true, accountType: type, email: type === 'personal' ? 'privatemail@gmail.com' : 'pro@company.com', preferences: [], hasSetPreferences: false, followedTrends: [] }; closeModal('login-choice-modal'); updateAuthUI(); if (type === 'work' && !user.hasSetPreferences) { populatePreferenceCheckboxes(); openModal('preferences-modal'); } };
         function generateCategoryLeaderboards(containerId, categoriesToShow) { const container = document.getElementById(containerId); container.innerHTML = ''; categoriesToShow.sort().forEach(category => { const topTrends = allTrends.filter(t => t.category === category).sort((a,b) => (user.followedTrends.includes(b.id) - user.followedTrends.includes(a.id)) || getTrendMetric(b) - getTrendMetric(a)).slice(0,3); if(topTrends.length > 0) { const leaderboardDiv = document.createElement('div'); leaderboardDiv.className = 'leaderboard-widget'; let listItems = topTrends.map(t => `<li><span>${truncateText(t.title, 25)}</span><span class="stat-display">${getTrendMetric(t)} 🔥</span></li>`).join(''); leaderboardDiv.innerHTML = `<h4>Top in ${category}</h4><ol>${listItems}</ol>`; container.appendChild(leaderboardDiv); } }); };
         function getTopCategories(n = 3) { const counts = {}; allTrends.forEach(t => { counts[t.category] = (counts[t.category] || 0) + 1; }); return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,n).map(([cat])=>cat); }
@@ -659,7 +659,7 @@
         function generateMiniSeries(trend, analysis) { const parseDate = (d) => d ? new Date(d) : null; const endDate = parseDate(trend.endDate) || new Date(); const startCandidate = parseDate(trend.startDate) || parseDate(trend.date); const startDate = startCandidate ? new Date(startCandidate) : new Date(endDate); if (!startCandidate) startDate.setMonth(endDate.getMonth() - 3); const monthKeys = generateMonthRange(new Date(startDate.getFullYear(), startDate.getMonth(), 1).toISOString().slice(0,10), new Date(endDate.getFullYear(), endDate.getMonth(), 1).toISOString().slice(0,10)); const labels = monthKeys.map(monthKeyToLabel); const base = Math.max(10, Math.min(2000000, getTrendMetric(trend) || 100)); const growth = (analysis && typeof analysis.growthRate === 'number') ? analysis.growthRate : 0.05; const seed = (trend.id || 1) + (trend.title ? trend.title.length : 0); const series = []; let value = Math.max(10, base * 0.5); for (let i = 0; i < labels.length; i++) { const noise = (Math.sin(seed + i * 1.7) + Math.cos(seed * 0.3 + i)) * 0.03; value = value * (1 + growth * 0.25 + noise); series.push(Number(value.toFixed(2))); } return { labels, series }; };
         function renderInlineTrendLineChart(containerEl, labels, series) { try { const chartWrap = document.createElement('div'); chartWrap.className = 'ai-insight-chart'; const canvas = document.createElement('canvas'); const cid = `ai-inline-chart-${Date.now()}-${Math.floor(Math.random()*1000)}`; canvas.id = cid; chartWrap.appendChild(canvas); containerEl.appendChild(chartWrap); const ctx = canvas.getContext('2d'); new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Interest', data: series, tension: 0.35, fill: false, borderColor: 'rgba(161, 0, 255, 1)', pointRadius: 2, pointBackgroundColor: 'rgba(161, 0, 255, 1)' }] }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#8a8da0' } }, y: { grid: { color: 'rgba(45, 46, 73, 0.5)' }, ticks: { color: '#8a8da0' } } } } }); } catch(_){} };
         
-        // MODIFIED: This is the core logic change.
+        // MODIFIED: This function is the core of the change.
         createHotTrendsChart = () => {
             const canvas = document.getElementById('hot-trends-chart');
             if (!canvas) return;
@@ -670,9 +670,26 @@
             const chartTitleEl = document.querySelector('#hot-trends-container h4');
             let trendsForChart;
 
+            let startDate, endDate;
+
+            // NEW LOGIC: Determine the chart's time range dynamically
             if (user.isLoggedIn && user.accountType === 'work' && followedTrends.length > 0) {
-                trendsForChart = followedTrends.slice(0, 10); // Limit to 10 followed trends for chart readability
+                trendsForChart = followedTrends.slice(0, 10);
                 if (chartTitleEl) chartTitleEl.textContent = t('Your Followed Trends');
+
+                // Find the earliest and latest dates from the trends you've followed
+                const allDates = trendsForChart
+                    .map(t => new Date(t.date))
+                    .filter(d => !isNaN(d));
+
+                if (allDates.length > 0) {
+                    const minDate = new Date(Math.min(...allDates));
+                    const maxDate = new Date(Math.max(...allDates));
+
+                    // Create a padded window around the dates for better visualization
+                    startDate = new Date(minDate.getFullYear(), minDate.getMonth() - 2, 1);
+                    endDate = new Date(maxDate.getFullYear(), maxDate.getMonth() + 2, 1);
+                }
             } else {
                 trendsForChart = allTrends
                     .sort((a, b) => (getTrendMetric(b) || 0) - (getTrendMetric(a) || 0))
@@ -680,7 +697,14 @@
                 if (chartTitleEl) chartTitleEl.textContent = t('Currently Hot Trends (Overall)');
             }
 
-            const monthKeys = generateMonthRange('2025-01-01', '2025-08-31');
+            // If startDate/endDate were not set (e.g., no followed trends), use a default fallback range
+            if (!startDate || !endDate) {
+                endDate = new Date();
+                startDate = new Date();
+                startDate.setMonth(endDate.getMonth() - 7); // Default to last 8 months
+            }
+
+            const monthKeys = generateMonthRange(startDate, endDate);
             const labels = monthKeys.map(monthKeyToLabel);
             
             let datasets;
@@ -817,18 +841,12 @@
         
         async function initializeApp() {
             allTrends = await fetchLiveTrends();
-            
-            // If API fails and returns no trends, allTrends will be an empty array.
-            // All subsequent functions will handle this gracefully (e.g., show no trends).
-
             applyTrendOrdering();
             populateCategoryFilters();
             updateAuthUI();
             applyTranslations();
             updateLanguageToggleUI();
-            
             setTimeout(checkAIStatus, 1000);
-
             const loader = document.getElementById('loader');
             if (loader) {
                 loader.classList.add('loader-hidden');
@@ -837,7 +855,25 @@
         }
         
         async function checkAIStatus() {
-            // This function remains the same
+             try {
+                const geminiManager = new GeminiAPIManager('AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc');
+                const isOnline = await geminiManager.checkAPIStatus();
+                const statusIndicator = document.getElementById('ai-status-indicator');
+                const statusText = document.getElementById('ai-status-text');
+                if (isOnline) {
+                    statusIndicator.className = 'ai-status-indicator online';
+                    statusText.textContent = t('AI: Ready');
+                } else {
+                    statusIndicator.className = 'ai-status-indicator offline';
+                    statusText.textContent = t('AI: Unavailable');
+                }
+            } catch (error) {
+                const statusIndicator = document.getElementById('ai-status-indicator');
+                const statusText = document.getElementById('ai-status-text');
+                statusIndicator.className = 'ai-status-indicator offline';
+                statusText.textContent = t('AI: Connection error');
+                console.error('AI Status Check Failed:', error);
+            }
         }
         
         initializeApp();
@@ -845,3 +881,6 @@
     </script>
 </body>
 </html>
+</body>
+</html>
+
