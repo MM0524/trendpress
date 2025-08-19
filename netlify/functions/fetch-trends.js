@@ -15,6 +15,7 @@ async function fetchWithTimeout(url, ms = 7000) {
 }
 
 const fetch = require("node-fetch");
+const cheerio = require("cheerio");
 
 // 🔹 Hacker News (Tech)
 async function fetchHackerNews() {
