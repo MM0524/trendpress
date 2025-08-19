@@ -1,5 +1,8 @@
 // netlify/functions/fetch-trends.js
 
+const fetch = require("node-fetch");
+const cheerio = require("cheerio");
+
 // Helper: fetch with timeout
 async function fetchWithTimeout(url, ms = 7000) {
   const controller = new AbortController();
@@ -14,13 +17,10 @@ async function fetchWithTimeout(url, ms = 7000) {
   }
 }
 
-const fetch = require("node-fetch");
-const cheerio = require("cheerio");
-
 // 🔹 Hacker News (Tech)
 async function fetchHackerNews() {
   try {
-    const res = await fetch("https://hnrss.org/frontpage.jsonfeed");
+    const res = await fetchWithTimeout("https://hnrss.org/frontpage.jsonfeed");
     const data = await res.json();
     return data.items.map(item => ({ title: item.title, link: item.url }));
   } catch (err) {
@@ -32,7 +32,7 @@ async function fetchHackerNews() {
 // 🔹 BBC World
 async function fetchBBCWorld() {
   try {
-    const res = await fetch("https://feeds.bbci.co.uk/news/world/rss.xml");
+    const res = await fetchWithTimeout("https://feeds.bbci.co.uk/news/world/rss.xml");
     const text = await res.text();
     const $ = cheerio.load(text, { xmlMode: true });
     return $("item").map((_, el) => ({
@@ -48,7 +48,7 @@ async function fetchBBCWorld() {
 // 🔹 VnExpress (Vietnam News)
 async function fetchVnExpress() {
   try {
-    const res = await fetch("https://vnexpress.net/rss/tin-moi-nhat.rss");
+    const res = await fetchWithTimeout("https://vnexpress.net/rss/tin-moi-nhat.rss");
     const text = await res.text();
     const $ = cheerio.load(text, { xmlMode: true });
     return $("item").map((_, el) => ({
@@ -64,7 +64,7 @@ async function fetchVnExpress() {
 // 🔹 Yahoo Finance
 async function fetchYahooFinance() {
   try {
-    const res = await fetch("https://finance.yahoo.com/rss/topstories");
+    const res = await fetchWithTimeout("https://finance.yahoo.com/rss/topstories");
     const text = await res.text();
     const $ = cheerio.load(text, { xmlMode: true });
     return $("item").map((_, el) => ({
@@ -80,7 +80,7 @@ async function fetchYahooFinance() {
 // 🔹 Apple Music Top Songs (Vietnam)
 async function fetchAppleMusic() {
   try {
-    const res = await fetch("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/10/songs.json");
+    const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/10/songs.json");
     const data = await res.json();
     return data.feed.results.map(item => ({
       title: item.name + " - " + item.artistName,
@@ -95,7 +95,7 @@ async function fetchAppleMusic() {
 // 🔹 Variety (Media)
 async function fetchVariety() {
   try {
-    const res = await fetch("https://variety.com/feed/");
+    const res = await fetchWithTimeout("https://variety.com/feed/");
     const text = await res.text();
     const $ = cheerio.load(text, { xmlMode: true });
     return $("item").map((_, el) => ({
@@ -111,7 +111,7 @@ async function fetchVariety() {
 // 🔹 IGN Gaming
 async function fetchIGNGaming() {
   try {
-    const res = await fetch("https://feeds.ign.com/ign/games-all");
+    const res = await fetchWithTimeout("https://feeds.ign.com/ign/games-all");
     const text = await res.text();
     const $ = cheerio.load(text, { xmlMode: true });
     return $("item").map((_, el) => ({
@@ -127,7 +127,7 @@ async function fetchIGNGaming() {
 // 🔹 VentureBeat AI
 async function fetchVentureBeatAI() {
   try {
-    const res = await fetch("https://venturebeat.com/category/ai/feed/");
+    const res = await fetchWithTimeout("https://venturebeat.com/category/ai/feed/");
     const text = await res.text();
     const $ = cheerio.load(text, { xmlMode: true });
     return $("item").map((_, el) => ({
@@ -143,7 +143,7 @@ async function fetchVentureBeatAI() {
 // 🔹 YouTube Trending VN
 async function fetchYouTubeTrendingVN() {
   try {
-    const res = await fetch("https://www.youtube.com/feeds/videos.xml?chart=mostPopular&regionCode=VN");
+    const res = await fetchWithTimeout("https://www.youtube.com/feeds/videos.xml?chart=mostPopular&regionCode=VN");
     const text = await res.text();
     const $ = cheerio.load(text, { xmlMode: true });
     return $("entry").map((_, el) => ({
