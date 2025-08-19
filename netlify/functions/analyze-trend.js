@@ -7,34 +7,51 @@ class GeminiAPIManager {
       this.retryDelay = 1000;
   }
 
-               // Tạo prompt cho phân tích xu hướng
-           createTrendAnalysisPrompt(trend, promptType = 'general') {
-               const basePrompt = `You are an AI market trend analyst expert. 
-               Please analyze the trend: "${trend.title}" in the "${trend.category}" category. 
-               
-               Description: ${trend.description}
-               Tags: ${trend.tags.join(', ')}
-               
-               Please provide your analysis in English and include:`;
+  // Tạo prompt cho phân tích xu hướng
+  createTrendAnalysisPrompt(trend, promptType = 'general', timeframe = null) {
+      const basePrompt = `You are an AI market trend analyst expert. 
+      Please analyze the trend: "${trend.title}" in the "${trend.category}" category. 
+      
+      Description: ${trend.description}
+      Tags: ${trend.tags.join(', ')}
+      
+      Please provide your analysis in English and include:`;
 
-                       if (promptType === 'viral') {
-                   return `${basePrompt}
-                   1. 3 actionable suggestions for creating viral content
-                   2. Primary target audience
-                   3. Best timing to leverage this trend
-                   4. Most suitable platforms
-                   
-                   Please use bullet points and keep it concise.`;
-               } else {
-                   return `${basePrompt}
-                   1. Market Impact
-                   2. Target Audience
-                   3. Monetization Opportunities
-                   4. Future Outlook
-                   5. Risks to Consider
-                   
-                   Please provide detailed but easy-to-understand analysis.`;
-               }
+      if (promptType === 'viral') {
+          return `${basePrompt}
+          1. 3 actionable suggestions for creating viral content
+          2. Primary target audience
+          3. Best timing to leverage this trend
+          4. Most suitable platforms
+          
+          Please use bullet points and keep it concise.`;
+      } 
+      else if (promptType === 'predict') {
+          let periodText = "the next 1 month"; // default
+          if (timeframe === '7d') periodText = "the next 7 days (1 week)";
+          else if (timeframe === '1m') periodText = "the next 1 month";
+          else if (timeframe === '3m') periodText = "the next 3 months";
+
+          return `${basePrompt}
+          Now, please PREDICT how this trend may evolve over ${periodText}, considering:
+          1. Expected growth or decline
+          2. Potential new audience segments
+          3. Market or cultural events that may influence this trend
+          4. Opportunities for businesses/creators
+          5. Possible risks or challenges
+          
+          Please provide this forecast in a structured, easy-to-understand way.`;
+      } 
+      else {
+          return `${basePrompt}
+          1. Market Impact
+          2. Target Audience
+          3. Monetization Opportunities
+          4. Future Outlook
+          5. Risks to Consider
+          
+          Please provide detailed but easy-to-understand analysis.`;
+      }
   }
 
   // Gọi API Gemini với retry logic
@@ -118,16 +135,21 @@ class GeminiAPIManager {
       return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-               // Phân tích xu hướng với AI
-           async analyzeTrend(trend, promptType = 'general') {
-               try {
-                   const prompt = this.createTrendAnalysisPrompt(trend, promptType);
-                   const insight = await this.generateContent(prompt);
-                   return this.formatInsight(insight, promptType);
-               } catch (error) {
-                   throw new Error(`Unable to analyze trend: ${error.message}`);
-               }
-           }
+  // Phân tích xu hướng với AI
+  async analyzeTrend(trend, promptType = 'general', timeframe = null) {
+      try {
+          const prompt = this.createTrendAnalysisPrompt(trend, promptType, timeframe);
+          const insight = await this.generateContent(prompt);
+          return this.formatInsight(insight, promptType);
+      } catch (error) {
+          throw new Error(`Unable to analyze trend: ${error.message}`);
+      }
+  }
+
+  // Hàm chuyên để dự đoán với timeframe tùy chọn
+  async predictFutureTrend(trend, timeframe = '1m') {
+      return this.analyzeTrend(trend, 'predict', timeframe);
+  }
 
   // Format insight để hiển thị đẹp hơn
   formatInsight(insight, promptType) {
