@@ -141,39 +141,29 @@ async function fetchVentureBeatAI() {
   }
 }
 
-// 🔹 Reddit Trends
+// 🔹 Reddit Trends (free API)
 async function fetchRedditTrends() {
   try {
-    const res = await fetch("https://www.reddit.com/r/all/top.json?limit=10", {
-      headers: { "User-Agent": "trend-fetcher-bot/1.0" }
-    });
+    const res = await fetch("https://api.pullpush.io/reddit/search/submission/?q=trending&size=10");
     const data = await res.json();
-    return data.data.children.map(post => ({
-      title: post.data.title,
-      link: "https://reddit.com" + post.data.permalink,
-    }));
-  } catch (err) {
-    console.warn("Reddit fetch failed", err.message);
+    return data.data.map(i => ({ title: i.title, link: "https://reddit.com" + i.permalink }));
+  } catch (e) {
+    console.warn("Reddit fetch failed", e.message);
     return [];
   }
 }
 
-// 🔹 Twitter Vietnam (scraped từ Trends24)
-async function fetchTwitterVietnam() {
+// 🔹 Twitter VN Trends (via Trends24 RSS)
+async function fetchTwitterVN() {
   try {
-    const res = await fetch("https://trends24.in/vietnam/");
-    const html = await res.text();
-    const $ = cheerio.load(html);
-    return $(".trend-card ol li a").map((_, el) => ({
-      title: $(el).text(),
-      link: "https://twitter.com/search?q=" + encodeURIComponent($(el).text()),
-    })).get();
-  } catch (err) {
-    console.warn("Twitter Vietnam trends fetch failed", err.message);
+    const res = await fetch("https://trends24.in/vietnam/feed/");
+    const feed = await parser.parseString(await res.text());
+    return feed.items.map(i => ({ title: i.title, link: i.link }));
+  } catch (e) {
+    console.warn("Twitter Vietnam trends fetch failed", e.message);
     return [];
   }
 }
-
 // 🔹 YouTube Trending VN
 async function fetchYouTubeTrendingVN() {
   try {
