@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -103,14 +102,15 @@
         }
         
         /* --- Header & Navigation --- */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; height: var(--header-height); animation: fadeIn 0.5s ease-out; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; height: var(--header-height); animation: fadeIn 0.5s ease-out; /* --- ANIMATION ADDITION --- */ }
         .logo { font-size: 1.8rem; font-weight: 700; cursor: pointer; transition: transform 0.3s ease; }
-        .logo:hover { transform: scale(1.05); }
+        .logo:hover { transform: scale(1.05); } /* --- ANIMATION ADDITION --- */
         .logo-trend { color: var(--primary-light); }
         .nav-links { display: flex; gap: 1.5rem; list-style: none; }
         .nav-links a { color: var(--text-muted-color); text-decoration: none; font-weight: 500; transition: color 0.3s ease, transform 0.3s ease; }
-        .nav-links a:hover { color: var(--primary-color); transform: translateY(-2px); }
+        .nav-links a:hover { color: var(--primary-color); transform: translateY(-2px); /* --- ANIMATION ADDITION --- */ }
         .nav-actions { position: relative; display: flex; align-items: center; gap: 0.75rem; }
+        /* Language Switcher */
         .language-switcher { margin-right: 1rem; }
         .language-switcher .btn { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
         .lang-text { font-size: 1.2rem; }
@@ -119,6 +119,7 @@
         
         /* --- Buttons --- */
         .btn { padding: 0.6rem 1.2rem; border: 1px solid transparent; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
+        /* --- ANIMATION ADDITION: Button press effect --- */
         .btn:active { transform: scale(0.97); }
         .btn-primary { background-color: var(--primary-color); color: white; }
         .btn-primary:hover { background-color: var(--primary-light); transform: translateY(-2px); }
@@ -126,12 +127,14 @@
         .btn-secondary:hover { background: var(--border-color); color: var(--text-color); transform: translateY(-2px); }
         .btn-outline { background: transparent; color: var(--primary-light); border: 1px solid var(--primary-light); font-size: 0.8rem; padding: 0.3rem 0.8rem; }
         .btn-outline:hover { background: var(--primary-light); color: white; transform: translateY(-2px); }
+        
+        /* Button analyze trend */
         .analyze-trend-btn { background: transparent; color: var(--primary-light); border: 1px solid var(--primary-light); font-size: 0.8rem; padding: 0.3rem 0.8rem; margin-right: 0.5rem; }
         .analyze-trend-btn:hover { background: var(--primary-light); color: white; }
 
         /* --- Main Content & Views --- */
-        .main-container, .for-u-container { animation: slideInUp 0.6s ease-out; }
-        .main-container { display: grid; grid-template-columns: 1fr; gap: 2rem; padding: 2rem; max-width: 896px; margin: 0 auto; }
+        .main-container, .for-u-container { animation: slideInUp 0.6s ease-out; /* --- ANIMATION ADDITION --- */ }
+        .main-container { display: grid; grid-template-columns: 1fr; gap: 2rem; padding: 2rem; max-width: 900px; margin: auto; }
         .for-u-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; max-width: 1400px; margin: auto; }
         .demo-banner { grid-column: 1 / -1; background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         .trending-container, .for-u-content, .leaderboard-panel { background-color: var(--surface-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
@@ -139,12 +142,17 @@
         .trending-title-group { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 600; }
         .filter-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
         .filter-btn { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; transition: all 0.3s ease; }
-        .filter-btn:hover { background-color: var(--border-color); color: var(--text-color); transform: translateY(-2px); }
-        .filter-btn.active { background-color: var(--primary-color); color: white; font-weight: 500; border-color: var(--primary-color); transform: scale(1.05); }
+        .filter-btn:hover { background-color: var(--border-color); color: var(--text-color); transform: translateY(-2px); /* --- ANIMATION ADDITION --- */ }
+        .filter-btn.active { background-color: var(--primary-color); color: white; font-weight: 500; border-color: var(--primary-color); transform: scale(1.05); /* --- ANIMATION ADDITION --- */ }
         
         /* --- Trend Card --- */
         .trend-card { 
-            background-color: var(--bg-color); padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem; 
+            background-color: var(--bg-color); 
+            padding: 1.5rem; 
+            border: 1px solid var(--border-color); 
+            border-radius: 10px; 
+            margin-bottom: 1rem; 
+            /* --- ANIMATION ADDITION: Card hover effect and entry animation --- */
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             animation: slideInUp 0.5s ease-out forwards;
             opacity: 0;
@@ -154,31 +162,113 @@
         .trend-card:nth-child(3) { animation-delay: 0.15s; }
         .trend-card:nth-child(4) { animation-delay: 0.2s; }
         .trend-card:nth-child(5) { animation-delay: 0.25s; }
-        .trend-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+
+        .trend-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        /* --- End Animation Addition --- */
+
         .trend-title { font-size: 1.25rem; font-weight: 600; cursor: pointer; transition: color 0.3s; }
         .trend-title:hover { color: var(--primary-light); }
         .trend-meta { text-align: right; font-size: 0.8rem; color: var(--text-muted-color); white-space: nowrap; }
         .trend-description { margin-bottom: 1rem; color: var(--text-muted-color); }
         
+        /* --- ANIMATION ADDITION: Animate AI Insight visibility --- */
         .trend-ai-insight {
-            background-color: rgba(161, 0, 255, 0.05); border-left: 3px solid var(--primary-color); font-size: 0.85rem; color: var(--text-muted-color); font-style: italic; border-radius: 4px;
-            max-height: 0; opacity: 0; overflow: hidden; margin: 0; padding: 0 1rem; transition: all 0.5s ease-in-out;
+            background-color: rgba(161, 0, 255, 0.05); 
+            border-left: 3px solid var(--primary-color); 
+            font-size: 0.85rem; 
+            color: var(--text-muted-color); 
+            font-style: italic; 
+            border-radius: 4px;
+            /* Animation properties */
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            margin: 0;
+            padding: 0 1rem;
+            transition: all 0.5s ease-in-out;
         }
-        body.work-account-view .trend-ai-insight { max-height: 150px; opacity: 1; margin: 0.5rem 0 1rem 0; padding: 0.75rem 1rem; }
+        body.work-account-view .trend-ai-insight {
+            max-height: 150px;
+            opacity: 1;
+            margin: 0.5rem 0 1rem 0;
+            padding: 0.75rem 1rem;
+        }
+        /* --- End Animation Addition --- */
         
-        .loading-spinner { width: 20px; height: 20px; border: 2px solid rgba(161, 0, 255, 0.1); border-top: 2px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-spinner { 
+            width: 20px; 
+            height: 20px; 
+            border: 2px solid rgba(161, 0, 255, 0.1); 
+            border-top: 2px solid var(--primary-color); 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+            margin: 0 auto; 
+        }
         
-        .ai-insight-content { text-align: left; line-height: 1.3; font-size: 0.8rem; max-width: 100%; }
-        .ai-insight-content h4 { font-size: 1rem; margin-bottom: 0.5rem; color: var(--primary-light); }
-        .ai-insight-content p { margin-bottom: 0.4rem; font-size: 0.75rem; }
-        .ai-insight-content ul { margin: 0.3rem 0; padding-left: 1rem; }
-        .ai-insight-content li { margin-bottom: 0.2rem; font-size: 0.7rem; }
-        .ai-insight-content strong { color: var(--primary-light); font-weight: 600; }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
         
-        .ai-status-indicator { position: fixed; top: 80px; right: 20px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--text-muted-color); z-index: 1001; transition: all 0.3s ease; }
-        .ai-status-indicator.online { border-color: #4CAF50; color: #4CAF50; }
-        .ai-status-indicator.offline { border-color: #f44336; color: #f44336; }
+        .ai-insight-content { 
+            text-align: left; 
+            line-height: 1.3; 
+            font-size: 0.8rem; 
+            max-width: 100%; 
+        }
+        
+        .ai-insight-content h4 { 
+            font-size: 1rem; 
+            margin-bottom: 0.5rem; 
+            color: var(--primary-light); 
+        }
+        
+        .ai-insight-content p { 
+            margin-bottom: 0.4rem; 
+            font-size: 0.75rem; 
+        }
+        
+        .ai-insight-content ul { 
+            margin: 0.3rem 0; 
+            padding-left: 1rem; 
+        }
+        
+        .ai-insight-content li { 
+            margin-bottom: 0.2rem; 
+            font-size: 0.7rem; 
+        }
+        
+        .ai-insight-content strong { 
+            color: var(--primary-light); 
+            font-weight: 600; 
+        }
+        
+        .ai-status-indicator {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            color: var(--text-muted-color);
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+        
+        .ai-status-indicator.online {
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+        
+        .ai-status-indicator.offline {
+            border-color: #f44336;
+            color: #f44336;
+        }
 
         .trend-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
         .trend-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
@@ -195,18 +285,22 @@
         .btn-follow.followed { background-color: var(--accent-color); color: white; border-color: var(--accent-light); }
         #trends-footer { text-align: center; margin-top: 1.5rem; }
         
+        /* --- For U Leaderboard Panel --- */
         .leaderboard-panel h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
         .leaderboard-widget { margin-bottom: 1.5rem; }
         .leaderboard-widget h4 { color: var(--primary-light); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
         .leaderboard-widget ol { list-style-position: inside; padding: 0; margin: 0; }
         .leaderboard-widget li { background-color: var(--bg-color); padding: 0.6rem; border-radius: 4px; margin-bottom: 0.5rem; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; }
+        /* deprecated: vote-display */
         .leaderboard-widget li .stat-display { font-size: 0.8rem; color: var(--text-muted-color); }
 
+        /* --- VIEW-SPECIFIC STYLING --- */
         .vote-count, .trend-meta-date, .view-source-btn, .trend-meta-submitter { display: none; }
-        .btn-follow { display: none; }
-        body.work-account-view .btn-follow { display: flex; }
+        .btn-follow { display: none; } /* Hide follow by default */
+        body.work-account-view .btn-follow { display: flex; } /* Show ONLY for work accounts */
         body.work-account-view .vote-count, body.work-account-view .trend-meta-date, body.work-account-view .view-source-btn, body.work-account-view .trend-meta-submitter { display: inline-block; }
         
+        /* --- Dropdown & Modal System --- */
         .dropdown { display: none; position: absolute; top: 110%; right: 0; background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; min-width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; padding: 0.5rem 0; }
         .dropdown.show { display: block; }
         .dropdown-header { padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--text-muted-color); border-bottom: 1px solid var(--border-color); margin-bottom: 0.5rem; }
@@ -214,16 +308,48 @@
         .dropdown-item:hover { background-color: var(--border-color); }
         .dropdown-item svg { width: 18px; height: 18px; stroke: var(--primary-light); }
         
+        /* --- ANIMATION ADDITION: Animate Modals --- */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 16, 33, 0.85); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); z-index: 2000; display: flex; justify-content: center; align-items: center;
-            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 16, 33, 0.85);
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            display: flex; /* Changed from none */
+            justify-content: center;
+            align-items: center;
+            /* Animation properties */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
         .modal-content {
-            background-color: var(--surface-color); padding: 1rem; border-radius: 10px; width: 85%; max-width: 380px; text-align: center; position: relative; border: 1px solid var(--border-color);
-            transform: scale(0.95) translateY(10px); transition: transform 0.3s ease, opacity 0.3s ease; opacity: 0;
+            background-color: var(--surface-color);
+            padding: 1rem;
+            border-radius: 10px;
+            width: 85%;
+            max-width: 380px;
+            text-align: center;
+            position: relative;
+            border: 1px solid var(--border-color);
+            /* Animation properties */
+            transform: scale(0.95) translateY(10px);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
         }
-        .modal-overlay.show .modal-content { transform: scale(1) translateY(0); opacity: 1; }
+        .modal-overlay.show .modal-content {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+        /* --- End Animation Addition --- */
 
         .modal-close { position: absolute; top: 0.75rem; right: 0.75rem; background: none; border: none; color: var(--text-muted-color); font-size: 1.2rem; cursor: pointer; }
         .modal-title { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--primary-light); }
@@ -241,6 +367,7 @@
         .leaderboards-container ol, .leaderboard-panel ol { list-style-position: inside; padding-left: 0; }
         .leaderboards-container li, .leaderboard-panel li { background-color: var(--bg-color); padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; }
 
+        /* Compact AI Insight modal */
         #ai-insight-modal .modal-content { max-width: 340px; width: 90%; padding: 0.75rem; }
         #ai-insight-modal .modal-body { max-height: 60vh; overflow-y: auto; }
         #ai-insight-modal .modal-title { font-size: 1rem; }
@@ -250,24 +377,108 @@
         #ai-insight-modal .ai-insight-chart { margin-top: 0.6rem; }
         #ai-insight-modal .ai-insight-chart canvas { width: 100%; height: 160px; }
 
+        /* --- ACCESSIBILITY --- */
         .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
         
-        .footer { background-color: var(--surface-color); border-top: 1px solid var(--border-color); margin-top: 4rem; padding: 3rem 0 1rem 0; }
-        .footer-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
-        .footer-section { display: flex; flex-direction: column; }
-        .footer-title { color: var(--primary-light); font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
-        .footer-description { color: var(--text-muted-color); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1rem; }
-        .footer-links { list-style: none; padding: 0; }
-        .footer-links li { margin-bottom: 0.5rem; }
-        .footer-links a { color: var(--text-muted-color); text-decoration: none; font-size: 0.9rem; transition: color 0.3s ease; }
-        .footer-links a:hover { color: var(--primary-light); }
-        .footer-contact p { color: var(--text-muted-color); font-size: 0.9rem; margin-bottom: 0.5rem; }
-        .footer-bottom { border-top: 1px solid var(--border-color); margin-top: 2rem; padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin-left: auto; margin-right: auto; padding-left: 2rem; padding-right: 2rem; }
-        .footer-bottom p { color: var(--text-muted-color); font-size: 0.9rem; }
-        .footer-social { display: flex; gap: 1rem; }
-        .social-link { color: var(--text-muted-color); font-size: 1.2rem; text-decoration: none; transition: color 0.3s ease, transform 0.3s ease; }
-        .social-link:hover { color: var(--primary-light); transform: scale(1.2); }
+        /* --- Footer --- */
+        .footer {
+            background-color: var(--surface-color);
+            border-top: 1px solid var(--border-color);
+            margin-top: 4rem;
+            padding: 3rem 0 1rem 0;
+        }
         
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        
+        .footer-section {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .footer-title {
+            color: var(--primary-light);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .footer-description {
+            color: var(--text-muted-color);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+        
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .footer-links a {
+            color: var(--text-muted-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: var(--primary-light);
+        }
+        
+        .footer-contact p {
+            color: var(--text-muted-color);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid var(--border-color);
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+        
+        .footer-bottom p {
+            color: var(--text-muted-color);
+            font-size: 0.9rem;
+        }
+        
+        .footer-social {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .social-link {
+            color: var(--text-muted-color);
+            font-size: 1.2rem;
+            text-decoration: none;
+            transition: color 0.3s ease, transform 0.3s ease; /* --- ANIMATION ADDITION --- */
+        }
+        
+        .social-link:hover {
+            color: var(--primary-light);
+            transform: scale(1.2); /* --- ANIMATION ADDITION --- */
+        }
+        
+        /* --- RESPONSIVE DESIGN --- */
         @media (max-width: 1024px) { .main-container, .for-u-container { grid-template-columns: 1fr; } .for-u-container { grid-auto-flow: dense; } .leaderboard-panel { grid-row: 1; } }
         @media (max-width: 768px) {
             .header { padding: 0 1rem; }
@@ -279,13 +490,33 @@
             .hamburger-menu.active span:nth-child(2) { opacity: 0; transform: translateX(20px); }
             .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg); }
             .main-container, .for-u-container { padding: 1rem; }
-            .footer-content { grid-template-columns: 1fr; text-align: center; padding: 0 1rem; }
-            .footer-bottom { flex-direction: column; gap: 1rem; text-align: center; padding-left: 1rem; padding-right: 1rem; }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+                padding: 0 1rem;
+            }
+            
+            .footer-bottom {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
         }
         
         .hidden { display: none !important; }
 
-        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
+        /* --- ANIMATION ADDITION: Accessibility for reduced motion --- */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -408,7 +639,7 @@
         </div>
     </footer>
 
-<script>
+    <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- STATE & DATA ---
         let user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [] };
@@ -430,8 +661,8 @@
                 'Sign Out': 'Đăng xuất',
                 'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học',
                 'Sign in with Google': 'Đăng nhập với Google',
-                'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse',
-                'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.',
+                'Demo Mode': 'Chế độ Demo',
+                'This is a demo. All data is mock data.': 'Đây là demo. Tất cả dữ liệu đều là dữ liệu mẫu.',
                 'Trending Now': 'Xu hướng hiện tại',
                 'Show All Trends': 'Hiển thị tất cả xu hướng',
                 'Load More': 'Tải thêm',
@@ -448,7 +679,6 @@
                 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.',
                 'Trending Board Dashboard': 'Bảng điều khiển Trending Board',
                 'Currently Hot Trends (Overall)': 'Xu hướng nóng hiện tại (Tổng thể)',
-                'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi',
                 'Category Leaderboards': 'Bảng xếp hạng danh mục',
                 'About TrendPulse': 'Giới thiệu TrendPulse',
                 "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": 'Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề xu hướng để có thông tin chi tiết từ AI.',
@@ -473,6 +703,7 @@
                 'Analyzing trend with API...': 'Đang phân tích xu hướng với API...',
                 'Unable to analyze trend.': 'Không thể phân tích xu hướng.',
                 'Trends for': 'Xu hướng cho',
+                // Analysis labels
                 'Analysis': 'Phân tích',
                 'Score': 'Điểm số',
                 'Confidence': 'Độ tin cậy',
@@ -492,9 +723,9 @@
                 'Sign In': 'Sign In',
                 'Sign Out': 'Sign Out',
                 'Sign in with Work/School': 'Sign in with Work/School',
-                'Sign in with Google': 'Sign in with Google',
-                'Welcome to TrendPulse': 'Welcome to TrendPulse',
-                'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.',
+                'Sign in with G oogle': 'Sign in with Google',
+                'Demo Mode': 'Demo Mode',
+                'This is a demo. All data is mock data.': 'This is a demo. All data is mock data.',
                 'Trending Now': 'Trending Now',
                 'Show All Trends': 'Show All Trends',
                 'Load More': 'Load More',
@@ -511,7 +742,6 @@
                 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.',
                 'Trending Board Dashboard': 'Trending Board Dashboard',
                 'Currently Hot Trends (Overall)': 'Currently Hot Trends (Overall)',
-                'Your Followed Trends': 'Your Followed Trends',
                 'Category Leaderboards': 'Category Leaderboards',
                 'About TrendPulse': 'About TrendPulse',
                 "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.",
@@ -536,6 +766,7 @@
                 'Analyzing trend with API...': 'Analyzing trend with API...',
                 'Unable to analyze trend.': 'Unable to analyze trend.',
                 'Trends for': 'Trends for',
+                // Analysis labels
                 'Analysis': 'Analysis',
                 'Score': 'Score',
                 'Confidence': 'Confidence',
@@ -556,8 +787,6 @@
             { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' },
             { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' },
             { selector: '#login-google-btn span', key: 'Sign in with Google' },
-            { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' },
-            { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' },
             { selector: '#trending-header-text', key: 'Trending Now' },
             { selector: '#clear-filter-btn', key: 'Show All Trends' },
             { selector: '#load-more-btn', key: 'Load More' },
@@ -572,6 +801,7 @@
             { selector: '#login-choice-modal .modal-title', key: 'Sign In' },
             { selector: '#login-choice-modal .modal-body', key: 'Choose an account to continue to TrendPulse.' },
             { selector: '#trending-board-modal .modal-title', key: 'Trending Board Dashboard' },
+            { selector: '#hot-trends-container h4', key: 'Currently Hot Trends (Overall)' },
             { selector: '#for-u-leaderboard-panel h3', key: 'Category Leaderboards' },
             { selector: '#about-modal .modal-title', key: 'About TrendPulse' },
             { selector: '#about-modal .modal-body', key: "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights." },
@@ -590,149 +820,261 @@
             { selector: '#ai-insight-title', key: 'AI Insight' },
         ];
         function t(key){ return (translations[currentLanguage] && translations[currentLanguage][key]) || key; }
-        function applyTranslations(){ i18nBindings.forEach(b=>{ const el = document.querySelector(b.selector); if(el){ el.textContent = t(b.key); }}); const footerBottom = document.querySelector('.footer-bottom p'); if (footerBottom) footerBottom.textContent = `© 2024 TrendPulse. ${t('All rights reserved.')}`; const statusText = document.getElementById('ai-status-text'); if (statusText) statusText.textContent = t('AI: Checking...'); }
-        function updateLanguageToggleUI(){ const btn = document.getElementById('language-toggle'); if(!btn) return; btn.textContent = currentLanguage==='vi' ? 'VN' : 'EN'; }
+        function applyTranslations(){
+            // Update bound elements
+            i18nBindings.forEach(b=>{ const el = document.querySelector(b.selector); if(el){ el.textContent = t(b.key); }});
+            // Footer bottom
+            const footerBottom = document.querySelector('.footer-bottom p');
+            if (footerBottom) footerBottom.textContent = `© 2024 TrendPulse. ${t('All rights reserved.')}`;
+            // AI status initial text
+            const statusText = document.getElementById('ai-status-text');
+            if (statusText) statusText.textContent = t('AI: Checking...');
+        }
+        function updateLanguageToggleUI(){
+            const btn = document.getElementById('language-toggle');
+            if(!btn) return;
+            btn.textContent = currentLanguage==='vi' ? 'VN' : 'EN';
+        }
         let allTrends = [];
         let categories = [];
         const DOM = { body: document.body, mainNav: document.getElementById('main-nav'), hamburgerMenu: document.getElementById('hamburger-menu'), logo: document.getElementById('logo'), signInBtn: document.getElementById('sign-in-btn'), userMenu: document.getElementById('user-menu'), userEmailBtn: document.getElementById('user-email-btn'), dropdownHeader: document.getElementById('dropdown-user-email'), userDropdown: document.getElementById('user-dropdown'), dropdownSignOut: document.getElementById('dropdown-sign-out'), dropdownWorkSchool: document.getElementById('dropdown-work-school'), navTopTrends: document.getElementById('nav-top-trends'), navTrendingBoard: document.getElementById('nav-trending-board'), navForU: document.getElementById('nav-for-u'), navAbout: document.getElementById('nav-about'), modalCloses: document.querySelectorAll('.modal-close'), mainViewContainer: document.getElementById('main-view-container'), forUViewContainer: document.getElementById('for-u-view-container'), trendsList: document.getElementById('trends-list'), forUTrendsList: document.getElementById('for-u-trends-list'), loadMoreBtn: document.getElementById('load-more-btn'), forULoadMoreBtn: document.getElementById('for-u-load-more-btn'), filterButtonsContainer: document.getElementById('filter-buttons'), clearFilterBtn: document.getElementById('clear-filter-btn'), preferencesGrid: document.getElementById('preferences-grid'), savePreferencesBtn: document.getElementById('save-preferences-btn'), trendingHeaderText: document.getElementById('trending-header-text') };
 
+        // --- FUNCTION DECLARATIONS (All defined before use) ---
         function openModal(modalId) { document.getElementById(modalId).classList.add('show'); }
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
-        async function fetchLiveTrends() {
+        function randomizeWorkData() { /* implementation below */ }
+        function createTrendCard(trend) { /* implementation below */ }
+        function displayTrends() { /* implementation below */ }
+        function switchView(view) { /* implementation below */ }
+        function loadMoreTrends() { /* implementation below */ }
+        function updateUIForFilter() { /* implementation below */ }
+        function populateCategoryFilters() { /* implementation below */ }
+        function populatePreferenceCheckboxes() { /* implementation below */ }
+        function updateAuthUI() { /* implementation below */ }
+        function signIn(type) { /* implementation below */ }
+        function createHotTrendsChart() { /* implementation below */ }
+        async function getAIInsight(trend, promptType = 'general') { /* implementation below */ }
+        async function analyzeTrendWithAPI(trend, analysisType = 'general') { /* implementation below */ }
+        function getAnalyzeFnBase() { /* implementation below */ }
+        function handleTrendListInteraction(e) { /* implementation below */ }
+        function getSimpleDateInsight(dateString) { /* implementation below */ }
+        function generateCategoryLeaderboards(containerId, categoriesToShow) { /* implementation below */ }
+        function truncateText(text, maxLength) { /* implementation below */ }
+        function loadSeenTrends() { /* implementation below */ }
+        function saveSeenTrendKey(key) { /* implementation below */ }
+        function makeTrendKey(trend) { /* implementation below */ }
+        function shuffleArray(arr, seed) { /* implementation below */ }
+        function applyTrendOrdering() { /* implementation below */ }
+        function generateMiniSeries(trend, analysis) { /* implementation below */ }
+        function renderInlineTrendLineChart(containerEl, labels, series) { /* implementation below */ }
+        function ensureMinTrendsPerHashtagUnique(minCount) { /* implementation below */ }
+        function guessCategoryForTag(tag) { /* implementation below */ }
+        function pickSourceForTag(tag) { /* implementation below */ }
+        function randomInt(min, max) { /* implementation below */ }
+        function randomDateString(start, end) { /* implementation below */ }
+        function sanitizeAnalysis(analysis, trend) { /* implementation below */ }
+        function computeOverallScoreFromMetric(trend) { /* implementation below */ }
+        function getTrendMetric(trend) { /* implementation below */ }
+        function getMetricLabel() { /* implementation below */ }
+        function generateDescriptionForTag(tag, token) { /* implementation below */ }
+        function generateDescriptionForTagEn(tag, token) { /* implementation below */ }
+        function getLocalizedTrendText(trend) { /* implementation below */ }
+        function generateMonthRange(start, end) { /* implementation below */ }
+        function aggregateVotesByMonth(trends, monthKeys) { /* implementation below */ }
+        function monthKeyToLabel(key) { /* implementation below */ }
+        function getTrendPastStatus(dateString) { /* implementation below */ }
+        function generateSeriesForMonths(trend, monthKeys) { /* implementation below */ }
+        function getColorPalette(count) { /* implementation below */ }
+
+        // --- FUNCTION IMPLEMENTATIONS ---
+        
+        // Function để gọi API analyze-trend
+        analyzeTrendWithAPI = async (trend, analysisType = 'general') => {
+            try {
+                const fnBase = getAnalyzeFnBase();
+                if (!fnBase) throw new Error('No analyze function base configured');
+                const response = await fetch(`${fnBase}/analyze-trend`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        trendData: trend,
+                        analysisType: analysisType
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                return sanitizeAnalysis(result.data, trend);
+            } catch (error) {
+                console.error('Lỗi khi gọi analyze-trend API:', error);
+                // Fallback về AI insight cũ nếu API không hoạt động
+                const fallback = await getAIInsight(trend, analysisType);
+                return sanitizeAnalysis({ type: analysisType, overallScore: computeOverallScoreFromMetric(trend), summary: fallback }, trend);
+            }
+        };
+
+        // Load live trends from serverless function and replace mock data
+        async function loadLiveTrends() {
             try {
                 const res = await fetch('/.netlify/functions/fetch-trends');
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                if (data.success && Array.isArray(data.trends)) {
-                    return data.trends;
+                if (data.success && Array.isArray(data.trends) && data.trends.length) {
+                    allTrends = data.trends;
+                    categories = Array.from(new Set(allTrends.map(t => t.category))).sort();
+                    populateCategoryFilters();
+                    applyTrendOrdering();
+                    displayTrends();
                 }
-                return [];
             } catch (e) {
-                console.warn('Live trends not available.', e.message);
-                return [];
+                console.warn('Live trends not available, using mock data.', e.message);
             }
         }
-        function createTrendCard(trend) { const trendCard = document.createElement('div'); trendCard.className = 'trend-card'; trendCard.dataset.trendId = trend.id; const { title: localizedTitle, description: localizedDesc } = getLocalizedTrendText(trend); const simpleInsight = getSimpleDateInsight(trend.date); const isFollowed = user.followedTrends.includes(trend.id); const pastStatus = getTrendPastStatus(trend.date); const pastBadge = pastStatus ? `<span class="tag status past">${currentLanguage==='vi' ? 'Đã qua thời' : 'Past'}</span>` : ''; trendCard.innerHTML = ` <div class="trend-card-header"> <h3 class="trend-title" data-title="${localizedTitle}">${localizedTitle}</h3> <div class="trend-meta"> <span class="trend-meta-submitter">by ${trend.submitter}</span> <span class="trend-meta-date"><br>on ${trend.date}</span> </div> </div> <p class="trend-description">${localizedDesc}</p> <div class="trend-ai-insight">${simpleInsight}</div> <div class="trend-footer"> <div class="trend-tags"> <span class="tag category">${trend.category}</span> ${pastBadge} ${trend.tags.map(tag => `<span class=\"tag hashtag\" data-tag=\"${tag}\">#${tag}</span>`).join('')} </div> <div class="trend-actions"> <a href="${trend.source}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a> <button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}" data-analysis-type="general">${t('🔍 Analyze')}</button> <button class="btn btn-follow ${isFollowed ? 'followed' : ''}" data-id="${trend.id}">${isFollowed ? t('Following') : t('❤️ Follow')}</button> </div> </div>`; return trendCard; };
-        function getSimpleDateInsight(dateString) { if (!dateString) return ''; const trendDate = new Date(dateString); const may2025 = new Date('2025-05-01'); const jan2025 = new Date('2025-01-01'); if (trendDate >= may2025) { return 'This trend is currently rising and expected to grow.'; } else if (trendDate < jan2025) { return 'This trend has already peaked and is considered part of a past wave.'; } return ''; };
-        function getTrendPastStatus(dateString) { if (!dateString) return false; const trendDate = new Date(dateString); const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 3); return trendDate < cutoff; };
-        function displayTrends() { let listElement, footerButton, trendsToFilter; if (currentView === 'forU') { listElement = DOM.forUTrendsList; footerButton = DOM.forULoadMoreBtn; const preferenceTrends = allTrends.filter(t => user.preferences.includes(t.category)); const followedTrends = allTrends.filter(t => user.followedTrends.includes(t.id)); const combined = [...followedTrends, ...preferenceTrends]; const uniqueTrendIds = new Set(combined.map(t => t.id)); trendsToFilter = Array.from(uniqueTrendIds).map(id => allTrends.find(t => t.id === id)); generateCategoryLeaderboards('for-u-leaderboards', user.preferences); } else { listElement = DOM.trendsList; footerButton = DOM.loadMoreBtn; if (currentFilter.type === 'category' && currentFilter.value !== 'All') { trendsToFilter = allTrends.filter(t => t.category === currentFilter.value); } else if (currentFilter.type === 'tag') { trendsToFilter = allTrends.filter(t => t.tags.includes(currentFilter.value)); } else { trendsToFilter = allTrends; } } listElement.innerHTML = ''; displayedTrends[currentView] = 0; const trendsToDisplay = trendsToFilter.slice(0, TRENDS_PER_PAGE); trendsToDisplay.forEach(trend => { listElement.appendChild(createTrendCard(trend)); try { saveSeenTrendKey(makeTrendKey(trend)); } catch(_){} }); displayedTrends[currentView] = trendsToDisplay.length; footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length || trendsToFilter.length === 0); };
-        function switchView(view) { currentView = view; if (view === 'forU') { DOM.mainViewContainer.classList.add('hidden'); DOM.forUViewContainer.classList.remove('hidden'); } else { DOM.forUViewContainer.classList.add('hidden'); DOM.mainViewContainer.classList.remove('hidden'); } displayTrends(); };
-        function loadMoreTrends() { let listElement, footerButton, trendsToFilter; if (currentView === 'forU') { listElement = DOM.forUTrendsList; footerButton = DOM.forULoadMoreBtn; const uniqueTrendIds = new Set([...allTrends.filter(t => user.preferences.includes(t.category)).map(t=>t.id), ...user.followedTrends]); trendsToFilter = Array.from(uniqueTrendIds).map(id => allTrends.find(t => t.id === id)); } else { listElement = DOM.trendsList; footerButton = DOM.loadMoreBtn; if (currentFilter.type === 'category' && currentFilter.value !== 'All') { trendsToFilter = allTrends.filter(t => t.category === currentFilter.value); } else if (currentFilter.type === 'tag') { trendsToFilter = allTrends.filter(t => t.tags.includes(currentFilter.value)); } else { trendsToFilter = allTrends; } } const nextTrends = trendsToFilter.slice(displayedTrends[currentView], displayedTrends[currentView] + TRENDS_PER_PAGE); nextTrends.forEach(trend => { listElement.appendChild(createTrendCard(trend)); try { saveSeenTrendKey(makeTrendKey(trend)); } catch(_){} }); displayedTrends[currentView] += nextTrends.length; footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length); };
-        function updateUIForFilter() { if (currentFilter.type === 'tag') { DOM.trendingHeaderText.textContent = `${t('Trends for')} #${currentFilter.value}`; DOM.clearFilterBtn.classList.remove('hidden'); DOM.filterButtonsContainer.classList.add('hidden'); } else { DOM.trendingHeaderText.textContent = t('Trending Now'); DOM.clearFilterBtn.classList.add('hidden'); DOM.filterButtonsContainer.classList.remove('hidden'); document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value)); } displayTrends(); };
-        function populateCategoryFilters() { categories = Array.from(new Set(allTrends.map(t => t.category))).sort(); const allCats = ['All', ...categories]; DOM.filterButtonsContainer.innerHTML = ''; allCats.forEach(category => { const button = document.createElement('button'); button.className = 'filter-btn'; button.textContent = category; button.dataset.filter = category; if (category === currentFilter.value) button.classList.add('active'); DOM.filterButtonsContainer.appendChild(button); }); };
-        function populatePreferenceCheckboxes() { categories = Array.from(new Set(allTrends.map(t => t.category))).sort(); DOM.preferencesGrid.innerHTML = ''; categories.forEach(category => { const item = document.createElement('div'); item.className = 'preference-item'; item.innerHTML = `<label><input type="checkbox" name="preference" value="${category}"> ${category}</label>`; DOM.preferencesGrid.appendChild(item); }); };
-        function updateAuthUI() { DOM.body.className = ''; if (user.isLoggedIn) { DOM.body.classList.add('logged-in'); DOM.signInBtn.classList.add('hidden'); DOM.userMenu.classList.remove('hidden'); DOM.userEmailBtn.textContent = user.email; DOM.dropdownHeader.textContent = user.email; DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType === 'work'); if (user.accountType === 'work') { DOM.body.classList.add('work-account-view'); } else if (user.accountType === 'personal') { DOM.body.classList.add('personal-account-view'); } } else { DOM.signInBtn.classList.remove('hidden'); DOM.userMenu.classList.add('hidden'); DOM.navForU.classList.add('hidden'); } displayTrends(); };
-        function signIn(type) { user = { isLoggedIn: true, accountType: type, email: type === 'personal' ? 'privatemail@gmail.com' : 'pro@company.com', preferences: [], hasSetPreferences: false, followedTrends: [] }; closeModal('login-choice-modal'); updateAuthUI(); if (type === 'work' && !user.hasSetPreferences) { populatePreferenceCheckboxes(); openModal('preferences-modal'); } };
-        function generateCategoryLeaderboards(containerId, categoriesToShow) { const container = document.getElementById(containerId); container.innerHTML = ''; categoriesToShow.sort().forEach(category => { const topTrends = allTrends.filter(t => t.category === category).sort((a,b) => (user.followedTrends.includes(b.id) - user.followedTrends.includes(a.id)) || getTrendMetric(b) - getTrendMetric(a)).slice(0,3); if(topTrends.length > 0) { const leaderboardDiv = document.createElement('div'); leaderboardDiv.className = 'leaderboard-widget'; let listItems = topTrends.map(t => `<li><span>${truncateText(t.title, 25)}</span><span class="stat-display">${getTrendMetric(t)} 🔥</span></li>`).join(''); leaderboardDiv.innerHTML = `<h4>Top in ${category}</h4><ol>${listItems}</ol>`; container.appendChild(leaderboardDiv); } }); };
-        function getTopCategories(n = 3) { const counts = {}; allTrends.forEach(t => { counts[t.category] = (counts[t.category] || 0) + 1; }); return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,n).map(([cat])=>cat); }
-        function loadSeenTrends() { try { return JSON.parse(localStorage.getItem('seenTrends') || '[]'); } catch (_) { return []; } };
-        function saveSeenTrendKey(key) { try { const seen = new Set(loadSeenTrends()); if (!seen.has(key)) { seen.add(key); localStorage.setItem('seenTrends', JSON.stringify(Array.from(seen))); } } catch (_) {} };
-        function makeTrendKey(trend) { return `${(trend.title||'').trim()}|${(trend.source||'').trim()}|${(trend.date||'').trim()}`.toLowerCase(); };
-        function seededRandom(seed){ let x = Math.sin(seed) * 10000; return x - Math.floor(x); }
-        function shuffleArray(arr, seed = Date.now() % 1000) { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(seededRandom(seed + i) * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-        function applyTrendOrdering() { const seenKeys = new Set(loadSeenTrends()); const unseen = []; const seen = []; allTrends.forEach(t => { (seenKeys.has(makeTrendKey(t)) ? seen : unseen).push(t); }); const shuffledUnseen = shuffleArray(unseen); allTrends = [...shuffledUnseen, ...seen]; };
-        function getAnalyzeFnBase() { return '/.netlify/functions'; }
-        function truncateText(text, maxLength = 180) { if (!text) return ''; if (text.length <= maxLength) return text; const cut = text.slice(0, maxLength); const lastSpace = cut.lastIndexOf(' '); return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '…'; };
-        function getTrendMetric(trend) { return Number(trend?.votes || 0); };
-        function getMetricLabel() { return currentLanguage==='vi' ? 'Bình chọn' : 'Votes'; };
-        function getLocalizedTrendText(trend) { if (currentLanguage === 'vi') { return { title: trend.title_vi || trend.title, description: trend.description_vi || trend.description }; } else { return { title: trend.title_en || trend.title, description: trend.description_en || trend.description }; } };
-        function generateMonthRange(start, end) { const res = []; const s = new Date(start); const e = new Date(end); s.setDate(1); e.setDate(1); while (s <= e) { const y = s.getFullYear(); const m = String(s.getMonth()+1).padStart(2, '0'); res.push(`${y}-${m}`); s.setMonth(s.getMonth()+1); } return res; };
-        function monthKeyToLabel(key) { const [y,m] = key.split('-'); return `${m}/${y.slice(-2)}`; };
-        function generateSeriesForMonths(trend, monthKeys) { const baseVotes = Math.max(10, Number(getTrendMetric(trend)) || 100); const trendDate = new Date(trend.date || Date.now()); const anchorKey = `${trendDate.getFullYear()}-${String(trendDate.getMonth()+1).padStart(2,'0')}`; const anchorIndex = monthKeys.indexOf(anchorKey); const seed = (trend.id || 1) + (trend.title ? trend.title.length : 0); const arr = new Array(monthKeys.length).fill(0); for (let i = 0; i < monthKeys.length; i++) { const dist = anchorIndex === -1 ? (i - Math.floor(monthKeys.length/2)) : (i - anchorIndex); const decay = Math.exp(-Math.abs(dist) * 0.35); const noise = (Math.sin(seed + i*1.13) + Math.cos(seed*0.37 + i*0.71)) * 0.05; const value = baseVotes * (0.6 + 0.4*decay) * (1 + noise); arr[i] = anchorIndex === -1 ? 0 : Math.max(0, Math.round(value)); } return arr; };
-        function getColorPalette(count) { const base = [ { stroke: 'rgba(161,0,255,1)', fill: 'rgba(161,0,255,0.15)' }, { stroke: 'rgba(0,200,255,1)', fill: 'rgba(0,200,255,0.15)' }, { stroke: 'rgba(0,230,150,1)', fill: 'rgba(0,230,150,0.15)' }, { stroke: 'rgba(255,180,0,1)', fill: 'rgba(255,180,0,0.15)' }, { stroke: 'rgba(255,99,132,1)', fill: 'rgba(255,99,132,0.15)' }, { stroke: 'rgba(153,102,255,1)', fill: 'rgba(153,102,255,0.15)' } ]; if (count <= base.length) return base.slice(0, count); const extra = []; for (let i = 0; i < count - base.length; i++) { const hue = Math.floor((i / (count - base.length + 1)) * 360); extra.push({ stroke: `hsl(${hue}, 90%, 60%)`, fill: `hsla(${hue}, 90%, 60%, 0.15)` }); } return base.concat(extra); };
-        function generateMiniSeries(trend, analysis) { const parseDate = (d) => d ? new Date(d) : null; const endDate = parseDate(trend.endDate) || new Date(); const startCandidate = parseDate(trend.startDate) || parseDate(trend.date); const startDate = startCandidate ? new Date(startCandidate) : new Date(endDate); if (!startCandidate) startDate.setMonth(endDate.getMonth() - 3); const monthKeys = generateMonthRange(new Date(startDate.getFullYear(), startDate.getMonth(), 1).toISOString().slice(0,10), new Date(endDate.getFullYear(), endDate.getMonth(), 1).toISOString().slice(0,10)); const labels = monthKeys.map(monthKeyToLabel); const base = Math.max(10, Math.min(2000000, getTrendMetric(trend) || 100)); const growth = (analysis && typeof analysis.growthRate === 'number') ? analysis.growthRate : 0.05; const seed = (trend.id || 1) + (trend.title ? trend.title.length : 0); const series = []; let value = Math.max(10, base * 0.5); for (let i = 0; i < labels.length; i++) { const noise = (Math.sin(seed + i * 1.7) + Math.cos(seed * 0.3 + i)) * 0.03; value = value * (1 + growth * 0.25 + noise); series.push(Number(value.toFixed(2))); } return { labels, series }; };
-        function renderInlineTrendLineChart(containerEl, labels, series) { try { const chartWrap = document.createElement('div'); chartWrap.className = 'ai-insight-chart'; const canvas = document.createElement('canvas'); const cid = `ai-inline-chart-${Date.now()}-${Math.floor(Math.random()*1000)}`; canvas.id = cid; chartWrap.appendChild(canvas); containerEl.appendChild(chartWrap); const ctx = canvas.getContext('2d'); new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Interest', data: series, tension: 0.35, fill: false, borderColor: 'rgba(161, 0, 255, 1)', pointRadius: 2, pointBackgroundColor: 'rgba(161, 0, 255, 1)' }] }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#8a8da0' } }, y: { grid: { color: 'rgba(45, 46, 73, 0.5)' }, ticks: { color: '#8a8da0' } } } } }); } catch(_){} };
         
-        // MODIFIED: This function now calls the serverless API for insights.
-        async function getAIInsight(trend, promptType = 'general') {
-            try {
-                // We'll treat this as a "general" analysis for now.
-                const analysis = await analyzeTrendWithAPI(trend, 'general');
-                // The serverless function returns an object, so we return the summary text.
-                return analysis.summary || "No summary available from AI.";
-            } catch (error) {
-                console.error("Error getting AI insight via serverless function:", error);
-                throw error; // Re-throw the error to be caught by the caller
-            }
+        // Fallback semi-realistic trends for demo/local use
+        function loadMockTrends(){
+            allTrends = [
+                { id: 1, title: 'OpenAI o4-mini API adoption surges among indie apps', description: 'Các dev indie đang chuyển sang o4-mini vì chi phí thấp và hiệu năng tốt.', category: 'Technology', tags: ['OpenAI','API','AI'], votes: 820, source: 'https://openai.com', date: '2025-06-10', submitter: 'TrendPulse' },
+                { id: 2, title: 'Apple Intelligence xuất hiện trên iOS 18 beta', description: 'Tính năng AI on-device và Private Cloud Compute gây chú ý.', category: 'Technology', tags: ['Apple','iOS18','AI'], votes: 740, source: 'https://www.apple.com', date: '2025-06-08', submitter: 'TrendPulse' },
+                { id: 3, title: 'Ethereum ETF chính thức giao dịch tại Mỹ', description: 'Thị trường crypto sôi động khi ETF ETH đi vào hoạt động.', category: 'Crypto', tags: ['Ethereum','ETF','SEC'], votes: 690, source: 'https://www.sec.gov', date: '2025-05-24', submitter: 'MarketWatch' },
+                { id: 4, title: 'NVIDIA Blackwell bắt đầu giao hàng cho đối tác', description: 'GPU thế hệ Blackwell hướng tới inference ở quy mô lớn.', category: 'Technology', tags: ['NVIDIA','GPU','Blackwell'], votes: 775, source: 'https://www.nvidia.com', date: '2025-05-30', submitter: 'NVIDIA' },
+                { id: 5, title: 'TikTok: trào lưu NPC livestream quay trở lại', description: 'Content NPC biến tấu với hiệu ứng mới thu hút lượt xem.', category: 'TikTok', tags: ['NPC','Live','Meme'], votes: 520, source: 'https://www.tiktok.com', date: '2025-06-05', submitter: '@creator' },
+                { id: 6, title: 'Quiet Luxury trở lại trong BST Xuân/Hè 2025', description: 'Tối giản, chất liệu cao cấp và gam màu trung tính lên ngôi.', category: 'Fashion', tags: ['QuietLuxury','SS25','Minimal'], votes: 310, source: 'https://www.vogue.com', date: '2025-05-20', submitter: 'Vogue' },
+                { id: 7, title: 'Threads chạm mốc 200M MAU', description: 'Tốc độ tăng trưởng ổn định với cải tiến tính năng cộng đồng.', category: 'Social', tags: ['Meta','Threads','MAU'], votes: 430, source: 'https://about.fb.com', date: '2025-05-28', submitter: 'Meta' },
+                { id: 8, title: 'AI shopping agents thử nghiệm tại các sàn TMĐT', description: 'Agent tự động so sánh giá, đánh giá và tư vấn mua hàng.', category: 'AI', tags: ['Agent','Ecommerce','Recommendation'], votes: 485, source: 'https://shopify.dev', date: '2025-06-02', submitter: 'EcomLab' },
+                { id: 9, title: 'MrBeast tung video thử thách 10 triệu đô', description: 'Video viral phá kỷ lục lượt xem 24h đầu.', category: 'Entertainment', tags: ['YouTube','MrBeast','Viral'], votes: 650, source: 'https://www.youtube.com/@MrBeast', date: '2025-06-06', submitter: 'YTWatch' },
+                { id: 10, title: 'Taylor Swift mở rộng tour châu Á', description: 'Thêm suất diễn khiến fandom bùng nổ thảo luận.', category: 'Entertainment', tags: ['TaylorSwift','Tour','Asia'], votes: 570, source: 'https://www.taylorswift.com', date: '2025-05-18', submitter: 'Billboard' },
+                { id: 11, title: 'Hacker News: bàn luận về WASM trong backend', description: 'WASM dần thực dụng hơn cho microservices.', category: 'News', tags: ['HackerNews','WASM','Backend'], votes: 220, source: 'https://news.ycombinator.com', date: '2025-06-04', submitter: 'hn' },
+                { id: 12, title: 'Snapchat AR filters phiên bản MyAI trending', description: 'Bộ lọc kết hợp AI real-time tăng tương tác đáng kể.', category: 'Social', tags: ['Snapchat','AR','AI'], votes: 360, source: 'https://newsroom.snap.com', date: '2025-05-29', submitter: 'Snap' },
+                { id: 13, title: 'Esports SEA mở rộng nội dung thi đấu 2025', description: 'Thêm tựa game mới và khán giả tăng tại Đông Nam Á.', category: 'Gaming', tags: ['Esports','SEA','Tournament'], votes: 295, source: 'https://www.oneesports.gg', date: '2025-05-22', submitter: 'OneEsports' },
+                { id: 14, title: 'Instagram Reels âm nhạc Việt thịnh hành', description: 'Các track V-pop leo top nhờ challenge dance.', category: 'Instagram', tags: ['Reels','Vpop','Dance'], votes: 335, source: 'https://www.instagram.com', date: '2025-06-03', submitter: '@musiclabel' },
+                { id: 15, title: 'Zelda live-action rò rỉ teaser fanmade chất lượng cao', description: 'Cộng đồng tranh luận về khả năng chính thức.', category: 'Entertainment', tags: ['Zelda','LiveAction','Teaser'], votes: 250, source: 'https://www.reddit.com/r/movies', date: '2025-05-12', submitter: 'Redditor' },
+
+                // OpenAI hashtag bổ sung
+                { id: 16, title: 'OpenAI mở rộng Assistants API với Realtime', description: 'Tính năng realtime nâng trải nghiệm voice AI.', category: 'Technology', tags: ['OpenAI','API','Realtime'], votes: 610, source: 'https://platform.openai.com', date: '2025-06-09', submitter: 'OpenAI' },
+                { id: 17, title: 'OpenAI Store: plugin/extension AI bùng nổ', description: 'Hệ sinh thái tiện ích giúp dev tích hợp nhanh.', category: 'Technology', tags: ['OpenAI','Store','Plugins'], votes: 455, source: 'https://openai.com', date: '2025-05-27', submitter: 'TrendPulse' },
+                { id: 18, title: 'OpenAI đưa ra guideline an toàn hình ảnh', description: 'Chuẩn kiểm duyệt hình ảnh AI rõ ràng hơn.', category: 'AI', tags: ['OpenAI','Safety','Images'], votes: 320, source: 'https://openai.com', date: '2025-05-30', submitter: 'AIWatch' },
+                { id: 19, title: 'OpenAI Code model cải thiện LLM reasoning', description: 'Tối ưu chain-of-thought và tool use.', category: 'Technology', tags: ['OpenAI','Code','LLM'], votes: 540, source: 'https://openai.com/research', date: '2025-06-01', submitter: 'Research' },
+                { id: 20, title: 'OpenAI hợp tác hãng chip cho inference tiết kiệm', description: 'Chi phí inference giảm, phổ cập ứng dụng AI.', category: 'AI', tags: ['OpenAI','Inference','Cost'], votes: 490, source: 'https://openai.com', date: '2025-05-25', submitter: 'MarketMind' },
+                { id: 21, title: 'OpenAI cập nhật policy sản phẩm sáng tạo', description: 'Tính minh bạch và attribution được cải thiện.', category: 'News', tags: ['OpenAI','Policy','Creators'], votes: 210, source: 'https://openai.com/policies', date: '2025-05-14', submitter: 'Newsroom' },
+                { id: 22, title: 'OpenAI mở chương trình hỗ trợ startup giáo dục', description: 'Tài trợ công cụ và tín dụng API.', category: 'Education', tags: ['OpenAI','Startup','Education'], votes: 275, source: 'https://openai.com', date: '2025-05-26', submitter: 'EdTech' },
+                { id: 23, title: 'OpenAI demo multi-agent phối hợp tác vụ', description: 'Các agent chia việc và tổng hợp kết quả.', category: 'AI', tags: ['OpenAI','Agents','Collaboration'], votes: 365, source: 'https://openai.com', date: '2025-06-07', submitter: 'AI Lab' },
+                { id: 24, title: 'OpenAI voice cloning kiểm thử nội bộ', description: 'Giới hạn phạm vi để đảm bảo an toàn.', category: 'AI', tags: ['OpenAI','Voice','Safety'], votes: 305, source: 'https://openai.com', date: '2025-05-31', submitter: 'AI Safety' },
+                { id: 25, title: 'OpenAI API giảm giá model mid-tier', description: 'Khuyến khích chuyển dịch từ model cũ.', category: 'Technology', tags: ['OpenAI','Pricing','API'], votes: 580, source: 'https://platform.openai.com/pricing', date: '2025-06-03', submitter: 'DevRel' },
+
+                // TikTok hashtag bổ sung
+                { id: 26, title: 'TikTok #NPC biến tấu tương tác mới', description: 'Hiệu ứng phản ứng tức thì tăng tương tác.', category: 'TikTok', tags: ['TikTok','NPC','Meme'], votes: 390, source: 'https://www.tiktok.com', date: '2025-06-10', submitter: '@tiktoker' },
+                { id: 27, title: 'TikTok #DanceChallenge lan rộng Đông Nam Á', description: 'Âm nhạc V-pop tạo trend nhảy.', category: 'TikTok', tags: ['TikTok','Dance','Challenge'], votes: 420, source: 'https://www.tiktok.com', date: '2025-06-08', submitter: '@dancer' },
+                { id: 28, title: 'TikTok #StudyWithMe trở lại mùa thi', description: 'Livestream học tập dài giờ.', category: 'TikTok', tags: ['TikTok','StudyWithMe','Live'], votes: 260, source: 'https://www.tiktok.com', date: '2025-05-29', submitter: '@student' },
+                { id: 29, title: 'TikTok #GRWM mùa hè', description: 'Thời trang nhẹ nhàng, màu pastel.', category: 'TikTok', tags: ['TikTok','GRWM','Fashion'], votes: 275, source: 'https://www.tiktok.com', date: '2025-06-02', submitter: '@fashion' },
+                { id: 30, title: 'TikTok #AItools review hàng tuần', description: 'Creator giới thiệu công cụ AI mới.', category: 'TikTok', tags: ['TikTok','AItools','Review'], votes: 315, source: 'https://www.tiktok.com', date: '2025-06-04', submitter: '@creator' },
+                { id: 31, title: 'TikTok #BookTok đẩy doanh số sách', description: 'Các tựa sách romance bùng nổ.', category: 'TikTok', tags: ['TikTok','BookTok','Reading'], votes: 245, source: 'https://www.tiktok.com', date: '2025-05-26', submitter: '@booklover' },
+                { id: 32, title: 'TikTok #FoodHack với airfryer', description: 'Món ăn sáng nhanh gọn.', category: 'TikTok', tags: ['TikTok','FoodHack','Airfryer'], votes: 288, source: 'https://www.tiktok.com', date: '2025-06-01', submitter: '@chef' },
+                { id: 33, title: 'TikTok #TravelVN khám phá đảo Phú Quý', description: 'Cảnh đẹp hoang sơ viral.', category: 'TikTok', tags: ['TikTok','TravelVN','Vlog'], votes: 330, source: 'https://www.tiktok.com', date: '2025-06-06', submitter: '@traveler' },
+                { id: 34, title: 'TikTok #SkincareRoutine tối giản', description: '3 bước cơ bản hiệu quả.', category: 'TikTok', tags: ['TikTok','Skincare','Routine'], votes: 270, source: 'https://www.tiktok.com', date: '2025-05-30', submitter: '@beauty' },
+                { id: 35, title: 'TikTok #GymMotivation cho người bận rộn', description: 'Bài tập 20 phút mỗi ngày.', category: 'TikTok', tags: ['TikTok','Gym','Motivation'], votes: 295, source: 'https://www.tiktok.com', date: '2025-06-03', submitter: '@coach' },
+
+                // Thêm các trend cũ/đang hot (không nhân bản)
+                { id: 36, title: 'Reddit IPO tạo sóng trên thị trường', description: 'Mốc sự kiện lớn với cộng đồng internet.', category: 'News', tags: ['Reddit','IPO','Market'], votes: 510, source: 'https://www.reuters.com', date: '2024-03-21', submitter: 'Reuters' },
+                { id: 37, title: 'Threads ra mắt, vượt 100M người dùng trong 5 ngày', description: 'Kỷ lục đăng ký nhanh nhất thời điểm đó.', category: 'Social', tags: ['Threads','Meta','Launch'], votes: 680, source: 'https://about.fb.com', date: '2023-07-10', submitter: 'Meta' },
+                { id: 38, title: 'ChatGPT phổ cập AI cho đại chúng', description: 'Ứng dụng AI tạo sinh đầu tiên đạt quy mô đại trà.', category: 'AI', tags: ['ChatGPT','OpenAI','LLM'], votes: 980, source: 'https://openai.com', date: '2023-12-01', submitter: 'OpenAI' },
+                { id: 39, title: 'Midjourney thúc đẩy làn sóng AI hình ảnh', description: 'Cộng đồng sáng tạo hình ảnh bùng nổ.', category: 'AI', tags: ['Midjourney','Generative','Art'], votes: 720, source: 'https://www.midjourney.com', date: '2023-08-20', submitter: 'MJ' },
+                { id: 40, title: 'Bitcoin halving và chu kỳ tăng giá', description: 'Sự kiện giảm một nửa phần thưởng khối gây chú ý.', category: 'Crypto', tags: ['Bitcoin','Halving','Market'], votes: 860, source: 'https://www.coindesk.com', date: '2024-04-20', submitter: 'CoinDesk' },
+                { id: 41, title: 'Barbie movie trở thành hiện tượng văn hoá', description: 'Marketing xuất sắc và hiệu ứng mạng xã hội.', category: 'Entertainment', tags: ['Barbie','Movie','Marketing'], votes: 640, source: 'https://www.boxofficemojo.com', date: '2023-08-01', submitter: 'BoxOffice' },
+                { id: 42, title: 'Elden Ring DLC gây sốt cộng đồng game', description: 'Khó, đẹp và giàu nội dung khám phá.', category: 'Gaming', tags: ['EldenRing','DLC','FromSoftware'], votes: 560, source: 'https://store.steampowered.com', date: '2024-06-25', submitter: 'Steam' },
+                { id: 43, title: 'Taylor Swift Eras Tour hiệu ứng kinh tế', description: 'Đóng góp lớn cho doanh thu địa phương.', category: 'Entertainment', tags: ['TaylorSwift','ErasTour','Economy'], votes: 740, source: 'https://www.bloomberg.com', date: '2024-02-15', submitter: 'Bloomberg' },
+                { id: 44, title: 'CapCut giúp video ngắn lan toả', description: 'Công cụ chỉnh sửa dễ dùng, miễn phí.', category: 'Social', tags: ['CapCut','ShortVideo','Creator'], votes: 520, source: 'https://www.capcut.com', date: '2023-09-12', submitter: 'Bytedance' },
+                { id: 45, title: 'DALL·E và ổn định hình ảnh sáng tạo', description: 'Sáng tạo quảng cáo và ý tưởng nhanh chóng.', category: 'AI', tags: ['DALLE','Creative','Ads'], votes: 610, source: 'https://openai.com', date: '2024-01-18', submitter: 'CreativeLab' },
+
+                // Late 2024 — Early 2025 highlights
+                { id: 46, title: 'Apple iPhone 16: AI tính năng bắt đầu rollout', description: 'Tập trung on-device AI và cải thiện camera computational.', category: 'Technology', tags: ['Apple','iPhone16','AI'], votes: 640, source: 'https://www.apple.com', date: '2024-10-25', submitter: 'Apple' },
+                { id: 47, title: 'Spotify AI DJ đạt đỉnh người dùng cuối 2024', description: 'Tính năng AI DJ thu hút người dùng trẻ và Gen Z.', category: 'Entertainment', tags: ['Spotify','AIDJ','Music'], votes: 420, source: 'https://newsroom.spotify.com', date: '2024-12-02', submitter: 'Spotify' },
+                { id: 48, title: 'TikTok Year-in-Review 2024: chủ đề nổi bật', description: 'Các hashtag ẩm thực, du lịch Việt và học tập lên top.', category: 'TikTok', tags: ['TikTok','YearInReview','VN'], votes: 510, source: 'https://www.tiktok.com', date: '2024-12-20', submitter: '@tiktokVN' },
+                { id: 49, title: 'CES 2025: làn sóng AI PC và agent trên desktop', description: 'Nhà sản xuất đồng loạt giới thiệu AI PC đầu 2025.', category: 'Technology', tags: ['CES2025','AIPC','Agent'], votes: 680, source: 'https://www.ces.tech', date: '2025-01-08', submitter: 'CES' },
+                { id: 50, title: 'Bitcoin ETF dòng tiền tiếp tục vào đầu 2025', description: 'Tín hiệu tích cực cho thị trường crypto.', category: 'Crypto', tags: ['Bitcoin','ETF','Flows'], votes: 600, source: 'https://www.coindesk.com', date: '2025-01-15', submitter: 'CoinDesk' },
+                { id: 51, title: 'OpenAI o4 series thâm nhập doanh nghiệp cuối 2024', description: 'Doanh nghiệp chuyển từ model cũ sang o4 vì hiệu quả.', category: 'AI', tags: ['OpenAI','o4','Enterprise'], votes: 570, source: 'https://openai.com', date: '2024-12-12', submitter: 'TrendPulse' },
+                { id: 52, title: 'Instagram Broadcast Channels bùng nổ tại VN', description: 'Creators dùng channel để cập nhật nội dung nhanh.', category: 'Instagram', tags: ['Instagram','Broadcast','VN'], votes: 355, source: 'https://www.instagram.com', date: '2024-11-18', submitter: '@creatorVN' },
+                { id: 53, title: 'YouTube Shorts cập nhật chia sẻ doanh thu 2025', description: 'Thu hút thêm creator chuyển sang nội dung ngắn.', category: 'Entertainment', tags: ['YouTube','Shorts','Monetization'], votes: 495, source: 'https://blog.youtube', date: '2025-02-05', submitter: 'YouTube' },
+                { id: 54, title: 'Steam Winter Sale 2024 lập kỷ lục', description: 'Lượng người dùng và doanh thu game tăng mạnh.', category: 'Gaming', tags: ['Steam','WinterSale','2024'], votes: 530, source: 'https://store.steampowered.com', date: '2024-12-27', submitter: 'Steam' },
+                { id: 55, title: 'Chiến dịch Tết 2025: thương hiệu đẩy mạnh social', description: 'Các chiến dịch Tết Kỷ Mùi lan tỏa mạnh trên mạng xã hội.', category: 'Social', tags: ['Tet2025','Campaign','VN'], votes: 460, source: 'https://news.google.com', date: '2025-02-08', submitter: 'AdWatch' },
+                { id: 56, title: 'V-pop ca khúc viral trên TikTok tháng 1/2025', description: 'Giai điệu bắt tai được remix rộng rãi.', category: 'TikTok', tags: ['Vpop','TikTok','Remix'], votes: 380, source: 'https://www.tiktok.com', date: '2025-01-22', submitter: '@musicVN' },
+                { id: 57, title: 'GenAI agents thử nghiệm cho CSKH đầu 2025', description: 'Giảm thời gian phản hồi và chi phí hỗ trợ.', category: 'AI', tags: ['Agent','Support','Automation'], votes: 520, source: 'https://www.zendesk.com', date: '2025-02-14', submitter: 'CXLab' },
+                { id: 58, title: 'NVIDIA công bố lộ trình Blackwell đầu năm', description: 'Tập trung inference hiệu quả và chi phí tối ưu.', category: 'Technology', tags: ['NVIDIA','Blackwell','Roadmap'], votes: 610, source: 'https://www.nvidia.com', date: '2025-01-10', submitter: 'NVIDIA' },
+                { id: 59, title: 'Ethereum L2 sử dụng tăng cuối 2024', description: 'Phí rẻ thúc đẩy hoạt động người dùng.', category: 'Crypto', tags: ['Ethereum','L2','Usage'], votes: 445, source: 'https://l2beat.com', date: '2024-12-18', submitter: 'L2Beat' },
+                { id: 60, title: 'Threads bổ sung tính năng lịch đăng 2025', description: 'Hỗ trợ lịch đăng giúp nhãn hàng duy trì tần suất.', category: 'Social', tags: ['Threads','Scheduler','Brands'], votes: 330, source: 'https://about.fb.com', date: '2025-02-02', submitter: 'Meta' }
+            ];
+            categories = Array.from(new Set(allTrends.map(t => t.category))).sort();
+            populateCategoryFilters();
+            displayTrends();
         }
-
-        // MODIFIED: This function is now the single source for all API analysis calls.
-        async function analyzeTrendWithAPI(trend, analysisType = 'general') {
-            try {
-                const fnBase = getAnalyzeFnBase();
-                const response = await fetch(`${fnBase}/analyze-trend`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ trendData: trend, analysisType: analysisType })
-                });
-                if (!response.ok) {
-                    throw new Error(`API error! status: ${response.status}`);
-                }
-                const result = await response.json();
-                return result.data; // The serverless function wraps data in a "data" property
-            } catch (error) {
-                console.error('Error calling analyze-trend API:', error);
-                // Return a structured error object so the UI can handle it
-                throw new Error("Could not connect to the analysis service.");
-            }
-        };
-
+        
+        randomizeWorkData = () => { const mockSubmitters = ['InnovatorX', 'TrendSpotter', 'FutureCast', 'AI Analyzed', 'DataDiver', 'MarketMind']; allTrends.forEach(trend => { trend.submitter = mockSubmitters[Math.floor(Math.random() * mockSubmitters.length)]; }); };
+        createTrendCard = (trend) => { const trendCard = document.createElement('div'); trendCard.className = 'trend-card'; trendCard.dataset.trendId = trend.id; const { title: localizedTitle, description: localizedDesc } = getLocalizedTrendText(trend); const simpleInsight = getSimpleDateInsight(trend.date); const isFollowed = user.followedTrends.includes(trend.id); const pastStatus = getTrendPastStatus(trend.date); const pastBadge = pastStatus ? `<span class="tag status past">${currentLanguage==='vi' ? 'Đã qua thời' : 'Past'}</span>` : ''; trendCard.innerHTML = ` <div class="trend-card-header"> <h3 class="trend-title" data-title="${localizedTitle}">${localizedTitle}</h3> <div class="trend-meta"> <span class="trend-meta-submitter">by ${trend.submitter}</span> <span class="trend-meta-date"><br>on ${trend.date}</span> </div> </div> <p class="trend-description">${localizedDesc}</p> <div class="trend-ai-insight">${simpleInsight}</div> <div class="trend-footer"> <div class="trend-tags"> <span class="tag category">${trend.category}</span> ${pastBadge} ${trend.tags.map(tag => `<span class=\"tag hashtag\" data-tag=\"${tag}\">#${tag}</span>`).join('')} </div> <div class="trend-actions"> <a href="${trend.source}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a> <button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}" data-analysis-type="general">${t('🔍 Analyze')}</button> <button class="btn btn-follow ${isFollowed ? 'followed' : ''}" data-id="${trend.id}">${isFollowed ? t('Following') : t('❤️ Follow')}</button> </div> </div>`; return trendCard; };
+        getSimpleDateInsight = (dateString) => { if (!dateString) return ''; const trendDate = new Date(dateString); const may2025 = new Date('2025-05-01'); const jan2025 = new Date('2025-01-01'); if (trendDate >= may2025) { return 'This trend is currently rising and expected to grow.'; } else if (trendDate < jan2025) { return 'This trend has already peaked and is considered part of a past wave.'; } return ''; };
+        getTrendPastStatus = (dateString) => { if (!dateString) return false; const trendDate = new Date(dateString); const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - 3); return trendDate < cutoff; };
+        displayTrends = () => { let listElement, footerButton, trendsToFilter; if (currentView === 'forU') { listElement = DOM.forUTrendsList; footerButton = DOM.forULoadMoreBtn; const preferenceTrends = allTrends.filter(t => user.preferences.includes(t.category)); const followedTrends = allTrends.filter(t => user.followedTrends.includes(t.id)); const combined = [...followedTrends, ...preferenceTrends]; const uniqueTrendIds = new Set(combined.map(t => t.id)); trendsToFilter = Array.from(uniqueTrendIds).map(id => allTrends.find(t => t.id === id)); generateCategoryLeaderboards('for-u-leaderboards', user.preferences); } else { listElement = DOM.trendsList; footerButton = DOM.loadMoreBtn; if (currentFilter.type === 'category' && currentFilter.value !== 'All') { trendsToFilter = allTrends.filter(t => t.category === currentFilter.value); } else if (currentFilter.type === 'tag') { trendsToFilter = allTrends.filter(t => t.tags.includes(currentFilter.value)); } else { trendsToFilter = allTrends; } } listElement.innerHTML = ''; displayedTrends[currentView] = 0; const trendsToDisplay = trendsToFilter.slice(0, TRENDS_PER_PAGE); trendsToDisplay.forEach(trend => { listElement.appendChild(createTrendCard(trend)); try { saveSeenTrendKey(makeTrendKey(trend)); } catch(_){} }); displayedTrends[currentView] = trendsToDisplay.length; footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length || trendsToFilter.length === 0); };
+        switchView = (view) => { currentView = view; if (view === 'forU') { DOM.mainViewContainer.classList.add('hidden'); DOM.forUViewContainer.classList.remove('hidden'); } else { DOM.forUViewContainer.classList.add('hidden'); DOM.mainViewContainer.classList.remove('hidden'); } displayTrends(); };
+        loadMoreTrends = () => { let listElement, footerButton, trendsToFilter; if (currentView === 'forU') { listElement = DOM.forUTrendsList; footerButton = DOM.forULoadMoreBtn; const uniqueTrendIds = new Set([...allTrends.filter(t => user.preferences.includes(t.category)).map(t=>t.id), ...user.followedTrends]); trendsToFilter = Array.from(uniqueTrendIds).map(id => allTrends.find(t => t.id === id)); } else { listElement = DOM.trendsList; footerButton = DOM.loadMoreBtn; if (currentFilter.type === 'category' && currentFilter.value !== 'All') { trendsToFilter = allTrends.filter(t => t.category === currentFilter.value); } else if (currentFilter.type === 'tag') { trendsToFilter = allTrends.filter(t => t.tags.includes(currentFilter.value)); } else { trendsToFilter = allTrends; } } const nextTrends = trendsToFilter.slice(displayedTrends[currentView], displayedTrends[currentView] + TRENDS_PER_PAGE); nextTrends.forEach(trend => { listElement.appendChild(createTrendCard(trend)); try { saveSeenTrendKey(makeTrendKey(trend)); } catch(_){} }); displayedTrends[currentView] += nextTrends.length; footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length); };
+        updateUIForFilter = () => { if (currentFilter.type === 'tag') { DOM.trendingHeaderText.textContent = `${t('Trends for')} #${currentFilter.value}`; DOM.clearFilterBtn.classList.remove('hidden'); DOM.filterButtonsContainer.classList.add('hidden'); } else { DOM.trendingHeaderText.textContent = t('Trending Now'); DOM.clearFilterBtn.classList.add('hidden'); DOM.filterButtonsContainer.classList.remove('hidden'); document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value)); } displayTrends(); };
+        populateCategoryFilters = () => { const allCats = ['All', ...categories.filter(c => c !== 'All').sort()]; DOM.filterButtonsContainer.innerHTML = ''; allCats.forEach(category => { const button = document.createElement('button'); button.className = 'filter-btn'; button.textContent = category; button.dataset.filter = category; if (category === currentFilter.value) button.classList.add('active'); DOM.filterButtonsContainer.appendChild(button); }); };
+        populatePreferenceCheckboxes = () => { DOM.preferencesGrid.innerHTML = ''; categories.sort().forEach(category => { const item = document.createElement('div'); item.className = 'preference-item'; item.innerHTML = `<label><input type="checkbox" name="preference" value="${category}"> ${category}</label>`; DOM.preferencesGrid.appendChild(item); }); };
+        updateAuthUI = () => { DOM.body.className = ''; if (user.isLoggedIn) { DOM.body.classList.add('logged-in'); DOM.signInBtn.classList.add('hidden'); DOM.userMenu.classList.remove('hidden'); DOM.userEmailBtn.textContent = user.email; DOM.dropdownHeader.textContent = user.email; DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType === 'work'); if (user.accountType === 'work') { DOM.body.classList.add('work-account-view'); randomizeWorkData(); } else if (user.accountType === 'personal') { DOM.body.classList.add('personal-account-view'); } } else { DOM.signInBtn.classList.remove('hidden'); DOM.userMenu.classList.add('hidden'); DOM.navForU.classList.add('hidden'); } allTrends.forEach(t => t.isFollowed = false); displayTrends(); };
+        signIn = (type) => { user = { isLoggedIn: true, accountType: type, email: type === 'personal' ? 'privatemail@gmail.com' : 'pro@company.com', preferences: [], hasSetPreferences: false, followedTrends: [] }; closeModal('login-choice-modal'); updateAuthUI(); if (type === 'work' && !user.hasSetPreferences) { populatePreferenceCheckboxes(); openModal('preferences-modal'); } };
+        generateCategoryLeaderboards = (containerId, categoriesToShow) => { const container = document.getElementById(containerId); container.innerHTML = ''; categoriesToShow.sort().forEach(category => { const topTrends = allTrends.filter(t => t.category === category).sort((a,b) => (user.followedTrends.includes(b.id) - user.followedTrends.includes(a.id)) || b.votes - a.votes).slice(0,3); if(topTrends.length > 0) { const leaderboardDiv = document.createElement('div'); leaderboardDiv.className = 'leaderboard-widget'; let listItems = topTrends.map(t => `<li><span>${t.title}</span><span class=\"vote-display\">${t.votes} 🔥</span></li>`).join(''); leaderboardDiv.innerHTML = `<h4>Top in ${category}</h4><ol>${listItems}</ol>`; container.appendChild(leaderboardDiv); } }); };
+        function getTopCategories(n = 3) { const counts = {}; allTrends.forEach(t => { counts[t.category] = (counts[t.category] || 0) + 1; }); return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,n).map(([cat])=>cat); }
         createHotTrendsChart = () => {
             const canvas = document.getElementById('hot-trends-chart');
-            if (!canvas) return;
             const ctx = canvas.getContext('2d');
-            if (hotTrendsChart) hotTrendsChart.destroy();
-
-            const followedTrends = allTrends.filter(trend => user.followedTrends.includes(trend.id));
-            const chartTitleEl = document.querySelector('#hot-trends-container h4');
-            let trendsForChart;
-            let startDate, endDate;
-
-            if (user.isLoggedIn && user.accountType === 'work' && followedTrends.length > 0) {
-                trendsForChart = followedTrends.slice(0, 10);
-                if (chartTitleEl) chartTitleEl.textContent = t('Your Followed Trends');
-            } else {
-                trendsForChart = allTrends
-                    .sort((a, b) => (getTrendMetric(b) || 0) - (getTrendMetric(a) || 0))
-                    .slice(0, 6);
-                if (chartTitleEl) chartTitleEl.textContent = t('Currently Hot Trends (Overall)');
-            }
-
-            const allDates = trendsForChart
-                .map(t => new Date(t.date))
-                .filter(d => !isNaN(d.getTime())); 
-
-            if (allDates.length > 0) {
-                const minDate = new Date(Math.min(...allDates));
-                const maxDate = new Date(Math.max(...allDates));
-                
-                startDate = new Date(minDate.getFullYear(), minDate.getMonth() - 2, 1);
-                endDate = new Date(maxDate.getFullYear(), maxDate.getMonth() + 2, 1);
-            } else {
-                endDate = new Date();
-                startDate = new Date();
-                startDate.setMonth(endDate.getMonth() - 7);
-            }
-
-            const monthKeys = generateMonthRange(startDate, endDate);
+            if(hotTrendsChart) hotTrendsChart.destroy();
+            // Build monthly series for period Jan 2025 to Aug 2025
+            const monthKeys = generateMonthRange('2025-01-01', '2025-08-31');
             const labels = monthKeys.map(monthKeyToLabel);
-            
+            // Filter hot trends in this window and pick top N by votes
+            const startWindow = new Date('2025-01-01');
+            const endWindow = new Date('2025-08-31');
+            const inWindow = allTrends.filter(t => {
+                const d = new Date(t.date || Date.now());
+                return d >= startWindow && d <= endWindow;
+            }).sort((a,b)=> (b.votes||0) - (a.votes||0)).slice(0,6);
+
+            // If no trends in window, fallback to aggregated line
             let datasets;
-            if (trendsForChart.length === 0) {
-                datasets = [{ label: getMetricLabel(), data: [], borderColor: 'rgba(161,0,255,1)' }];
-            } else {
-                const palette = getColorPalette(trendsForChart.length);
-                datasets = trendsForChart.map((t, idx) => ({
-                    label: truncateText(t.title, 30),
-                    data: generateSeriesForMonths(t, monthKeys),
-                    borderColor: palette[idx].stroke,
-                    backgroundColor: palette[idx].fill,
-                    tension: 0.35,
+            if (inWindow.length === 0) {
+                const fallbackData = aggregateVotesByMonth(allTrends, monthKeys);
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                gradient.addColorStop(0, 'rgba(161,0,255,1)');
+                gradient.addColorStop(1, 'rgba(181,64,255,1)');
+                datasets = [{
+                        label: getMetricLabel() + ' (sum by month)',
+                    data: fallbackData,
+                    borderColor: gradient,
+                    backgroundColor: 'rgba(161,0,255,0.15)',
+                    tension: 0.4,
                     pointRadius: 3,
-                    pointHoverRadius: 5,
                     fill: false,
                     borderWidth: 2
-                }));
+                }]
+            } else {
+                const palette = getColorPalette(inWindow.length);
+                datasets = inWindow.map((t, idx) => {
+                    const series = generateSeriesForMonths(t, monthKeys);
+                    return {
+                        label: t.title,
+                        data: series,
+                        borderColor: palette[idx].stroke,
+                        backgroundColor: palette[idx].fill,
+                        tension: 0.35,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        fill: false,
+                        borderWidth: 2
+                    };
+                });
             }
 
             function formatNumber(n){
@@ -747,8 +1089,16 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: true, position: 'bottom', labels: { color: '#8a8da0', boxWidth: 10, padding: 20 } },
-                        tooltip: { backgroundColor: '#1f2037', titleColor: '#e3e8f0', bodyColor: '#e3e8f0', borderColor: 'rgba(161,0,255,0.5)', borderWidth: 1, padding: 10, callbacks: { label: (ctx) => `${getMetricLabel()}: ${formatNumber(ctx.parsed.y)}` } }
+                        legend: { display: true, labels: { color: '#8a8da0', boxWidth: 10 } },
+                        tooltip: {
+                            backgroundColor: '#1f2037',
+                            titleColor: '#e3e8f0',
+                            bodyColor: '#e3e8f0',
+                            borderColor: 'rgba(161,0,255,0.5)',
+                            borderWidth: 1,
+                            padding: 10,
+                    callbacks: { label: (ctx) => `${getMetricLabel()}: ${formatNumber(ctx.parsed.y)}` }
+                        }
                     },
                     scales: {
                         x: { grid: { display: false }, ticks: { color: '#8a8da0' } },
@@ -761,44 +1111,531 @@
             generateCategoryLeaderboards('category-leaderboards', topCats.length ? topCats : ['Gaming','Technology','Fashion']);
         };
         
+        // Seen/ordering helpers
+        loadSeenTrends = () => {
+            try {
+                return JSON.parse(localStorage.getItem('seenTrends') || '[]');
+            } catch (_) { return []; }
+        };
+        saveSeenTrendKey = (key) => {
+            try {
+                const seen = new Set(loadSeenTrends());
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    localStorage.setItem('seenTrends', JSON.stringify(Array.from(seen)));
+                }
+            } catch (_) {}
+        };
+        makeTrendKey = (trend) => {
+            // khóa ổn định theo tiêu đề + nguồn + ngày
+            return `${(trend.title||'').trim()}|${(trend.source||'').trim()}|${(trend.date||'').trim()}`.toLowerCase();
+        };
+        function seededRandom(seed){ let x = Math.sin(seed) * 10000; return x - Math.floor(x); }
+        shuffleArray = (arr, seed = Date.now() % 1000) => {
+            // Fisher-Yates với seed nhẹ để giao diện trông mới
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(seededRandom(seed + i) * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        };
+        applyTrendOrdering = () => {
+            const seenKeys = new Set(loadSeenTrends());
+            const unseen = [];
+            const seen = [];
+            allTrends.forEach(t => { (seenKeys.has(makeTrendKey(t)) ? seen : unseen).push(t); });
+            const shuffledUnseen = shuffleArray(unseen);
+            allTrends = [...shuffledUnseen, ...seen];
+        };
+        
+        // Guess category from existing trends or fallback map
+        guessCategoryForTag = (tag) => {
+            const found = allTrends.find(t => (t.tags||[]).includes(tag));
+            if (found && found.category) return found.category;
+            const map = {
+                OpenAI: 'Technology', API: 'Technology', AI: 'AI', Realtime: 'Technology',
+                Apple: 'Technology', iOS18: 'Technology',
+                Ethereum: 'Crypto', Bitcoin: 'Crypto', Crypto: 'Crypto', NFT: 'Crypto',
+                NVIDIA: 'Technology', GPU: 'Technology', Blackwell: 'Technology',
+                TikTok: 'TikTok', Reels: 'Instagram', Instagram: 'Instagram', YouTube: 'Entertainment',
+                Threads: 'Social', Meta: 'Social', CapCut: 'Social',
+                Fashion: 'Fashion', QuietLuxury: 'Fashion',
+                HackerNews: 'News', WASM: 'Technology', Backend: 'Technology',
+                Esports: 'Gaming', Gaming: 'Gaming',
+                TaylorSwift: 'Entertainment', MrBeast: 'Entertainment', Barbie: 'Entertainment',
+                Midjourney: 'AI', DALLE: 'AI', LLM: 'AI'
+            };
+            return map[tag] || 'News';
+        };
+        
+        // Generate concise, context-aware Vietnamese description for a hashtag + token
+        generateDescriptionForTag = (tag, token) => {
+            const category = guessCategoryForTag(tag);
+            const tokenLeadMap = {
+                Update: 'Bản cập nhật mới nhất',
+                Trend: 'Xu hướng nổi bật',
+                Insight: 'Góc nhìn thực tế',
+                Report: 'Báo cáo ngắn',
+                Breakout: 'Đột phá tăng trưởng',
+                Milestone: 'Cột mốc đáng chú ý',
+                Buzz: 'Độ bàn luận tăng cao',
+                Roundup: 'Tổng hợp nhanh',
+                'How-to': 'Hướng dẫn thực hành',
+                'Case Study': 'Nghiên cứu tình huống',
+                Launch: 'Ra mắt/triển khai',
+                Collab: 'Hợp tác nhiều bên',
+                Highlight: 'Điểm nhấn tuần'
+            };
+            const lead = tokenLeadMap[token] || 'Cập nhật';
+            let tail;
+            switch (category) {
+                case 'AI':
+                case 'Technology':
+                    tail = 'Tập trung ứng dụng thực tế, tác động tới dev/creator và chi phí vận hành.';
+                    break;
+                case 'TikTok':
+                case 'Instagram':
+                case 'Social':
+                    tail = 'Nêu ví dụ nội dung hiệu quả, mẹo tối ưu tương tác và thời điểm đăng phù hợp.';
+                    break;
+                case 'Crypto':
+                    tail = 'Phân tích ảnh hưởng tới thị trường, biến động giá và rủi ro chính sách.';
+                    break;
+                case 'Entertainment':
+                    tail = 'Ảnh hưởng tới cộng đồng người hâm mộ và độ lan tỏa trên mạng xã hội.';
+                    break;
+                case 'Gaming':
+                case 'Esports':
+                    tail = 'Tác động đến cộng đồng, meta/giải đấu và nội dung phát trực tuyến.';
+                    break;
+                case 'Fashion':
+                    tail = 'Điểm nhấn phối đồ, bảng màu và cảm hứng phong cách hiện tại.';
+                    break;
+                default:
+                    tail = 'Tổng quan diễn biến chính và tác động đáng lưu ý.';
+            }
+            return `${lead} về #${tag}. ${tail}`;
+        };
+        // English description generator
+        generateDescriptionForTagEn = (tag, token) => {
+            const category = guessCategoryForTag(tag);
+            const tokenLeadMap = {
+                Update: 'Latest update',
+                Trend: 'Notable trend',
+                Insight: 'Practical insight',
+                Report: 'Brief report',
+                Breakout: 'Breakout growth',
+                Milestone: 'Key milestone',
+                Buzz: 'High buzz',
+                Roundup: 'Quick roundup',
+                'How-to': 'How-to guide',
+                'Case Study': 'Case study',
+                Launch: 'Launch/rollout',
+                Collab: 'Collaboration highlight',
+                Highlight: 'Weekly highlight'
+            };
+            const lead = tokenLeadMap[token] || 'Update';
+            let tail;
+            switch (category) {
+                case 'AI':
+                case 'Technology':
+                    tail = 'Focuses on real-world use, impact on devs/creators, and operating cost.'; break;
+                case 'TikTok':
+                case 'Instagram':
+                case 'Social':
+                    tail = 'Examples of effective content, engagement tips, and optimal posting time.'; break;
+                case 'Crypto':
+                    tail = 'Covers market impact, price volatility, and policy risks.'; break;
+                case 'Entertainment':
+                    tail = 'Highlights fandom impact and social media reach.'; break;
+                case 'Gaming':
+                case 'Esports':
+                    tail = 'Effects on community, meta/tournaments, and live streaming content.'; break;
+                case 'Fashion':
+                    tail = 'Key styling cues, palette, and current inspirations.'; break;
+                default:
+                    tail = 'Overview of key developments and notable impact.';
+            }
+            return `${lead} on #${tag}. ${tail}`;
+        };
+
+        // Return localized title/description for currentLanguage
+        getLocalizedTrendText = (trend) => {
+            // If explicit localized fields exist, use them
+            if (currentLanguage === 'vi') {
+                return { title: trend.title_vi || trend.title, description: trend.description_vi || trend.description };
+            } else {
+                // Generate English for synthetic hashtag trends if Vietnamese base detected
+                const isSynthetic = Array.isArray(trend.tags) && trend.tags.length === 1 && trend.title && trend.title.split(' ').length <= 3;
+                if (isSynthetic) {
+                    const tag = trend.tags[0];
+                    const token = (trend.title || '').replace(tag, '').trim() || 'Update';
+                    return { title: `${tag} ${token}`, description: generateDescriptionForTagEn(tag, token) };
+                }
+                // Fallback: if no English fields, keep original
+                return { title: trend.title_en || trend.title, description: trend.description_en || trend.description };
+            }
+        };
+
+        // Pick a plausible source per tag
+        pickSourceForTag = (tag) => {
+            const map = {
+                OpenAI: 'https://openai.com', ChatGPT: 'https://openai.com', DALLE: 'https://openai.com', Midjourney: 'https://www.midjourney.com',
+                TikTok: 'https://www.tiktok.com', Reels: 'https://www.instagram.com', Instagram: 'https://www.instagram.com', YouTube: 'https://www.youtube.com',
+                Threads: 'https://about.fb.com', Meta: 'https://about.fb.com', CapCut: 'https://www.capcut.com',
+                Ethereum: 'https://www.coindesk.com', Bitcoin: 'https://www.coindesk.com', Crypto: 'https://www.coindesk.com',
+                NVIDIA: 'https://www.nvidia.com', Apple: 'https://www.apple.com',
+                HackerNews: 'https://news.ycombinator.com', WASM: 'https://news.ycombinator.com',
+                TaylorSwift: 'https://www.billboard.com', MrBeast: 'https://www.youtube.com/@MrBeast', Barbie: 'https://www.boxofficemojo.com'
+            };
+            return map[tag] || 'https://news.google.com';
+        };
+        randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        randomDateString = (start, end) => {
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            const ts = startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime());
+            return new Date(ts).toISOString().slice(0,10);
+        };
+        
+        // Ensure at least N unique trends per hashtag by generating new unique entries (no cloning)
+        ensureMinTrendsPerHashtagUnique = (minCount = 10) => {
+            const byTag = new Map();
+            allTrends.forEach(t => {
+                (t.tags || []).forEach(tag => {
+                    const list = byTag.get(tag) || [];
+                    list.push(t);
+                    byTag.set(tag, list);
+                });
+            });
+            let nextId = Math.max(0, ...allTrends.map(t => t.id || 0)) + 1;
+            const titleTokens = ['Update','Trend','Insight','Report','Breakout','Milestone','Buzz','Roundup','How-to','Case Study','Launch','Collab','Highlight'];
+            byTag.forEach((list, tag) => {
+                if (list.length >= minCount) return;
+                const need = minCount - list.length;
+                const category = guessCategoryForTag(tag);
+                for (let i = 0; i < need; i++) {
+                    const token = titleTokens[i % titleTokens.length];
+                    const title = `${tag} ${token}`;
+                    const desc = generateDescriptionForTag(tag, token);
+                    const votes = randomInt(180, 900) - i * 5;
+                    const source = pickSourceForTag(tag);
+                    const date = randomDateString('2025-05-01', '2025-06-12');
+                    const submitter = tag.match(/^[A-Za-z0-9_]+$/) ? `${tag}Watch` : 'TrendPulse';
+                    const newTrend = {
+                        id: nextId++,
+                        title,
+                        description: desc,
+                        category,
+                        tags: [tag],
+                        votes: Math.max(20, votes),
+                        source,
+                        date,
+                        submitter
+                    };
+                    allTrends.push(newTrend);
+                }
+            });
+        };
+        
+        // Ensure each hashtag has at least minCount trends by duplicating with slight variations (demo-only)
+        ensureMinTrendsPerHashtag = (minCount = 10) => {
+            const byTag = new Map();
+            allTrends.forEach(t => {
+                (t.tags || []).forEach(tag => {
+                    const list = byTag.get(tag) || [];
+                    list.push(t);
+                    byTag.set(tag, list);
+                });
+            });
+            let nextId = Math.max(0, ...allTrends.map(t => t.id || 0)) + 1;
+            byTag.forEach((list, tag) => {
+                if (list.length >= minCount) return;
+                const need = minCount - list.length;
+                for (let i = 0; i < need; i++) {
+                    const base = list[i % list.length] || allTrends[i % allTrends.length];
+                    if (!base) break;
+                    const clone = { ...base };
+                    clone.id = nextId++;
+                    clone.title = `${base.title} (${tag} v${i+1})`;
+                    clone.votes = Math.max(10, (base.votes || 100) - (i * 7));
+                    clone.date = base.date;
+                    if (!clone.tags.includes(tag)) clone.tags = [...new Set([...(clone.tags||[]), tag])];
+                    allTrends.push(clone);
+                }
+            });
+        };
+        getAIInsight = async (trend, promptType = 'general') => { 
+            try {
+                // Khởi tạo Gemini API Manager
+                const geminiManager = new GeminiAPIManager('AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc');
+                
+                // Kiểm tra trạng thái API trước khi gọi
+                const isAPIReady = await geminiManager.checkAPIStatus();
+                if (!isAPIReady) {
+                    throw new Error('API Gemini không khả dụng. Vui lòng thử lại sau.');
+                }
+                
+                // Phân tích xu hướng với AI
+                const insight = await geminiManager.analyzeTrend(trend, promptType);
+                return insight;
+                
+            } catch (error) {
+                console.error('Gemini API Error:', error);
+                throw new Error(`Lỗi AI: ${error.message}`);
+            }
+        };
+        
+        // Compact helper: truncate long text safely
+        truncateText = (text, maxLength = 180) => {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            const cut = text.slice(0, maxLength);
+            const lastSpace = cut.lastIndexOf(' ');
+            return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '…';
+        };
+        
+        // Sanitize analysis object to prevent NaN
+        sanitizeAnalysis = (analysis, trend) => {
+            const safe = { ...analysis };
+            const clamp01 = (v, def=0.5) => {
+                const n = Number(v);
+                if (!isFinite(n)) return def;
+                return Math.max(0, Math.min(1, n));
+            };
+            if (typeof safe.overallScore === 'undefined' || !isFinite(Number(safe.overallScore))) {
+                safe.overallScore = computeOverallScoreFromVotes(trend);
+            } else {
+                safe.overallScore = clamp01(safe.overallScore);
+            }
+            if (typeof safe.score !== 'undefined') safe.score = clamp01(safe.score);
+            if (typeof safe.confidence !== 'undefined') safe.confidence = clamp01(safe.confidence);
+            if (typeof safe.growthRate !== 'undefined') safe.growthRate = clamp01(safe.growthRate);
+            if (!Array.isArray(safe.recommendations)) safe.recommendations = [];
+            if (!safe.type) safe.type = 'general';
+            if (!safe.summary) safe.summary = '';
+            return safe;
+        };
+        // Unified metric helpers: prefer views/engagement if available, fallback to votes
+        getTrendMetric = (trend) => {
+            if (Number.isFinite(Number(trend?.views))) return Number(trend.views);
+            if (Number.isFinite(Number(trend?.engagement))) return Number(trend.engagement);
+            return Number(trend?.votes || 0);
+        };
+        getMetricLabel = () => {
+            // Determine label by checking first trend's available fields
+            const sample = allTrends.find(Boolean) || {};
+            if (Number.isFinite(Number(sample?.views))) return currentLanguage==='vi' ? 'Lượt xem' : 'Views';
+            if (Number.isFinite(Number(sample?.engagement))) return currentLanguage==='vi' ? 'Tương tác' : 'Engagement';
+            return currentLanguage==='vi' ? 'Bình chọn' : 'Votes';
+        };
+        computeOverallScoreFromMetric = (trend) => {
+            const metric = getTrendMetric(trend);
+            const normalized = Math.max(0, Math.min(1, metric / 100000));
+            return normalized;
+        };
+        
+        // Build YYYY-MM keys from start to end (inclusive)
+        generateMonthRange = (start, end) => {
+            const res = [];
+            const s = new Date(start);
+            const e = new Date(end);
+            s.setDate(1);
+            e.setDate(1);
+            while (s <= e) {
+                const y = s.getFullYear();
+                const m = String(s.getMonth()+1).padStart(2, '0');
+                res.push(`${y}-${m}`);
+                s.setMonth(s.getMonth()+1);
+            }
+            return res;
+        };
+        monthKeyToLabel = (key) => {
+            const [y,m] = key.split('-');
+            return `${m}/${y.slice(-2)}`;
+        };
+        aggregateVotesByMonth = (trends, monthKeys) => {
+            const map = new Map(monthKeys.map(k => [k, 0]));
+            trends.forEach(t => {
+                const d = new Date(t.date || Date.now());
+                const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                if (map.has(k)) map.set(k, map.get(k) + Number(getTrendMetric(t)||0));
+            });
+            return monthKeys.map(k => map.get(k));
+        };
+        // Generate synthetic per-month series for a trend, anchored by its date/votes
+        generateSeriesForMonths = (trend, monthKeys) => {
+            const baseVotes = Math.max(10, Number(getTrendMetric(trend)) || 100);
+            const trendDate = new Date(trend.date || Date.now());
+            const anchorKey = `${trendDate.getFullYear()}-${String(trendDate.getMonth()+1).padStart(2,'0')}`;
+            const anchorIndex = monthKeys.indexOf(anchorKey);
+            const seed = (trend.id || 1) + (trend.title ? trend.title.length : 0);
+            const arr = new Array(monthKeys.length).fill(0);
+            for (let i = 0; i < monthKeys.length; i++) {
+                const dist = anchorIndex === -1 ? (i - Math.floor(monthKeys.length/2)) : (i - anchorIndex);
+                const decay = Math.exp(-Math.abs(dist) * 0.35);
+                const noise = (Math.sin(seed + i*1.13) + Math.cos(seed*0.37 + i*0.71)) * 0.05;
+                const value = baseVotes * (0.6 + 0.4*decay) * (1 + noise);
+                arr[i] = Math.max(0, Math.round(value));
+            }
+            return arr;
+        };
+        getColorPalette = (count) => {
+            const base = [
+                { stroke: 'rgba(161,0,255,1)', fill: 'rgba(161,0,255,0.15)' },
+                { stroke: 'rgba(0,200,255,1)', fill: 'rgba(0,200,255,0.15)' },
+                { stroke: 'rgba(0,230,150,1)', fill: 'rgba(0,230,150,0.15)' },
+                { stroke: 'rgba(255,180,0,1)', fill: 'rgba(255,180,0,0.15)' },
+                { stroke: 'rgba(255,99,132,1)', fill: 'rgba(255,99,132,0.15)' },
+                { stroke: 'rgba(153,102,255,1)', fill: 'rgba(153,102,255,0.15)' }
+            ];
+            if (count <= base.length) return base.slice(0, count);
+            const extra = [];
+            for (let i = 0; i < count - base.length; i++) {
+                const hue = Math.floor((i / (count - base.length + 1)) * 360);
+                extra.push({ stroke: `hsl(${hue}, 90%, 60%)`, fill: `hsla(${hue}, 90%, 60%, 0.15)` });
+            }
+            return base.concat(extra);
+        };
+        
+        // Tạo chuỗi dữ liệu nhỏ cho line chart trong modal phân tích
+        generateMiniSeries = (trend, analysis) => {
+            const parseDate = (d) => d ? new Date(d) : null;
+            const endDate = parseDate(trend.endDate) || new Date();
+            const startCandidate = parseDate(trend.startDate) || parseDate(trend.date);
+            const startDate = startCandidate ? new Date(startCandidate) : new Date(endDate);
+            if (!startCandidate) startDate.setMonth(endDate.getMonth() - 3);
+
+            const monthKeys = generateMonthRange(new Date(startDate.getFullYear(), startDate.getMonth(), 1).toISOString().slice(0,10), new Date(endDate.getFullYear(), endDate.getMonth(), 1).toISOString().slice(0,10));
+            const labels = monthKeys.map(monthKeyToLabel);
+
+            const base = Math.max(10, Math.min(2000000, getTrendMetric(trend) || 100));
+            const growth = (analysis && typeof analysis.growthRate === 'number') ? analysis.growthRate : 0.05;
+            const seed = (trend.id || 1) + (trend.title ? trend.title.length : 0);
+            const series = [];
+            let value = Math.max(10, base * 0.5);
+            for (let i = 0; i < labels.length; i++) {
+                const noise = (Math.sin(seed + i * 1.7) + Math.cos(seed * 0.3 + i)) * 0.03;
+                value = value * (1 + growth * 0.25 + noise);
+                series.push(Number(value.toFixed(2)));
+            }
+            return { labels, series };
+        };
+
+        // Vẽ line chart gọn trong modal phân tích
+        renderInlineTrendLineChart = (containerEl, labels, series) => {
+            try {
+                const chartWrap = document.createElement('div');
+                chartWrap.className = 'ai-insight-chart';
+                const canvas = document.createElement('canvas');
+                const cid = `ai-inline-chart-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+                canvas.id = cid;
+                chartWrap.appendChild(canvas);
+                containerEl.appendChild(chartWrap);
+                const ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Interest',
+                            data: series,
+                            tension: 0.35,
+                            fill: false,
+                            borderColor: 'rgba(161, 0, 255, 1)',
+                            pointRadius: 2,
+                            pointBackgroundColor: 'rgba(161, 0, 255, 1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#8a8da0' } },
+                            y: { grid: { color: 'rgba(45, 46, 73, 0.5)' }, ticks: { color: '#8a8da0' } }
+                        }
+                    }
+                });
+            } catch(_){}
+        };
         handleTrendListInteraction = (e) => { 
             const titleElement = e.target.closest('.trend-title'); 
-            if (titleElement && user.accountType === 'work') {
+            if (titleElement) { 
+                if (user.accountType !== 'work') return; 
                 const trendId = parseInt(titleElement.closest('.trend-card').dataset.trendId); 
                 const trend = allTrends.find(t => t.id === trendId); 
                 const modalBody = document.getElementById('ai-insight-body'); 
                 document.getElementById('ai-insight-title').textContent = `${t('AI Insight for')} "${trend.title}"`; 
                 modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align: center; margin-top: 1rem; color: var(--text-muted-color);">${t('Analyzing trend...')}</p>`; 
                 openModal('ai-insight-modal'); 
-                getAIInsight(trend).then(insight => { 
+                const promptType = currentView === 'forU' ? 'viral' : 'general'; 
+                getAIInsight(trend, promptType).then(insight => { 
                     modalBody.innerHTML = `<div class="ai-insight-content">${insight.replace(/\n/g, '<br>')}</div>`; 
-                    const gen = generateMiniSeries(trend, {});
+                    // Thêm line chart mini theo mốc thời gian trend
+                    const gen = generateMiniSeries(trend, { growthRate: 0.05 });
                     renderInlineTrendLineChart(modalBody, gen.labels, gen.series);
                 }).catch(err => { 
-                    modalBody.innerHTML = `<div style="text-align: center; color: #ff6b6b;"><p>${t('Unable to analyze trend.')}</p><p style="font-size: 0.9rem; margin-top: 0.5rem;">${err.message}</p></div>`; 
+                    modalBody.innerHTML = `<div style="text-align: center; color: #ff6b6b;">
+                        <p>${t('Unable to analyze trend.')}</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">${err.message}</p>
+                    </div>`; 
                     console.error(err); 
                 }); 
             } 
             
+            // Xử lý button analyze trend
             const analyzeButton = e.target.closest('.analyze-trend-btn');
-            if (analyzeButton && user.isLoggedIn && user.accountType === 'work') {
+            if (analyzeButton) {
+                if (!user.isLoggedIn || user.accountType !== 'work') return;
                 const trendId = parseInt(analyzeButton.dataset.trendId);
+                const analysisType = analyzeButton.dataset.analysisType;
                 const trend = allTrends.find(t => t.id === trendId);
+                
                 const modalBody = document.getElementById('ai-insight-body');
                 document.getElementById('ai-insight-title').textContent = `${t('Trend Analysis for')} "${trend.title}"`;
                 modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align: center; margin-top: 1rem; color: var(--text-muted-color);">${t('Analyzing trend with API...')}</p>`;
                 openModal('ai-insight-modal');
                 
-                analyzeTrendWithAPI(trend).then(analysis => {
-                    let analysisHTML = `<div class="ai-insight-content"><h4>${t('Analysis')}</h4>
-                        <p><strong>${t('Overall Score')}:</strong> ${(analysis.overallScore * 100).toFixed(1)}%</p>
-                        <p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>
-                    </div>`;
+                // Gọi API analyze-trend
+                analyzeTrendWithAPI(trend, analysisType).then(analysis => {
+                    let analysisHTML = '<div class="ai-insight-content">';
+                    const typeMap = { sentiment: currentLanguage==='vi' ? 'cảm xúc' : 'sentiment', engagement: currentLanguage==='vi' ? 'tương tác' : 'engagement', growth: currentLanguage==='vi' ? 'tăng trưởng' : 'growth', general: currentLanguage==='vi' ? 'tổng quan' : 'general' };
+                    analysisHTML += `<h4>${t('Analysis')} ${typeMap[analysis.type] || analysis.type}</h4>`;
+                    
+                    if (analysis.type === 'sentiment') {
+                        analysisHTML += `<p><strong>${t('Score')}:</strong> ${(analysis.score * 100).toFixed(1)}%</p>`;
+                        analysisHTML += `<p><strong>${t('Confidence')}:</strong> ${(analysis.confidence * 100).toFixed(1)}%</p>`;
+                        analysisHTML += `<p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
+                    } else if (analysis.type === 'engagement') {
+                        analysisHTML += `<p><strong>${t('Score')}:</strong> ${(analysis.score * 100).toFixed(1)}%</p>`;
+                        analysisHTML += `<p><strong>${t('Reach')}:</strong> ${analysis.reach}</p>`;
+                        analysisHTML += `<p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
+                    } else if (analysis.type === 'growth') {
+                        analysisHTML += `<p><strong>${t('Growth Rate')}:</strong> ${(analysis.growthRate * 100).toFixed(1)}%</p>`;
+                        analysisHTML += `<p><strong>${t('Trend')}:</strong> ${analysis.trend}</p>`;
+                        analysisHTML += `<p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
+                    } else {
+                        analysisHTML += `<p><strong>${t('Overall Score')}:</strong> ${(analysis.overallScore * 100).toFixed(1)}%</p>`;
+                        const recs = (analysis.recommendations || []).slice(0, 3);
+                        if (recs.length) {
+                        analysisHTML += `<p><strong>${t('Recommendations')}:</strong></p><ul>`;
+                            recs.forEach(rec => { analysisHTML += `<li>${rec}</li>`; });
+                        analysisHTML += `</ul>`;
+                        }
+                        analysisHTML += `<p><strong>${t('Summary')}:</strong> ${truncateText(analysis.summary, 180)}</p>`;
+                    }
+                    
+                    analysisHTML += '</div>';
                     modalBody.innerHTML = analysisHTML;
+                    // Thêm line chart mini dựa trên phân tích và mốc thời gian trend
                     const gen = generateMiniSeries(trend, analysis);
                     renderInlineTrendLineChart(modalBody, gen.labels, gen.series);
                 }).catch(err => {
-                    modalBody.innerHTML = `<div style="text-align: center; color: #ff6b6b;"><p>Không thể phân tích trend.</p><p style="font-size: 0.9rem; margin-top: 0.5rem;">${err.message}</p></div>`; 
+                    modalBody.innerHTML = `<div style="text-align: center; color: #ff6b6b;">
+                        <p>Không thể phân tích trend.</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">${err.message}</p>
+                    </div>`; 
                     console.error(err); 
                 }); 
             } 
@@ -809,7 +1646,8 @@
                 updateUIForFilter(); 
             } 
             const followButton = e.target.closest('.btn-follow'); 
-            if (followButton && user.isLoggedIn && user.accountType === 'work') { 
+            if (followButton) { 
+                if (!user.isLoggedIn || user.accountType !== 'work') return; 
                 const trendId = parseInt(followButton.dataset.id); 
                 const isFollowed = user.followedTrends.includes(trendId); 
                 if (isFollowed) { 
@@ -818,11 +1656,12 @@
                     user.followedTrends.push(trendId); 
                 } 
                 followButton.classList.toggle('followed', !isFollowed); 
-                followButton.textContent = !isFollowed ? t('Following') : t('❤️ Follow'); 
+                followButton.innerHTML = !isFollowed ? t('Following') : t('❤️ Follow'); 
                 if(currentView === 'forU') displayTrends(); 
             } 
         };
 
+        // --- EVENT LISTENER ATTACHMENTS ---
         DOM.hamburgerMenu.addEventListener('click', () => { DOM.hamburgerMenu.classList.toggle('active'); DOM.mainNav.classList.toggle('nav-active'); });
         DOM.logo.addEventListener('click', () => switchView('main'));
         DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
@@ -839,82 +1678,86 @@
         document.getElementById('login-work-btn')?.addEventListener('click', () => signIn('work'));
         DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
         DOM.forULoadMoreBtn.addEventListener('click', loadMoreTrends);
-        DOM.savePreferencesBtn.addEventListener('click', () => { user.preferences = Array.from(document.querySelectorAll('#preferences-grid input:checked')).map(cb => cb.value); user.hasSetPreferences = true; closeModal('preferences-modal'); switchView('forU'); });
+        DOM.savePreferencesBtn.addEventListener('click', () => {
+            user.preferences = Array.from(document.querySelectorAll('#preferences-grid input:checked')).map(cb => cb.value);
+            user.hasSetPreferences = true;
+            closeModal('preferences-modal');
+            switchView('forU');
+        });
         [DOM.trendsList, DOM.forUTrendsList].forEach(list => list.addEventListener('click', handleTrendListInteraction));
         DOM.filterButtonsContainer.addEventListener('click', (e) => { if (e.target.classList.contains('filter-btn')) { currentFilter = { type: 'category', value: e.target.dataset.filter }; updateUIForFilter(); } });
         DOM.clearFilterBtn.addEventListener('click', () => { currentFilter = { type: 'category', value: 'All' }; updateUIForFilter(); });
         document.addEventListener('click', (e) => { if(DOM.userMenu && !DOM.userMenu.contains(e.target)) { DOM.userDropdown.classList.remove('show'); }});
+        
+        // Footer event listeners
         document.getElementById('footer-top-trends')?.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
         document.getElementById('footer-trending-board')?.addEventListener('click', (e) => { e.preventDefault(); if (user.accountType === 'work') { openModal('trending-board-modal'); createHotTrendsChart(); } else { openModal('premium-modal'); } });
         document.getElementById('footer-about')?.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); });
-        document.getElementById('language-toggle')?.addEventListener('click', () => { currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi'; localStorage.setItem('lang', currentLanguage); applyTranslations(); updateLanguageToggleUI(); displayTrends(); if (document.getElementById('trending-board-modal')?.classList.contains('show')) { createHotTrendsChart(); } });
         
-        async function initializeApp() {
-            allTrends = await fetchLiveTrends();
-            applyTrendOrdering();
-            populateCategoryFilters();
-            updateAuthUI();
+        // Language toggle
+        document.getElementById('language-toggle')?.addEventListener('click', () => {
+            currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi';
+            localStorage.setItem('lang', currentLanguage);
             applyTranslations();
             updateLanguageToggleUI();
-            setTimeout(checkAIStatus, 1000);
-            const loader = document.getElementById('loader');
-            if (loader) {
-                loader.classList.add('loader-hidden');
-                setTimeout(() => { loader.style.display = 'none'; }, 500);
+            // Re-render lists to update card buttons
+            displayTrends();
+            // Cập nhật lại chart Trending Board nếu đang mở để hiển thị nhãn theo ngôn ngữ
+            if (document.getElementById('trending-board-modal')?.classList.contains('show')) {
+                createHotTrendsChart();
+            }
+        });
+        
+        // --- INITIALIZATION ---
+        // Load mock data first for instant UI; live data (if available) will replace it
+        loadMockTrends();
+        // Bổ sung thêm trends độc lập để đạt tối thiểu 10 trends mỗi hashtag (không nhân bản)
+        ensureMinTrendsPerHashtagUnique(10);
+        applyTrendOrdering();
+        populateCategoryFilters();
+        updateAuthUI();
+        applyTranslations();
+        updateLanguageToggleUI();
+        // Load live data after initial render
+        loadLiveTrends();
+        
+        // Kiểm tra trạng thái AI khi khởi động
+        async function checkAIStatus() {
+            try {
+                const geminiManager = new GeminiAPIManager('AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc');
+                const isOnline = await geminiManager.checkAPIStatus();
+                
+                const statusIndicator = document.getElementById('ai-status-indicator');
+                const statusText = document.getElementById('ai-status-text');
+                
+                if (isOnline) {
+                    statusIndicator.className = 'ai-status-indicator online';
+                    statusText.textContent = t('AI: Ready');
+                } else {
+                    statusIndicator.className = 'ai-status-indicator offline';
+                    statusText.textContent = t('AI: Unavailable');
+                }
+            } catch (error) {
+                const statusIndicator = document.getElementById('ai-status-indicator');
+                const statusText = document.getElementById('ai-status-text');
+                statusIndicator.className = 'ai-status-indicator offline';
+                statusText.textContent = t('AI: Connection error');
+                console.error('AI Status Check Failed:', error);
             }
         }
         
-        async function checkAIStatus() {
-            const statusIndicator = document.getElementById('ai-status-indicator');
-            const statusText = document.getElementById('ai-status-text');
-            try {
-            const response = await fetch("/.netlify/functions/fetch-trends"); 
-            // fetch từ serverless function
+        // Kiểm tra trạng thái AI sau khi trang load
+        setTimeout(checkAIStatus, 1000);
 
-            if (response.ok) {
-                statusIndicator.className = 'ai-status-indicator online';
-                statusText.textContent = 'AI: Ready';
-
-            const manager = new GeminiAPIManager('AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc');
-
-            // 🔥 lấy trends từ fetch-trends.js
-            const trends = await response.json();
-
-            if (trends.length > 0) {
-                const trend = trends[0]; // trend mới nhất
-
-                // 7 ngày
-                manager.predictFutureTrend(trend, "7d").then(r => {
-                    document.getElementById("output").innerHTML = r;
-                });
-
-                // 1 tháng
-                manager.predictFutureTrend(trend, '1m').then(r => {
-                    console.log("Prediction 1 month:", r);
-                });
-
-                // 3 tháng
-                manager.predictFutureTrend(trend, '3m').then(r => {
-                    console.log("Prediction 3 months:", r);
-                });
-            } else {
-                console.warn("Không có trend nào từ fetch-trends.js");
-            }
-
-        } else {
-            statusIndicator.className = 'ai-status-indicator offline';
-            statusText.textContent = "AI: Unavailable";
+        // --- Hide Loader ---
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.classList.add('loader-hidden');
+            // Optional: remove from DOM after transition
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
         }
-    } catch (error) {
-        statusIndicator.className = 'ai-status-indicator offline';
-        statusText.textContent = "AI: Connection error";
-        console.error("AI Status Check Failed:", error);
-        }
-    }
 
+    });
     </script>
 </body>
 </html>
-
-
-
