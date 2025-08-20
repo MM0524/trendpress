@@ -865,31 +865,56 @@
         }
         
         async function checkAIStatus() {
+            const statusIndicator = document.getElementById('ai-status-indicator');
+            const statusText = document.getElementById('ai-status-text');
             try {
-                const response = await fetch(getAnalyzeFnBase());
-                const statusIndicator = document.getElementById('ai-status-indicator');
-                const statusText = document.getElementById('ai-status-text');
+            const response = await fetch("/.netlify/functions/fetch-trends"); 
+            // fetch từ serverless function
 
-                if (response.ok) {
-                    statusIndicator.className = 'ai-status-indicator online';
-                    statusText.textContent = t('AI: Ready');
-                } else {
-                    statusIndicator.className = 'ai-status-indicator offline';
-                    statusText.textContent = t('AI: Unavailable');
-                }
-            } catch (error) {
-                const statusIndicator = document.getElementById('ai-status-indicator');
-                const statusText = document.getElementById('ai-status-text');
-                statusIndicator.className = 'ai-status-indicator offline';
-                statusText.textContent = t('AI: Connection error');
-                console.error('AI Status Check Failed:', error);
+            if (response.ok) {
+                statusIndicator.className = 'ai-status-indicator online';
+                statusText.textContent = 'AI: Ready';
+
+            const manager = new GeminiAPIManager('AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc');
+
+            // 🔥 lấy trends từ fetch-trends.js
+            const trends = await response.json();
+
+            if (trends.length > 0) {
+                const trend = trends[0]; // trend mới nhất
+
+                // 7 ngày
+                manager.predictFutureTrend(trend, "7d").then(r => {
+                    document.getElementById("output").innerHTML = r;
+                });
+
+                // 1 tháng
+                manager.predictFutureTrend(trend, '1m').then(r => {
+                    console.log("Prediction 1 month:", r);
+                });
+
+                // 3 tháng
+                manager.predictFutureTrend(trend, '3m').then(r => {
+                    console.log("Prediction 3 months:", r);
+                });
+            } else {
+                console.warn("Không có trend nào từ fetch-trends.js");
             }
+
+        } else {
+            statusIndicator.className = 'ai-status-indicator offline';
+            statusText.textContent = "AI: Unavailable";
         }
-        
-        initializeApp();
-    });
+    } catch (error) {
+        statusIndicator.className = 'ai-status-indicator offline';
+        statusText.textContent = "AI: Connection error";
+        console.error("AI Status Check Failed:", error);
+        }
+    }
+
     </script>
 </body>
 </html>
+
 
 
