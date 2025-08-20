@@ -645,7 +645,36 @@
         function getColorPalette(count) { const base = [ { stroke: 'rgba(161,0,255,1)', fill: 'rgba(161,0,255,0.15)' }, { stroke: 'rgba(0,200,255,1)', fill: 'rgba(0,200,255,0.15)' }, { stroke: 'rgba(0,230,150,1)', fill: 'rgba(0,230,150,0.15)' }, { stroke: 'rgba(255,180,0,1)', fill: 'rgba(255,180,0,0.15)' }, { stroke: 'rgba(255,99,132,1)', fill: 'rgba(255,99,132,0.15)' }, { stroke: 'rgba(153,102,255,1)', fill: 'rgba(153,102,255,0.15)' } ]; if (count <= base.length) return base.slice(0, count); const extra = []; for (let i = 0; i < count - base.length; i++) { const hue = Math.floor((i / (count - base.length + 1)) * 360); extra.push({ stroke: `hsl(${hue}, 90%, 60%)`, fill: `hsla(${hue}, 90%, 60%, 0.15)` }); } return base.concat(extra); };
         function generateMiniSeries(trend, analysis) { const parseDate = (d) => d ? new Date(d) : null; const endDate = parseDate(trend.endDate) || new Date(); const startCandidate = parseDate(trend.startDate) || parseDate(trend.date); const startDate = startCandidate ? new Date(startCandidate) : new Date(endDate); if (!startCandidate) startDate.setMonth(endDate.getMonth() - 3); const monthKeys = generateMonthRange(new Date(startDate.getFullYear(), startDate.getMonth(), 1).toISOString().slice(0,10), new Date(endDate.getFullYear(), endDate.getMonth(), 1).toISOString().slice(0,10)); const labels = monthKeys.map(monthKeyToLabel); const base = Math.max(10, Math.min(2000000, getTrendMetric(trend) || 100)); const growth = (analysis && typeof analysis.growthRate === 'number') ? analysis.growthRate : 0.05; const seed = (trend.id || 1) + (trend.title ? trend.title.length : 0); const series = []; let value = Math.max(10, base * 0.5); for (let i = 0; i < labels.length; i++) { const noise = (Math.sin(seed + i * 1.7) + Math.cos(seed * 0.3 + i)) * 0.03; value = value * (1 + growth * 0.25 + noise); series.push(Number(value.toFixed(2))); } return { labels, series }; };
         function renderInlineTrendLineChart(containerEl, labels, series) { try { const chartWrap = document.createElement('div'); chartWrap.className = 'ai-insight-chart'; const canvas = document.createElement('canvas'); const cid = `ai-inline-chart-${Date.now()}-${Math.floor(Math.random()*1000)}`; canvas.id = cid; chartWrap.appendChild(canvas); containerEl.appendChild(chartWrap); const ctx = canvas.getContext('2d'); new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Interest', data: series, tension: 0.35, fill: false, borderColor: 'rgba(161, 0, 255, 1)', pointRadius: 2, pointBackgroundColor: 'rgba(161, 0, 255, 1)' }] }, options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#8a8da0' } }, y: { grid: { color: 'rgba(45, 46, 73, 0.5)' }, ticks: { color: '#8a8da0' } } } } }); } catch(_){} };
-        
+
+        // Function để gọi API analyze-trend
+        analyzeTrendWithAPI = async (trend, analysisType = 'general') => {
+            try {
+                const fnBase = getAnalyzeFnBase();
+                if (!fnBase) throw new Error('No analyze function base configured');
+                const response = await fetch(`${fnBase}/analyze-trend`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        trendData: trend,
+                        analysisType: analysisType
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                return sanitizeAnalysis(result.data, trend);
+            } catch (error) {
+                console.error('Lỗi khi gọi analyze-trend API:', error);
+                // Fallback về AI insight cũ nếu API không hoạt động
+                const fallback = await getAIInsight(trend, analysisType);
+                return sanitizeAnalysis({ type: analysisType, overallScore: computeOverallScoreFromMetric(trend), summary: fallback }, trend);
+            }
+        };
         // MODIFIED: This function now has fully dynamic time ranges.
         createHotTrendsChart = () => {
             const canvas = document.getElementById('hot-trends-chart');
@@ -868,3 +897,4 @@
     </script>
 </body>
 </html>
+
