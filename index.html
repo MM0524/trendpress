@@ -4,23 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrendPulse | Prioritized Edition</title>
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23A100FF'/></svg>">
     <style>
-        /* --- General Setup & Fonts --- */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         :root {
-            --bg-color: #0F1021;
-            --surface-color: #191a2e;
-            --primary-color: #A100FF;
-            --primary-light: #b540ff;
-            --text-color: #e3e8f0;
-            --text-muted-color: #8a8da0;
-            --border-color: #2d2e49;
-            --header-height: 65px;
+            --bg-color: #0F1021; --surface-color: #191a2e; --primary-color: #A100FF;
+            --primary-light: #b540ff; --text-color: #e3e8f0; --text-muted-color: #8a8da0;
+            --border-color: #2d2e49; --header-height: 65px;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; overflow-x: hidden; }
@@ -33,78 +24,62 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; height: var(--header-height); animation: fadeIn 0.5s ease-out; }
-        .logo { font-size: 1.8rem; font-weight: 700; cursor: pointer; transition: transform 0.3s ease; }
-        .logo:hover { transform: scale(1.05); }
+        .logo { font-size: 1.8rem; font-weight: 700; cursor: pointer; }
         .logo-trend { color: var(--primary-light); }
         .nav-links { display: flex; gap: 1.5rem; list-style: none; }
-        .nav-links a { color: var(--text-muted-color); text-decoration: none; font-weight: 500; transition: color 0.3s ease, transform 0.3s ease; }
-        .nav-links a:hover { color: var(--primary-color); transform: translateY(-2px); }
+        .nav-links a { color: var(--text-muted-color); text-decoration: none; font-weight: 500; transition: color 0.3s ease; }
+        .nav-links a:hover { color: var(--primary-color); }
         .nav-actions { position: relative; display: flex; align-items: center; gap: 0.75rem; }
-        .language-switcher { margin-right: 1rem; }
         .hamburger-menu { display: none; }
         .btn { padding: 0.6rem 1.2rem; border: 1px solid transparent; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
         .btn:active { transform: scale(0.97); }
         .btn-primary { background-color: var(--primary-color); color: white; }
-        .btn-primary:hover { background-color: var(--primary-light); transform: translateY(-2px); }
+        .btn-primary:hover { background-color: var(--primary-light); }
         .btn-secondary { background: var(--surface-color); color: var(--text-muted-color); border: 1px solid var(--border-color); }
-        .btn-secondary:hover { background: var(--border-color); color: var(--text-color); }
         .btn-outline { background: transparent; color: var(--primary-light); border: 1px solid var(--primary-light); font-size: 0.8rem; padding: 0.3rem 0.8rem; }
         .btn-outline:hover { background: var(--primary-light); color: white; }
         .analyze-trend-btn { margin-right: 0.5rem; }
         .main-container, .for-u-container { animation: slideInUp 0.6s ease-out; }
         .main-container { display: grid; grid-template-columns: 1fr; gap: 2rem; padding: 2rem; max-width: 900px; margin: auto; }
         .for-u-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; max-width: 1400px; margin: auto; }
-        .demo-banner { grid-column: 1 / -1; background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         .trending-container, .for-u-content, .leaderboard-panel { background-color: var(--surface-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
         .trending-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
         .trending-title-group { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 600; }
         .filter-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
         .filter-btn { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; transition: all 0.3s ease; }
-        .filter-btn:hover { background-color: var(--border-color); color: var(--text-color); transform: translateY(-2px); }
-        .filter-btn.active { background-color: var(--primary-color); color: white; font-weight: 500; border-color: var(--primary-color); transform: scale(1.05); }
+        .filter-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
         .trend-card { background-color: var(--bg-color); padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem; transition: transform 0.3s ease, box-shadow 0.3s ease; animation: slideInUp 0.5s ease-out forwards; opacity: 0; }
-        .trend-card:nth-child(1) { animation-delay: 0.05s; }
-        .trend-card:nth-child(2) { animation-delay: 0.1s; }
-        .trend-card:nth-child(3) { animation-delay: 0.15s; }
-        .trend-card:nth-child(4) { animation-delay: 0.2s; }
-        .trend-card:nth-child(5) { animation-delay: 0.25s; }
         .trend-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
         .trend-title { font-size: 1.25rem; font-weight: 600; cursor: pointer; transition: color 0.3s; }
         .trend-title:hover { color: var(--primary-light); }
-        .trend-meta { text-align: right; font-size: 0.8rem; color: var(--text-muted-color); white-space: nowrap; }
         .trend-description { margin-bottom: 1rem; color: var(--text-muted-color); }
         .loading-spinner { width: 20px; height: 20px; border: 2px solid rgba(161, 0, 255, 0.1); border-top: 2px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .ai-status-indicator { position: fixed; top: 80px; right: 20px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--text-muted-color); z-index: 1001; transition: all 0.3s ease; }
+        .ai-status-indicator { position: fixed; top: 80px; right: 20px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.8rem; z-index: 1001; }
         .ai-status-indicator.online { border-color: #4CAF50; color: #4CAF50; }
         .ai-status-indicator.offline { border-color: #f44336; color: #f44336; }
         .trend-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
         .trend-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
         .tag { padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 500; }
         .tag.category { background-color: var(--primary-color); color: white; }
-        .tag.hashtag { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); cursor: pointer; transition: all 0.2s ease-in-out; font-weight: 400; }
-        .tag.hashtag:hover { transform: translateY(-2px); border-color: var(--primary-light); background-color: var(--border-color); color: var(--text-color); }
+        .tag.hashtag { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); cursor: pointer; }
         .trend-actions { display: flex; align-items: center; gap: 1rem; }
-        .btn-follow { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); display: flex; align-items: center; gap: 0.5rem; }
-        .btn-follow:hover { background-color: var(--border-color); color: var(--text-color); }
-        .btn-follow.followed { background-color: var(--primary-color); color: white; border-color: var(--primary-light); }
+        .btn-follow { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); }
+        .btn-follow.followed { background-color: var(--primary-color); color: white; }
         #trends-footer { text-align: center; margin-top: 1.5rem; }
-        .leaderboard-panel h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
+        .leaderboard-panel h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; }
         .leaderboard-widget { margin-bottom: 1.5rem; }
-        .leaderboard-widget h4 { color: var(--primary-light); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        .leaderboard-widget h4 { color: var(--primary-light); margin-bottom: 0.75rem; }
         .leaderboard-widget ol { list-style: none; padding: 0; }
-        .leaderboard-widget li { background-color: var(--bg-color); padding: 0.6rem; border-radius: 4px; margin-bottom: 0.5rem; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; }
-        .leaderboard-widget li .stat-display { font-size: 0.8rem; color: var(--text-muted-color); }
-        .vote-count, .trend-meta-date, .view-source-btn, .trend-meta-submitter { display: none; }
+        .leaderboard-widget li { background-color: var(--bg-color); padding: 0.6rem; border-radius: 4px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; }
+        .view-source-btn { display: none; }
         .btn-follow { display: none; }
-        body.work-account-view .btn-follow { display: flex; }
-        body.work-account-view .vote-count, body.work-account-view .trend-meta-date, body.work-account-view .view-source-btn, body.work-account-view .trend-meta-submitter { display: inline-block; }
-        .dropdown { display: none; position: absolute; top: 110%; right: 0; background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; min-width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; padding: 0.5rem 0; }
+        body.work-account-view .btn-follow, body.work-account-view .view-source-btn { display: inline-flex; }
+        .dropdown { display: none; position: absolute; top: 110%; right: 0; background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; min-width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 10; }
         .dropdown.show { display: block; }
-        .dropdown-header { padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--text-muted-color); border-bottom: 1px solid var(--border-color); margin-bottom: 0.5rem; }
-        .dropdown-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: var(--text-color); text-decoration: none; transition: background-color 0.2s; cursor: pointer; }
+        .dropdown-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: var(--text-color); text-decoration: none; cursor: pointer; }
         .dropdown-item:hover { background-color: var(--border-color); }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 16, 33, 0.85); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 16, 33, 0.85); backdrop-filter: blur(5px); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .modal-overlay.show { opacity: 1; visibility: visible; }
         .modal-content { background-color: var(--surface-color); padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; text-align: center; position: relative; border: 1px solid var(--border-color); transform: scale(0.95) translateY(10px); transition: transform 0.3s ease, opacity 0.3s ease; opacity: 0; }
         .modal-overlay.show .modal-content { transform: scale(1) translateY(0); opacity: 1; }
@@ -112,30 +87,34 @@
         .modal-title { font-size: 1.5rem; margin-bottom: 1rem; }
         .modal-body { margin-bottom: 1.5rem; color: var(--text-muted-color); }
         #login-choice-modal .modal-actions { display: flex; flex-direction: column; gap: 1rem; }
-        .btn-social { background-color: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.8rem; text-align: left; font-size: 0.95rem; }
-        .btn-social:hover { background-color: var(--border-color); }
+        .btn-social { background-color: var(--surface-color); border: 1px solid var(--border-color); width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.8rem; }
         .preferences-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: left; margin-bottom: 1.5rem; }
         #trending-board-content { max-width: 800px; }
         #hot-trends-container canvas { width: 100%; max-height: 300px; }
         .leaderboards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
-        .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+        
+        /* CẬP NHẬT GIAO DIỆN MODAL PHÂN TÍCH */
+        #ai-insight-modal .modal-content { max-width: 550px; width: 90%; text-align: left; }
+        #ai-insight-modal .modal-body { max-height: 70vh; overflow-y: auto; padding-right: 15px; }
+        #ai-insight-modal h4 { color: var(--primary-light); margin-top: 1rem; margin-bottom: 0.5rem; }
+        #ai-insight-modal ul { list-style-position: inside; padding-left: 5px; }
+        #ai-insight-modal li { margin-bottom: 0.5rem; }
+
         .footer { background-color: var(--surface-color); border-top: 1px solid var(--border-color); margin-top: 4rem; padding: 3rem 0 1rem 0; }
         .footer-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
         .footer-title { color: var(--primary-light); font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
         .footer-links { list-style: none; padding: 0; }
-        .footer-links a { color: var(--text-muted-color); text-decoration: none; transition: color 0.3s ease; }
-        .footer-links a:hover { color: var(--primary-light); }
+        .footer-links a { color: var(--text-muted-color); text-decoration: none; }
         .footer-bottom { border-top: 1px solid var(--border-color); margin-top: 2rem; padding-top: 1.5rem; text-align: center; color: var(--text-muted-color); font-size: 0.9rem; }
+        
         @media (max-width: 1024px) { .for-u-container { grid-template-columns: 1fr; } .leaderboard-panel { grid-row: 1; } }
         @media (max-width: 768px) {
             .header { padding: 0 1rem; }
             .nav-links { position: fixed; top: var(--header-height); left: 0; width: 100%; height: calc(100vh - var(--header-height)); background-color: var(--bg-color); flex-direction: column; align-items: center; padding-top: 2rem; transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
             nav.nav-active .nav-links { transform: translateX(0); }
             .hamburger-menu { display: flex; flex-direction: column; justify-content: space-around; width: 2rem; height: 2rem; background: transparent; border: none; cursor: pointer; z-index: 10; }
-            .hamburger-menu span { width: 2rem; height: 0.25rem; background: var(--text-color); border-radius: 10px; transition: all 0.3s linear; transform-origin: 1px; }
-            .hamburger-menu.active span:nth-child(1) { transform: rotate(45deg); }
-            .hamburger-menu.active span:nth-child(2) { opacity: 0; }
-            .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg); }
+            .hamburger-menu span { width: 2rem; height: 0.25rem; background: var(--text-color); border-radius: 10px; transition: all 0.3s linear; }
+            .hamburger-menu.active span:nth-child(1) { transform: rotate(45deg); } .hamburger-menu.active span:nth-child(2) { opacity: 0; } .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg); }
             .main-container, .for-u-container { padding: 1rem; }
             .footer-content { grid-template-columns: 1fr; text-align: center; }
         }
@@ -144,6 +123,7 @@
 </head>
 <body>
     <div class="loader-overlay" id="loader"><div class="loader-pulse"><div></div><div></div></div></div>
+
     <header class="header">
         <div class="logo" id="logo"><span class="logo-trend">Trend</span>Pulse</div>
         <div class="ai-status-indicator" id="ai-status-indicator"><span id="ai-status-text"></span></div>
@@ -163,19 +143,19 @@
                     <button class="btn btn-secondary" id="user-email-btn"></button>
                     <div class="dropdown" id="user-dropdown">
                         <div class="dropdown-header" id="dropdown-user-email"></div>
-                        <a href="#" class="dropdown-item" id="dropdown-work-school"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></a>
-                        <a href="#" class="dropdown-item" id="dropdown-sign-out"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span></span></a>
+                        <a href="#" class="dropdown-item" id="dropdown-work-school"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></a>
+                        <a href="#" class="dropdown-item" id="dropdown-sign-out"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span></span></a>
                     </div>
                 </div>
             </div>
-            <button class="hamburger-menu" id="hamburger-menu" aria-label="Toggle navigation menu"><span></span><span></span><span></span></button>
+            <button class="hamburger-menu" id="hamburger-menu"><span></span><span></span><span></span></button>
         </div>
     </header>
     <main class="main-container" id="main-view-container">
         <div class="demo-banner"><h2></h2><p></p></div>
         <section class="trending-container">
             <div class="trending-header">
-                <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><span id="trending-header-text"></span></div>
+                <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><span id="trending-header-text"></span></div>
                  <button class="btn btn-secondary hidden" id="clear-filter-btn"></button>
             </div>
             <div class="filter-buttons" id="filter-buttons"></div>
@@ -186,7 +166,7 @@
     <section class="for-u-container hidden" id="for-u-view-container">
         <div class="for-u-content">
             <div class="trending-header">
-                <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg><span></span></div>
+                <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg><span></span></div>
             </div>
             <div id="for-u-trends-list"></div>
             <div id="for-u-trends-footer"><button class="btn btn-primary" id="for-u-load-more-btn"></button></div>
@@ -195,50 +175,32 @@
              <h3></h3><div id="for-u-leaderboards"></div>
         </aside>
     </section>
-    <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal" aria-label="Close preferences dialog">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
-    <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal" aria-label="Close premium dialog">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
-    <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal" aria-label="Close login dialog">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span></span></button><button class="btn btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></button></div></div></div>
-    <div class="modal-overlay" id="trending-board-modal"><div class="modal-content" id="trending-board-content"><button class="modal-close" data-close="trending-board-modal" aria-label="Close trending board dialog">&times;</button><h3 class="modal-title"></h3><div id="hot-trends-container"><h4></h4><canvas id="hot-trends-chart"></canvas></div><div class="leaderboards-container" id="category-leaderboards"></div></div></div>
-    <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal" aria-label="Close AI insight dialog">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
-    <div class="modal-overlay" id="about-modal"><div class="modal-content"><button class="modal-close" data-close="about-modal" aria-label="Close about dialog">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p></div></div>
+    <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
+    <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
+    <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span></span></button><button class="btn btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></button></div></div></div>
+    <div class="modal-overlay" id="trending-board-modal"><div class="modal-content" id="trending-board-content"><button class="modal-close" data-close="trending-board-modal">&times;</button><h3 class="modal-title"></h3><div id="hot-trends-container"><h4></h4><canvas id="hot-trends-chart"></canvas></div><div class="leaderboards-container" id="category-leaderboards"></div></div></div>
+    <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
+    <div class="modal-overlay" id="about-modal"><div class="modal-content"><button class="modal-close" data-close="about-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p></div></div>
 
     <footer class="footer">
         <div class="footer-content">
-            <div class="footer-section">
-                <h4 class="footer-title">TrendPulse</h4>
-                <p class="footer-description"></p>
-            </div>
-            <div class="footer-section">
-                <h4 class="footer-title"></h4>
-                <ul class="footer-links">
-                    <li><a href="#" id="footer-top-trends"></a></li>
-                    <li><a href="#" id="footer-trending-board"></a></li>
-                    <li><a href="#" id="footer-about"></a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h4 class="footer-title"></h4>
-                <ul class="footer-links"><li></li><li></li><li></li><li></li></ul>
-            </div>
-            <div class="footer-section">
-                <h4 class="footer-title"></h4>
-                <div class="footer-contact"><p></p><p></p></div>
-            </div>
+            <div class="footer-section"><h4 class="footer-title">TrendPulse</h4><p class="footer-description"></p></div>
+            <div class="footer-section"><h4 class="footer-title"></h4><ul class="footer-links"><li><a href="#" id="footer-top-trends"></a></li><li><a href="#" id="footer-trending-board"></a></li><li><a href="#" id="footer-about"></a></li></ul></div>
+            <div class="footer-section"><h4 class="footer-title"></h4><ul class="footer-links"><li></li><li></li><li></li><li></li></ul></div>
+            <div class="footer-section"><h4 class="footer-title"></h4><div class="footer-contact"><p></p><p></p></div></div>
         </div>
         <div class="footer-bottom"><p></p></div>
     </footer>
 
-<script>
+    <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- INSECURE API MANAGER (AS PER YOUR REQUEST) ---
         // WARNING: THIS IS NOT SAFE FOR PRODUCTION. YOUR API KEY IS EXPOSED.
         class GeminiAPIManager {
             constructor(apiKey) {
                 this.apiKey = apiKey;
-                this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-            }
+                this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';            }
             
-            // Prompt để lấy JSON tóm tắt (cho nút Analyze)
             createStructuredSummaryPrompt(trend) {
                 return `Analyze the trend: "${trend.title}". Respond ONLY with a valid JSON object with this structure:
                 {
@@ -249,7 +211,6 @@
                 }`;
             }
 
-            // Prompt để lấy phân tích chi tiết (cho click vào Tiêu đề)
             createDetailedAnalysisPrompt(trend) {
                 return `Analyze the trend: "${trend.title}" (Category: ${trend.category}).
                 Description: "${trend.description}".
@@ -267,7 +228,6 @@
                 * **Platform 2 (e.g., LinkedIn):** <reason>`;
             }
 
-            // Hàm gọi API chính, có thể xử lý cả 2 loại prompt
             async analyzeTrend(trend, analysisType = 'summary') {
                 const isSummary = analysisType === 'summary';
                 const prompt = isSummary ? this.createStructuredSummaryPrompt(trend) : this.createDetailedAnalysisPrompt(trend);
@@ -288,12 +248,19 @@
                     if (!response.ok) throw new Error(`API Error: ${response.status}`);
                     
                     const data = await response.json();
+                    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                        if (data.candidates && data.candidates[0].finishReason === 'SAFETY') {
+                            return "The analysis for this trend was blocked due to sensitivity.";
+                        }
+                        throw new Error('Invalid response format from Gemini API');
+                    }
+
                     const textContent = data.candidates[0].content.parts[0].text;
                     
                     if (isSummary) {
-                        return JSON.parse(textContent); // Trả về JSON
+                        return JSON.parse(textContent);
                     } else {
-                        return this.formatDetailedInsight(textContent); // Trả về HTML
+                        return this.formatDetailedInsight(textContent);
                     }
                 } catch (error) {
                     console.error("Gemini API request failed:", error);
@@ -326,7 +293,6 @@
         let allTrends = [];
         let categories = [];
         
-        // --- LANGUAGE SUPPORT ---
         let currentLanguage = localStorage.getItem('lang') || 'vi';
         const translations = {
             vi: {
@@ -337,7 +303,7 @@
             }
         };
         const i18nBindings = [
-            { selector: '#nav-top-trends', key: 'Top Trends' }, { selector: '#nav-trending-board', key: 'Trending Board' }, { selector: '#nav-for-u a', key: 'For U' }, { selector: '#nav-about', key: 'About' }, { selector: '#sign-in-btn', key: 'Sign In' }, { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' }, { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' }, { selector: '#login-google-btn span', key: 'Sign in with Google' }, { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' }, { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' }, { selector: '#trending-header-text', key: 'Trending Now' }, { selector: '#clear-filter-btn', key: 'Show All Trends' }, { selector: '#load-more-btn', key: 'Load More' }, { selector: '#for-u-load-more-btn', key: 'Load More' }, { selector: '.for-u-container .trending-title-group span', key: 'For You' }, { selector: '#preferences-modal .modal-title', key: 'Welcome! Set Your Preferences' }, { selector: '#preferences-modal .modal-body', key: "Select the categories you're interested in for a personalized experience." }, { selector: '#save-preferences-btn', key: 'Save Preferences' }, { selector: '#premium-modal .modal-title', key: 'Premium Access Required' }, { selector: '#premium-modal .modal-body', key: 'Please sign in with a company or school email to view the Trending Board.' }, { selector: '#premium-login-btn', key: 'Log In' }, { selector: '#login-choice-modal .modal-title', key: 'Sign In' }, { selector: '#login-choice-modal .modal-body', key: 'Choose an account to continue to TrendPulse.' }, { selector: '#trending-board-modal .modal-title', key: 'Trending Board Dashboard' }, { selector: '#for-u-leaderboard-panel h3', key: 'Category Leaderboards' }, { selector: '#about-modal .modal-title', key: 'About TrendPulse' }, { selector: '#about-modal .modal-body', key: "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights." }, { selector: '.footer-section:nth-child(1) .footer-description', key: 'Footer Description' }, { selector: '.footer-section:nth-child(2) .footer-title', key: 'Quick Links' }, { selector: '#footer-top-trends', key: 'Top Trends' }, { selector: '#footer-trending-board', key: 'Trending Board' }, { selector: '#footer-about', key: 'About' }, { selector: '.footer-section:nth-child(3) .footer-title', key: 'Features' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(1)', key: 'AI Analysis' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(2)', key: 'Trend Prediction' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(3)', key: 'Leaderboards' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(4)', key: 'Personal Recommendations' }, { selector: '.footer-section:nth-child(4) .footer-title', key: 'Contact' }, { selector: '.footer-section:nth-child(4) .footer-contact p:nth-child(1)', key: 'Email: info@trendpulse.com' }, { selector: '.footer-section:nth-child(4) .footer-contact p:nth-child(2)', key: 'Support: support@trendpulse.com' },
+            { selector: '#nav-top-trends', key: 'Top Trends' }, { selector: '#nav-trending-board', key: 'Trending Board' }, { selector: '#nav-for-u a', key: 'For U' }, { selector: '#nav-about', key: 'About' }, { selector: '#sign-in-btn', key: 'Sign In' }, { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' }, { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' }, { selector: '#login-google-btn span', key: 'Sign in with Google' }, { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' }, { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' }, { selector: '#trending-header-text', key: 'Trending Now' }, { selector: '#clear-filter-btn', key: 'Show All Trends' }, { selector: '#load-more-btn', key: 'Load More' }, { selector: '#for-u-load-more-btn', key: 'Load More' }, { selector: '.for-u-container .trending-title-group span', key: 'For You' }, { selector: '#preferences-modal .modal-title', key: 'Welcome! Set Your Preferences' }, { selector: '#preferences-modal .modal-body', key: "Select the categories you're interested in for a personalized experience." }, { selector: '#save-preferences-btn', key: 'Save Preferences' }, { selector: '#premium-modal .modal-title', key: 'Premium Access Required' }, { selector: '#premium-modal .modal-body', key: 'Please sign in with a company or school email to view the Trending Board.' }, { selector: '#premium-login-btn', key: 'Log In' }, { selector: '#login-choice-modal .modal-title', key: 'Sign In' }, { selector: '#login-choice-modal .modal-body', key: 'Choose an account to continue to TrendPulse.' }, { selector: '#trending-board-modal .modal-title', key: 'Trending Board Dashboard' }, { selector: '#for-u-leaderboard-panel h3', key: 'Category Leaderboards' }, { selector: '#about-modal .modal-title', key: 'About TrendPulse' }, { selector: '#about-modal .modal-body', key: "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights." }, { selector: '.footer-section:nth-child(1) .footer-description', key: 'Footer Description' }, { selector: '.footer-section:nth-child(2) .footer-title', key: 'Quick Links' }, { selector: '#footer-top-trends', key: 'Top Trends' }, { selector: '#footer-trending-board', key: 'Trending Board' }, { selector: '#footer-about', key: 'About' }, { selector: '.footer-section:nth-child(3) .footer-title', key: 'Features' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(1)', key: 'AI Analysis' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(2)', key: 'Trend Prediction' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(3)', key: 'Leaderboards' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(4)', key: 'Personal Recommendations' }, { selector: '.footer-section:nth-child(4) .footer-title', key: 'Contact' }, { selector: '.footer-section:nth-child(4) .footer-contact p:nth-child(1)', key: 'Email: info@trendpulse.com' }, { selector: '.footer-section:nth-child(4) .footer-contact p:nth-child(2)', key: 'Support: support@trendpulse.com' }, { selector: '#ai-insight-title', key: 'AI Insight for' },
         ];
         
         const DOM = {
@@ -445,8 +411,7 @@
         function populateCategoryFilters() { categories = [...new Set(allTrends.map(t => t.category))].sort(); DOM.filterButtonsContainer.innerHTML = ['All', ...categories].map(category => `<button class="filter-btn ${category === 'All' ? 'active' : ''}" data-filter="${category}">${category}</button>`).join(''); };
         function populatePreferenceCheckboxes() { DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}"> ${category}</label></div>`).join(''); };
         function updateUIForFilter() { if (currentFilter.type === 'tag') { document.querySelector('#trending-header-text').textContent = `${t('Trends for')} #${currentFilter.value}`; DOM.clearFilterBtn.classList.remove('hidden'); DOM.filterButtonsContainer.classList.add('hidden'); } else { document.querySelector('#trending-header-text').textContent = t('Trending Now'); DOM.clearFilterBtn.classList.add('hidden'); DOM.filterButtonsContainer.classList.remove('hidden'); document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value)); } displayedTrends.main = 0; displayTrends(); };
-        
-        // --- CHARTING & DATA VIZ ---
+
         function createHotTrendsChart() {
             const canvas = document.getElementById('hot-trends-chart');
             if (!canvas) return;
@@ -481,15 +446,15 @@
         function renderSummaryAnalysis(analysisData) {
             const modalBody = document.getElementById('ai-insight-body');
             modalBody.innerHTML = `
-                <div style="text-align: left; margin-bottom: 1rem;">
+                <div style="margin-bottom: 1rem;">
                     <h4>${t('Success Score')}</h4>
                     <p style="font-size: 2rem; font-weight: bold; color: var(--primary-light);">${analysisData.successScore.toFixed(0)}%</p>
                 </div>
-                <div style="text-align: left; margin-bottom: 1rem;">
+                <div style="margin-bottom: 1rem;">
                     <h4>${t('Summary')}</h4>
                     <p>${analysisData.summary}</p>
                 </div>
-                <div style="text-align: left;">
+                <div>
                      <h4>${t('Interest Over Time')}</h4>
                     <canvas id="analysis-chart"></canvas>
                 </div>
@@ -500,7 +465,6 @@
         function renderDetailedAnalysis(htmlContent, trend) {
              const modalBody = document.getElementById('ai-insight-body');
              modalBody.innerHTML = htmlContent;
-             // Vẫn tạo một biểu đồ giả để giao diện nhất quán
              const baseValue = getTrendMetric(trend);
              const fakeHistory = [baseValue * 0.8, baseValue * 0.9, baseValue, baseValue * 0.95];
              const fakeFuture = [baseValue * 1.05, baseValue * 1.1, baseValue * 1.15];
@@ -529,7 +493,6 @@
             });
         }
         
-        // --- UTILITY FUNCTIONS ---
         function getTrendMetric(trend) { return Number(trend?.votes || 0); }
         function getLocalizedTrendText(trend) { return currentLanguage === 'vi' ? { title: trend.title_vi || trend.title, description: trend.description_vi || trend.description } : { title: trend.title_en || trend.title, description: trend.description_en || trend.description }; }
         function truncateText(text = '', maxLength = 180) { if (text.length <= maxLength) return text; const cut = text.slice(0, maxLength); return cut.slice(0, cut.lastIndexOf(' ', maxLength) || maxLength) + '…'; }
@@ -543,7 +506,6 @@
         function generateSeriesForMonths(trend, monthKeys) { const baseVotes = getTrendMetric(trend); const trendDate = new Date(trend.date || Date.now()); const anchorKey = `${trendDate.getFullYear()}-${String(trendDate.getMonth() + 1).padStart(2, '0')}`; const anchorIndex = monthKeys.indexOf(anchorKey); const series = new Array(monthKeys.length).fill(null); if (anchorIndex !== -1) { for (let i = 0; i < monthKeys.length; i++) { const dist = i - anchorIndex; const decay = Math.exp(-Math.abs(dist) * 0.4); series[i] = Math.max(0, Math.round(baseVotes * decay * (1 + (Math.random() - 0.5) * 0.2))); } } return series; }
         function getColorPalette(count) { const base = [{ stroke: '#A100FF' }, { stroke: '#00C8FF' }, { stroke: '#00E696' }, { stroke: '#FFB400' }, { stroke: '#FF6384' }]; while (base.length < count) base.push({ stroke: `hsl(${Math.random() * 360}, 90%, 60%)` }); return base; }
 
-        // --- EVENT HANDLERS ---
         async function checkAIStatus() {
             try {
                 const geminiManager = new GeminiAPIManager('AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc');
@@ -569,6 +531,7 @@
         function handleInteraction(e) {
             const trendCard = e.target.closest('.trend-card');
             if (!trendCard) return;
+
             const trendId = parseInt(trendCard.dataset.trendId);
             const trend = allTrends.find(t => t.id === trendId);
             
@@ -620,7 +583,6 @@
             }
         }
         
-        // --- INITIALIZATION ---
         async function initializeApp() {
             applyTranslations();
             updateLanguageToggleUI();
@@ -632,7 +594,6 @@
             document.getElementById('loader')?.classList.add('loader-hidden');
         }
 
-        // --- EVENT LISTENER ATTACHMENTS ---
         DOM.hamburgerMenu.addEventListener('click', () => DOM.mainNav.classList.toggle('nav-active'));
         DOM.logo.addEventListener('click', () => switchView('main'));
         DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
@@ -658,12 +619,6 @@
         
         initializeApp();
     });
-</script>
+    </script>
 </body>
 </html>
-
-
-
-
-
-
