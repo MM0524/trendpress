@@ -235,28 +235,43 @@
         class GeminiAPIManager {
             constructor(apiKey) {
                 this.apiKey = apiKey;
-                this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+                this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';      
             }
             
-            // YÊU CẦU MỚI: Prompt để AI trả về dữ liệu JSON có cấu trúc
-            createStructuredAnalysisPrompt(trend) {
+            // YÊU CẦU MỚI: Prompt để AI trả về phân tích chi tiết
+            createDetailedAnalysisPrompt(trend) {
                 return `Analyze the trend: "${trend.title}" (Category: ${trend.category}).
                 Description: "${trend.description}".
                 
-                Based on this information, provide a detailed analysis.
+                Provide a detailed analysis in English. Structure your response using markdown with the following sections EXACTLY:
                 
-                Respond ONLY with a valid JSON object. Do not include any text before or after the JSON object.
-                The JSON object must have the following structure:
-                {
-                  "successScore": <a number between 0 and 100 representing the trend's potential for success>,
-                  "summary": "<a concise, one-paragraph summary of the trend's impact and potential>",
-                  "historicalData": [<an array of 4 numbers representing interest/views for the last 3 months and the current month>],
-                  "futureProjection": [<an array of 3 numbers representing a short-term forecast for the next 3 months>]
-                }`;
+                ### Analysis of "${trend.title}" Trend
+                <A paragraph explaining the core concept of this trend.>
+                
+                ### Actionable Suggestions for Viral Content
+                * **Real-World Case Studies:** <suggestion>
+                * **"Horror Stories" & Solutions:** <suggestion>
+                * **Interactive Tool Idea:** <suggestion>
+                
+                ### Primary Target Audience
+                * <Audience 1>
+                * <Audience 2>
+                * <Audience 3>
+                
+                ### Best Timing to Leverage this Trend
+                * <Timing suggestion 1>
+                * <Timing suggestion 2>
+                
+                ### Most Suitable Platforms
+                * **Technical Blogs (Medium, Dev.to):** <reason>
+                * **YouTube:** <reason>
+                * **LinkedIn:** <reason>
+                
+                Keep the descriptions concise and actionable. Use asterisks (*) for bullet points and double asterisks (**) for bolding the sub-headings within bullet points.`;
             }
 
             async analyzeTrend(trend) {
-                const prompt = this.createStructuredAnalysisPrompt(trend);
+                const prompt = this.createDetailedAnalysisPrompt(trend);
                 try {
                     const response = await fetch(`${this.baseURL}?key=${this.apiKey}`, {
                         method: 'POST',
@@ -264,7 +279,6 @@
                         body: JSON.stringify({
                             contents: [{ parts: [{ text: prompt }] }],
                             generationConfig: {
-                                responseMimeType: "application/json", // Yêu cầu Gemini trả về JSON
                                 temperature: 0.7,
                                 maxOutputTokens: 2048,
                             }
@@ -273,23 +287,39 @@
                     if (!response.ok) throw new Error(`API Error: ${response.status}`);
                     
                     const data = await response.json();
-                    const jsonString = data.candidates[0].content.parts[0].text;
+                    if (!data.candidates || !data.candidates[0].content) {
+                        if (data.candidates && data.candidates[0].finishReason === 'SAFETY') {
+                            return "The analysis for this trend was blocked due to sensitivity.";
+                        }
+                        throw new Error('Invalid response format from Gemini API');
+                    }
                     
-                    // Parse the JSON string returned by the AI
-                    return JSON.parse(jsonString);
+                    return this.formatDetailedInsight(data.candidates[0].content.parts[0].text);
 
                 } catch (error) {
-                    console.error("Gemini API request or JSON parsing failed:", error);
-                    // Trả về một object lỗi để UI có thể xử lý
-                    return { error: true, message: "AI analysis is currently unavailable or returned an invalid format." };
+                    console.error("Gemini API request failed:", error);
+                    throw new Error("AI analysis is currently unavailable.");
                 }
+            }
+
+            // HÀM MỚI: Format văn bản markdown từ AI thành HTML
+            formatDetailedInsight(markdownText) {
+                return markdownText
+                    .replace(/### (.*?)\n/g, '<h4>$1</h4>') // H3 -> h4
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+                    .replace(/^\* (.*$)/gm, '<li>$1</li>') // Bullet points
+                    .replace(/<li>/g, '<ul><li>') // Wrap li in ul
+                    .replace(/<\/li>\n<ul>/g, '</li><li>') // Merge consecutive li
+                    .replace(/<\/li>(\s*<h)/g, '</li></ul>$1') // Close ul before next header
+                    .replace(/\n/g, '<br>') // New lines
+                    .concat('</ul>'); // Ensure last ul is closed
             }
 
             async checkAPIStatus() {
                 try {
                     const response = await fetch(`${this.baseURL}?key=${this.apiKey}`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', },
                         body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] })
                     });
                     return response.ok;
@@ -307,7 +337,7 @@
         let currentFilter = { type: 'category', value: 'All' };
         let currentView = 'main';
         let hotTrendsChart = null;
-        let analysisChart = null; // Chart for the analysis modal
+        let analysisChart = null;
         let allTrends = [];
         let categories = [];
         
@@ -315,10 +345,10 @@
         let currentLanguage = localStorage.getItem('lang') || 'vi';
         const translations = {
             vi: {
-                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign In': 'Đăng nhập', 'Sign Out': 'Đăng xuất', 'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google', 'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại', 'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': '🔍 Phân tích', 'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium', 'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.', 'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Currently Hot Trends (Overall)': 'Xu hướng nóng hiện tại (Tổng thể)', 'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi', 'Category Leaderboards': 'Bảng xếp hạng danh mục', 'About TrendPulse': 'Giới thiệu TrendPulse', "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": 'Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề xu hướng để có thông tin chi tiết từ AI.', 'Footer Description': 'Nền tảng phân tích và dự đoán xu hướng hàng đầu, giúp bạn nắm bắt những thay đổi mới nhất trong thế giới số.', 'Quick Links': 'Liên kết nhanh', 'Features': 'Tính năng', 'AI Analysis': 'Phân tích AI', 'Trend Prediction': 'Dự đoán xu hướng', 'Leaderboards': 'Bảng xếp hạng', 'Personal Recommendations': 'Gợi ý cá nhân', 'Contact': 'Liên hệ', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Hỗ trợ: support@trendpulse.com', 'All rights reserved.': 'Tất cả quyền được bảo lưu.', 'AI: Checking...': 'AI: Đang kiểm tra...', 'AI: Ready': 'AI: Sẵn sàng', 'AI: Unavailable': 'AI: Không khả dụng', 'AI: Connection error': 'AI: Lỗi kết nối', 'AI Insight': 'AI Insight', 'AI Insight for': 'AI Insight cho', 'Analyzing trend...': 'Đang phân tích xu hướng...', 'Unable to analyze trend.': 'Không thể phân tích xu hướng.', 'Trends for': 'Xu hướng cho', 'Success Score': 'Tỷ Lệ Thành Công', 'Summary': 'Tóm Tắt', 'Interest Over Time': 'Mức Độ Quan Tâm',
+                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign In': 'Đăng nhập', 'Sign Out': 'Đăng xuất', 'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google', 'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại', 'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': '🔍 Phân tích', 'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium', 'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.', 'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Currently Hot Trends (Overall)': 'Xu hướng nóng hiện tại (Tổng thể)', 'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi', 'Category Leaderboards': 'Bảng xếp hạng danh mục', 'About TrendPulse': 'Giới thiệu TrendPulse', "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": 'Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề xu hướng để có thông tin chi tiết từ AI.', 'Footer Description': 'Nền tảng phân tích và dự đoán xu hướng hàng đầu, giúp bạn nắm bắt những thay đổi mới nhất trong thế giới số.', 'Quick Links': 'Liên kết nhanh', 'Features': 'Tính năng', 'AI Analysis': 'Phân tích AI', 'Trend Prediction': 'Dự đoán xu hướng', 'Leaderboards': 'Bảng xếp hạng', 'Personal Recommendations': 'Gợi ý cá nhân', 'Contact': 'Liên hệ', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Hỗ trợ: support@trendpulse.com', 'All rights reserved.': 'Tất cả quyền được bảo lưu.', 'AI: Checking...': 'AI: Đang kiểm tra...', 'AI: Ready': 'AI: Sẵn sàng', 'AI: Unavailable': 'AI: Không khả dụng', 'AI: Connection error': 'AI: Lỗi kết nối', 'AI Insight': 'AI Insight', 'AI Insight for': 'AI Insight cho', 'Analyzing trend...': 'Đang phân tích xu hướng...', 'Unable to analyze trend.': 'Không thể phân tích xu hướng.', 'Trends for': 'Xu hướng cho',
             },
             en: {
-                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out', 'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google', 'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now', 'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': '🔍 Analyze', 'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences', 'Premium Access Required': 'Premium Access Required', 'Please sign in with a company or school email to view the Trending Board.': 'Please sign in with a company or school email to view the Trending Board.', 'Log In': 'Log In', 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.', 'Trending Board Dashboard': 'Trending Board Dashboard', 'Currently Hot Trends (Overall)': 'Currently Hot Trends (Overall)', 'Your Followed Trends': 'Your Followed Trends', 'Category Leaderboards': 'Category Leaderboards', 'About TrendPulse': 'About TrendPulse', "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.", 'Footer Description': 'A leading platform for trend analysis and prediction, helping you stay ahead of the curve in the digital world.', 'Quick Links': 'Quick Links', 'Features': 'Features', 'AI Analysis': 'AI Analysis', 'Trend Prediction': 'Trend Prediction', 'Leaderboards': 'Leaderboards', 'Personal Recommendations': 'Personal Recommendations', 'Contact': 'Contact', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Support: support@trendpulse.com', 'All rights reserved.': 'All rights reserved.', 'AI: Checking...': 'AI: Checking...', 'AI: Ready': 'AI: Ready', 'AI: Unavailable': 'AI: Unavailable', 'AI: Connection error': 'AI: Connection error', 'AI Insight': 'AI Insight', 'AI Insight for': 'AI Insight for', 'Analyzing trend...': 'Analyzing trend...', 'Unable to analyze trend.': 'Unable to analyze trend.', 'Trends for': 'Trends for', 'Success Score': 'Success Score', 'Summary': 'Summary', 'Interest Over Time': 'Interest Over Time',
+                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out', 'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google', 'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now', 'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': '🔍 Analyze', 'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences', 'Premium Access Required': 'Premium Access Required', 'Please sign in with a company or school email to view the Trending Board.': 'Please sign in with a company or school email to view the Trending Board.', 'Log In': 'Log In', 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.', 'Trending Board Dashboard': 'Trending Board Dashboard', 'Currently Hot Trends (Overall)': 'Currently Hot Trends (Overall)', 'Your Followed Trends': 'Your Followed Trends', 'Category Leaderboards': 'Category Leaderboards', 'About TrendPulse': 'About TrendPulse', "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.", 'Footer Description': 'A leading platform for trend analysis and prediction, helping you stay ahead of the curve in the digital world.', 'Quick Links': 'Quick Links', 'Features': 'Features', 'AI Analysis': 'AI Analysis', 'Trend Prediction': 'Trend Prediction', 'Leaderboards': 'Leaderboards', 'Personal Recommendations': 'Personal Recommendations', 'Contact': 'Contact', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Support: support@trendpulse.com', 'All rights reserved.': 'All rights reserved.', 'AI: Checking...': 'AI: Checking...', 'AI: Ready': 'AI: Ready', 'AI: Unavailable': 'AI: Unavailable', 'AI: Connection error': 'AI: Connection error', 'AI Insight': 'AI Insight', 'AI Insight for': 'AI Insight for', 'Analyzing trend...': 'Analyzing trend...', 'Unable to analyze trend.': 'Unable to analyze trend.', 'Trends for': 'Trends for',
             }
         };
         const i18nBindings = [
@@ -396,13 +426,9 @@
                 const uniqueTrendIds = new Set(combined.map(t => t.id));
                 return Array.from(uniqueTrendIds).map(id => allTrends.find(t => t.id === id));
             } else {
-                if (currentFilter.type === 'category' && currentFilter.value !== 'All') {
-                    return allTrends.filter(t => t.category === currentFilter.value);
-                } else if (currentFilter.type === 'tag') {
-                    return allTrends.filter(t => (t.tags || []).includes(currentFilter.value));
-                } else {
-                    return allTrends;
-                }
+                if (currentFilter.type === 'category' && currentFilter.value !== 'All') { return allTrends.filter(t => t.category === currentFilter.value); } 
+                else if (currentFilter.type === 'tag') { return allTrends.filter(t => (t.tags || []).includes(currentFilter.value)); } 
+                else { return allTrends; }
             }
         }
         
@@ -415,10 +441,7 @@
             const trendsToDisplay = trendsToFilter.slice(0, displayedTrends[currentView] || TRENDS_PER_PAGE);
             trendsToDisplay.forEach(trend => listElement.appendChild(createTrendCard(trend)));
             
-            if (displayedTrends[currentView] === 0) {
-                 displayedTrends[currentView] = trendsToDisplay.length;
-            }
-
+            if (displayedTrends[currentView] === 0) { displayedTrends[currentView] = trendsToDisplay.length; }
             footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length);
         };
         
@@ -426,13 +449,10 @@
             const listElement = currentView === 'main' ? DOM.trendsList : DOM.forUTrendsList;
             const footerButton = currentView === 'main' ? DOM.loadMoreBtn : DOM.forULoadMoreBtn;
             const trendsToFilter = getVisibleTrends();
-            
             const currentCount = displayedTrends[currentView];
             const nextTrends = trendsToFilter.slice(currentCount, currentCount + TRENDS_PER_PAGE);
-            
             nextTrends.forEach(trend => listElement.appendChild(createTrendCard(trend)));
             displayedTrends[currentView] += nextTrends.length;
-            
             footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length);
         }
         
@@ -448,7 +468,6 @@
             const canvas = document.getElementById('hot-trends-chart');
             if (!canvas) return;
             if (hotTrendsChart) hotTrendsChart.destroy();
-
             const chartTitleEl = document.querySelector('#hot-trends-container h4');
             let trendsForChart;
 
@@ -469,23 +488,36 @@
                 startDate = new Date(new Date(minDate).setMonth(minDate.getMonth() - 2));
                 endDate = new Date(new Date(maxDate).setMonth(maxDate.getMonth() + 2));
             }
-
             const monthKeys = generateMonthRange(startDate, endDate);
             const labels = monthKeys.map(monthKeyToLabel);
             const palette = getColorPalette(trendsForChart.length);
-            const datasets = trendsForChart.map((t, idx) => ({
-                label: truncateText(t.title, 30),
-                data: generateSeriesForMonths(t, monthKeys),
-                borderColor: palette[idx].stroke,
-                tension: 0.4,
-                fill: false
-            }));
-
-            hotTrendsChart = new Chart(canvas.getContext('2d'), {
-                type: 'line', data: { labels, datasets },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#8a8da0' } } }, scales: { x: { ticks: { color: '#8a8da0' } }, y: { ticks: { color: '#8a8da0' }, beginAtZero: true } } }
-            });
+            const datasets = trendsForChart.map((t, idx) => ({ label: truncateText(t.title, 30), data: generateSeriesForMonths(t, monthKeys), borderColor: palette[idx].stroke, tension: 0.4, fill: false }));
+            hotTrendsChart = new Chart(canvas.getContext('2d'), { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#8a8da0' } } }, scales: { x: { ticks: { color: '#8a8da0' } }, y: { ticks: { color: '#8a8da0' }, beginAtZero: true } } } });
         };
+        
+        function renderAnalysisChart(trend) {
+            if (analysisChart) analysisChart.destroy();
+            const modalBody = document.getElementById('ai-insight-body');
+            const canvas = document.createElement('canvas');
+            modalBody.appendChild(canvas);
+
+            const labels = ['-2 Mo', '-1 Mo', 'Now', '+1 Mo', '+2 Mo'];
+            const baseValue = getTrendMetric(trend) || 300;
+            const historicalData = [baseValue * 0.8, baseValue * 0.9, baseValue];
+            const futureData = [null, null, baseValue, baseValue * 1.1, baseValue * 1.15];
+            
+            analysisChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Historical', data: historicalData, borderColor: '#00C8FF', tension: 0.4 },
+                        { label: 'Projection', data: futureData, borderColor: '#A100FF', borderDash: [5, 5], tension: 0.4 }
+                    ]
+                },
+                options: { responsive: true, plugins: { legend: { display: true, labels: { color: '#8a8da0' } } }, scales: { x: { ticks: { color: '#8a8da0' } }, y: { ticks: { color: '#8a8da0' }, beginAtZero: false } } }
+            });
+        }
         
         // --- UTILITY FUNCTIONS ---
         function getTrendMetric(trend) { return Number(trend?.votes || 0); }
@@ -500,70 +532,6 @@
         function monthKeyToLabel(key) { const [y, m] = key.split('-'); return `${m}/${y.slice(-2)}`; }
         function generateSeriesForMonths(trend, monthKeys) { const baseVotes = getTrendMetric(trend); const trendDate = new Date(trend.date || Date.now()); const anchorKey = `${trendDate.getFullYear()}-${String(trendDate.getMonth() + 1).padStart(2, '0')}`; const anchorIndex = monthKeys.indexOf(anchorKey); const series = new Array(monthKeys.length).fill(null); if (anchorIndex !== -1) { for (let i = 0; i < monthKeys.length; i++) { const dist = i - anchorIndex; const decay = Math.exp(-Math.abs(dist) * 0.4); series[i] = Math.max(0, Math.round(baseVotes * decay * (1 + (Math.random() - 0.5) * 0.2))); } } return series; }
         function getColorPalette(count) { const base = [{ stroke: '#A100FF' }, { stroke: '#00C8FF' }, { stroke: '#00E696' }, { stroke: '#FFB400' }, { stroke: '#FF6384' }]; while (base.length < count) base.push({ stroke: `hsl(${Math.random() * 360}, 90%, 60%)` }); return base; }
-
-        // --- HÀM MỚI ĐỂ RENDER MODAL PHÂN TÍCH ---
-        function renderAnalysisModal(analysisData) {
-            const modalBody = document.getElementById('ai-insight-body');
-            modalBody.innerHTML = `
-                <div style="text-align: left; margin-bottom: 1rem;">
-                    <h4>${t('Success Score')}</h4>
-                    <p style="font-size: 2rem; font-weight: bold; color: var(--primary-light);">${analysisData.successScore.toFixed(0)}%</p>
-                </div>
-                <div style="text-align: left; margin-bottom: 1rem;">
-                    <h4>${t('Summary')}</h4>
-                    <p>${analysisData.summary}</p>
-                </div>
-                <div style="text-align: left;">
-                     <h4>${t('Interest Over Time')}</h4>
-                    <canvas id="analysis-chart"></canvas>
-                </div>
-            `;
-            renderAnalysisChart(analysisData.historicalData, analysisData.futureProjection);
-        }
-
-        // --- HÀM MỚI ĐỂ VẼ BIỂU ĐỒ PHÂN TÍCH ---
-        function renderAnalysisChart(historicalData, futureProjection) {
-            const canvas = document.getElementById('analysis-chart');
-            if (!canvas) return;
-            if (analysisChart) analysisChart.destroy();
-
-            const labels = ['-3 Mo', '-2 Mo', '-1 Mo', 'Now', '+1 Mo', '+2 Mo', '+3 Mo'];
-            const lastHistoricalPoint = historicalData[historicalData.length - 1];
-            
-            analysisChart = new Chart(canvas.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Historical',
-                            data: historicalData,
-                            borderColor: 'rgba(0, 200, 255, 1)',
-                            backgroundColor: 'rgba(0, 200, 255, 0.2)',
-                            fill: false,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Projection',
-                            data: [null, null, null, lastHistoricalPoint, ...futureProjection], // Bắt đầu từ điểm "Now"
-                            borderColor: 'rgba(161, 0, 255, 1)',
-                            backgroundColor: 'rgba(161, 0, 255, 0.2)',
-                            fill: false,
-                            borderDash: [5, 5], // Nét đứt cho dự đoán
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: true, labels: { color: '#8a8da0' } } },
-                    scales: {
-                        x: { ticks: { color: '#8a8da0' } },
-                        y: { ticks: { color: '#8a8da0' }, beginAtZero: true }
-                    }
-                }
-            });
-        }
 
         // --- EVENT HANDLERS ---
         async function checkAIStatus() {
@@ -613,12 +581,9 @@
                  openModal('ai-insight-modal');
                  
                  const geminiManager = new GeminiAPIManager('AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc');
-                 geminiManager.analyzeTrend(trend).then(analysisData => {
-                    if (analysisData.error) {
-                        modalBody.innerHTML = `<p style="color: #ff6b6b;">${t('Unable to analyze trend.')}</p>`;
-                    } else {
-                        renderAnalysisModal(analysisData);
-                    }
+                 geminiManager.analyzeTrend(trend).then(formattedHtml => {
+                    modalBody.innerHTML = formattedHtml;
+                    renderAnalysisChart(trend); // Vẽ biểu đồ sau khi có nội dung
                  }).catch(err => {
                     modalBody.innerHTML = `<p style="color: #ff6b6b;">${t('Unable to analyze trend.')}</p>`;
                  });
@@ -669,9 +634,10 @@
         
         initializeApp();
     });
-</script>
+    </script>
 </body>
 </html>
+
 
 
 
