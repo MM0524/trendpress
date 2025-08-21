@@ -86,14 +86,57 @@
         .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-muted-color); font-size: 1.5rem; cursor: pointer; }
         .modal-title { font-size: 1.5rem; margin-bottom: 1rem; }
         .modal-body { margin-bottom: 1.5rem; color: var(--text-muted-color); }
-        #login-choice-modal .modal-actions { display: flex; flex-direction: column; gap: 1rem; }
-        .btn-social { background-color: var(--surface-color); border: 1px solid var(--border-color); width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.8rem; }
         .preferences-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: left; margin-bottom: 1.5rem; }
         #trending-board-content { max-width: 800px; }
         #hot-trends-container canvas { width: 100%; max-height: 300px; }
         .leaderboards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
         
-        /* CẬP NHẬT GIAO DIỆN MODAL PHÂN TÍCH */
+        /* CẬP NHẬT CSS CHO MODAL ĐĂNG NHẬP */
+        #login-choice-modal .modal-content {
+            max-width: 420px;
+            background-color: var(--surface-color);
+        }
+        #login-choice-modal .modal-title {
+            color: var(--primary-light);
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+        #login-choice-modal .modal-body {
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        #login-choice-modal .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        #login-choice-modal .btn-social {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Để căn giữa cả icon và text */
+            gap: 0.75rem;
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            position: relative;
+        }
+        #login-choice-modal .btn-social:hover {
+            border-color: var(--primary-color);
+            background-color: #21233a;
+        }
+        #login-choice-modal .btn-social svg {
+            position: absolute;
+            left: 1.5rem; /* Đặt icon ở bên trái */
+            stroke: var(--text-muted-color);
+            width: 20px;
+            height: 20px;
+        }
+
         #ai-insight-modal .modal-content { max-width: 550px; width: 90%; text-align: left; }
         #ai-insight-modal .modal-body { max-height: 70vh; overflow-y: auto; padding-right: 15px; }
         #ai-insight-modal h4 { color: var(--primary-light); margin-top: 1rem; margin-bottom: 0.5rem; }
@@ -105,8 +148,8 @@
         .footer-title { color: var(--primary-light); font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
         .footer-links { list-style: none; padding: 0; }
         .footer-links a { color: var(--text-muted-color); text-decoration: none; }
+        .footer-links a:hover { color: var(--primary-light); }
         .footer-bottom { border-top: 1px solid var(--border-color); margin-top: 2rem; padding-top: 1.5rem; text-align: center; color: var(--text-muted-color); font-size: 0.9rem; }
-        
         @media (max-width: 1024px) { .for-u-container { grid-template-columns: 1fr; } .leaderboard-panel { grid-row: 1; } }
         @media (max-width: 768px) {
             .header { padding: 0 1rem; }
@@ -177,7 +220,26 @@
     </section>
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
-    <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span></span></button><button class="btn btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></button></div></div></div>
+    
+    <!-- CẬP NHẬT HTML CHO MODAL ĐĂNG NHẬP -->
+    <div class="modal-overlay" id="login-choice-modal">
+        <div class="modal-content">
+            <button class="modal-close" data-close="login-choice-modal">&times;</button>
+            <h3 class="modal-title">Sign In</h3>
+            <p class="modal-body">Choose an account to continue to TrendPulse.</p>
+            <div class="modal-actions">
+                <button class="btn-social" id="login-google-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <span>Sign in with Google</span>
+                </button>
+                <button class="btn-social" id="login-work-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                    <span>Sign in with Work/School</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="trending-board-modal"><div class="modal-content" id="trending-board-content"><button class="modal-close" data-close="trending-board-modal">&times;</button><h3 class="modal-title"></h3><div id="hot-trends-container"><h4></h4><canvas id="hot-trends-chart"></canvas></div><div class="leaderboards-container" id="category-leaderboards"></div></div></div>
     <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
     <div class="modal-overlay" id="about-modal"><div class="modal-content"><button class="modal-close" data-close="about-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p></div></div>
@@ -192,31 +254,14 @@
         <div class="footer-bottom"><p></p></div>
     </footer>
 
-<script>
+    <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- INSECURE API MANAGER (AS PER YOUR REQUEST) ---
         // WARNING: THIS IS NOT SAFE FOR PRODUCTION. YOUR API KEY IS EXPOSED.
         class GeminiAPIManager {
-            constructor(apiKey) {
-                this.apiKey = apiKey;
-                this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-            }
-            
-            // CẬP NHẬT: Prompt giờ chỉ yêu cầu dự đoán cho 7 ngày
-            createStructuredSummaryPrompt(trend) {
-                return `Analyze the trend: "${trend.title}". Respond ONLY with a valid JSON object with this structure:
-                {
-                  "successScore": <a number between 0-100 for the trend's potential>,
-                  "summary": "<a one-paragraph summary of the trend's potential>",
-                  "historicalData": [<array of 4 numbers for interest over the last 4 months>],
-                  "futureProjection": [<array of 1 number for a forecast for the next 7 days>]
-                }`;
-            }
-
-            createDetailedAnalysisPrompt(trend) {
-                return `Analyze the trend: "${trend.title}" (Category: ${trend.category}). Description: "${trend.description}". Provide a detailed professional analysis in English. Structure your response using markdown with these EXACT sections:\n### Analysis of "${trend.title}" Trend\n<A paragraph explaining the core concept.>\n### Actionable Suggestions for Viral Content\n* **Real-World Case Studies:** <suggestion>\n* **"Horror Stories" & Solutions:** <suggestion>\n### Primary Target Audience\n* <Audience 1>\n* <Audience 2>\n### Most Suitable Platforms\n* **Platform 1 (e.g., YouTube):** <reason>\n* **Platform 2 (e.g., LinkedIn):** <reason>`;
-            }
-
+            constructor(apiKey) { this.apiKey = apiKey;  this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'; }
+            createStructuredSummaryPrompt(trend) { return `Analyze the trend: "${trend.title}". Respond ONLY with a valid JSON object with this structure: {"successScore": <a number between 0-100 for the trend's potential>,"summary": "<a one-paragraph summary of the trend's potential>","historicalData": [<array of 4 numbers for interest over the last 4 months>],"futureProjection": [<array of 1 number for a forecast for the next 7 days>]}`; }
+            createDetailedAnalysisPrompt(trend) { return `Analyze the trend: "${trend.title}" (Category: ${trend.category}). Description: "${trend.description}". Provide a detailed professional analysis in English. Structure your response using markdown with these EXACT sections:\n### Analysis of "${trend.title}" Trend\n<A paragraph explaining the core concept.>\n### Actionable Suggestions for Viral Content\n* **Real-World Case Studies:** <suggestion>\n* **"Horror Stories" & Solutions:** <suggestion>\n### Primary Target Audience\n* <Audience 1>\n* <Audience 2>\n### Most Suitable Platforms\n* **Platform 1 (e.g., YouTube):** <reason>\n* **Platform 2 (e.g., LinkedIn):** <reason>`; }
             async analyzeTrend(trend, analysisType = 'summary') {
                 const isSummary = analysisType === 'summary';
                 const prompt = isSummary ? this.createStructuredSummaryPrompt(trend) : this.createDetailedAnalysisPrompt(trend);
@@ -226,12 +271,11 @@
                     const response = await fetch(`${this.baseURL}?key=${this.apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig }) });
                     if (!response.ok) throw new Error(`API Error: ${response.status}`);
                     const data = await response.json();
-                    if (!data.candidates || !data.candidates[0].content) { if (data.candidates && data.candidates[0].finishReason === 'SAFETY') { return "The analysis for this trend was blocked due to sensitivity."; } throw new Error('Invalid response format from Gemini API'); }
+                    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) { if (data.candidates && data.candidates[0].finishReason === 'SAFETY') { return "The analysis for this trend was blocked due to sensitivity."; } throw new Error('Invalid response format from Gemini API'); }
                     const textContent = data.candidates[0].content.parts[0].text;
                     if (isSummary) { return JSON.parse(textContent); } else { return this.formatDetailedInsight(textContent); }
                 } catch (error) { console.error("Gemini API request failed:", error); throw new Error("AI analysis is currently unavailable."); }
             }
-
             formatDetailedInsight(markdownText) { return markdownText.replace(/### (.*?)\n/g, '<h4>$1</h4>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^\* (.*$)/gm, '<li>$1</li>').replace(/<li>/g, '<ul><li>').replace(/<\/li>\n<ul>/g, '</li><li>').replace(/<\/li>(\s*<h)/g, '</li></ul>$1').replace(/\n/g, '<br>').concat('</ul>'); }
             async checkAPIStatus() { try { const response = await fetch(`${this.baseURL}?key=${this.apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] }) }); return response.ok; } catch (error) { return false; } }
         }
@@ -400,7 +444,7 @@
         function renderDetailedAnalysis(htmlContent, trend) {
              const modalBody = document.getElementById('ai-insight-body');
              modalBody.innerHTML = htmlContent;
-             const { historicalData, futureProjection } = generateChartDataFromScore(75, getCombinedMetric(trend)); // Assume a positive score for detailed analysis
+             const { historicalData, futureProjection } = generateChartDataFromScore(75, getCombinedMetric(trend));
              renderAnalysisChart(historicalData, futureProjection);
         }
 
@@ -408,7 +452,7 @@
             if (analysisChart) analysisChart.destroy();
             const canvas = document.createElement('canvas');
             document.getElementById('ai-insight-body').appendChild(canvas);
-            const labels = ['-3 Mo', '-2 Mo', '-1 Mo', 'Now', '+7d']; // CẬP NHẬT: Nhãn trục X
+            const labels = ['-3 Mo', '-2 Mo', '-1 Mo', 'Now', '+7d'];
             const lastHistoricalPoint = historicalData[historicalData.length - 1];
             analysisChart = new Chart(canvas.getContext('2d'), {
                 type: 'line',
@@ -439,32 +483,25 @@
             const trendDate = new Date(trend.date || Date.now()); 
             const anchorKey = `${trendDate.getFullYear()}-${String(trendDate.getMonth() + 1).padStart(2, '0')}`; 
             const anchorIndex = monthKeys.indexOf(anchorKey);
-            const series = new Array(monthKeys.length).fill(0); // Bắt đầu tất cả bằng 0
+            const series = new Array(monthKeys.length).fill(0);
             if (anchorIndex !== -1) { 
                 for (let i = anchorIndex; i < monthKeys.length; i++) { 
                     const dist = i - anchorIndex;
                     const decay = Math.exp(-Math.pow(dist / 2, 2));
                     series[i] = Math.max(0, Math.round(peakMetric * decay * (1 + (Math.random() - 0.5) * 0.1)));
                 } 
-                // Thêm một chút tăng trưởng nhẹ ở tháng trước đó
-                if (anchorIndex > 0) {
-                    series[anchorIndex - 1] = Math.round(peakMetric * 0.3 * (Math.random() * 0.5 + 0.5));
-                }
+                if (anchorIndex > 0) { series[anchorIndex - 1] = Math.round(peakMetric * 0.3 * (Math.random() * 0.5 + 0.5)); }
             } 
             return series; 
         }
 
-        // CẬP NHẬT: Hàm này giờ chỉ dự đoán cho 7 ngày
         function generateChartDataFromScore(score, baseMetric = 500) {
-            const growthFactor = (score - 50) / 500; // Map score [0, 100] to a smaller growth factor for 7d
+            const growthFactor = (score - 50) / 500;
             let historicalData = [baseMetric * 0.4, baseMetric * 0.6, baseMetric * 0.8, baseMetric].map(v => Math.round(v));
             let futureProjection = [];
             let lastValue = baseMetric;
-            
-            // Chỉ tính 1 điểm cho 7 ngày tới
             lastValue = lastValue * (1 + growthFactor + (Math.random() - 0.5) * 0.05);
             futureProjection.push(Math.max(0, Math.round(lastValue)));
-
             return { historicalData, futureProjection };
         }
 
@@ -565,7 +602,3 @@
     </script>
 </body>
 </html>
-
-
-
-
