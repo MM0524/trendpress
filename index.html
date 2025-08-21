@@ -254,7 +254,7 @@
         <div class="footer-bottom"><p></p></div>
     </footer>
 
-    <script>
+<script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- INSECURE API MANAGER (AS PER YOUR REQUEST) ---
         // WARNING: THIS IS NOT SAFE FOR PRODUCTION. YOUR API KEY IS EXPOSED.
@@ -394,6 +394,38 @@
         function populateCategoryFilters() { categories = [...new Set(allTrends.map(t => t.category))].sort(); DOM.filterButtonsContainer.innerHTML = ['All', ...categories].map(category => `<button class="filter-btn ${category === 'All' ? 'active' : ''}" data-filter="${category}">${category}</button>`).join(''); };
         function populatePreferenceCheckboxes() { DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}"> ${category}</label></div>`).join(''); };
         function updateUIForFilter() { if (currentFilter.type === 'tag') { document.querySelector('#trending-header-text').textContent = `${t('Trends for')} #${currentFilter.value}`; DOM.clearFilterBtn.classList.remove('hidden'); DOM.filterButtonsContainer.classList.add('hidden'); } else { document.querySelector('#trending-header-text').textContent = t('Trending Now'); DOM.clearFilterBtn.classList.add('hidden'); DOM.filterButtonsContainer.classList.remove('hidden'); document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value)); } displayedTrends.main = 0; displayTrends(); };
+
+        // CẬP NHẬT: Hàm render bảng xếp hạng
+        function generateCategoryLeaderboards(containerId, categoriesToShow) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            categoriesToShow.sort().forEach(category => {
+                const trendsInCategory = allTrends.filter(t => t.category === category);
+                if (trendsInCategory.length === 0) return;
+
+                // Sắp xếp theo ngày để tìm trend mới nhất
+                const sortedByDate = [...trendsInCategory].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const newestTrend = sortedByDate[0];
+
+                // Sắp xếp theo điểm nóng để tìm trend hot nhất
+                const sortedByHotness = [...trendsInCategory].sort((a, b) => b.hotnessScore - a.hotnessScore);
+                
+                // Kết hợp: Lấy trend mới nhất và 2 trend hot nhất (không trùng lặp)
+                let topTrends = [newestTrend];
+                for (const trend of sortedByHotness) {
+                    if (topTrends.length < 3 && !topTrends.find(t => t.id === trend.id)) {
+                        topTrends.push(trend);
+                    }
+                }
+                
+                const leaderboardDiv = document.createElement('div');
+                leaderboardDiv.className = 'leaderboard-widget';
+                let listItems = topTrends.map(t => `<li><span>${truncateText(t.title, 25)}</span><span class="stat-display">${(t.hotnessScore * 100).toFixed(0)} 🔥</span></li>`).join('');
+                leaderboardDiv.innerHTML = `<h4>Top in ${category}</h4><ol>${listItems}</ol>`;
+                container.appendChild(leaderboardDiv);
+            });
+        }
 
         function createHotTrendsChart() {
             const canvas = document.getElementById('hot-trends-chart');
@@ -602,3 +634,4 @@
     </script>
 </body>
 </html>
+
