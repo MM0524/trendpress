@@ -68,10 +68,11 @@
         .btn-follow.followed { background-color: var(--primary-color); color: white; }
         #trends-footer { text-align: center; margin-top: 1.5rem; }
         .leaderboard-panel h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; }
-        .leaderboard-widget { margin-bottom: 1.5rem; }
-        .leaderboard-widget h4 { color: var(--primary-light); margin-bottom: 0.75rem; }
-        .leaderboard-widget ol { list-style: none; padding: 0; }
-        .leaderboard-widget li { background-color: var(--bg-color); padding: 0.6rem; border-radius: 4px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; }
+        .leaderboard-widget { margin-bottom: 2rem; }
+        .leaderboard-widget h4 { color: var(--primary-light); margin-bottom: 1rem; font-size: 1rem; font-weight: 600; }
+        .leaderboard-widget ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+        .leaderboard-widget li { background-color: var(--bg-color); padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background-color 0.2s ease; cursor: pointer; }
+        .leaderboard-widget li:hover { background-color: var(--border-color); }
         .view-source-btn { display: none; }
         .btn-follow { display: none; }
         body.work-account-view .btn-follow, body.work-account-view .view-source-btn { display: inline-flex; }
@@ -86,63 +87,22 @@
         .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-muted-color); font-size: 1.5rem; cursor: pointer; }
         .modal-title { font-size: 1.5rem; margin-bottom: 1rem; }
         .modal-body { margin-bottom: 1.5rem; color: var(--text-muted-color); }
+        #login-choice-modal .modal-content { max-width: 420px; background-color: var(--surface-color); }
+        #login-choice-modal .modal-title { color: var(--primary-light); font-size: 1.75rem; margin-bottom: 0.5rem; }
+        #login-choice-modal .modal-body { margin-bottom: 2rem; font-size: 0.9rem; }
+        #login-choice-modal .modal-actions { display: flex; flex-direction: column; gap: 1rem; }
+        #login-choice-modal .btn-social { background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 1rem; text-align: center; font-size: 0.95rem; font-weight: 500; position: relative; }
+        #login-choice-modal .btn-social:hover { border-color: var(--primary-color); background-color: #21233a; }
+        #login-choice-modal .btn-social svg { position: absolute; left: 1.5rem; stroke: var(--text-muted-color); width: 20px; height: 20px; }
         .preferences-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: left; margin-bottom: 1.5rem; }
         #trending-board-content { max-width: 800px; }
         #hot-trends-container canvas { width: 100%; max-height: 300px; }
         .leaderboards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
-        
-        /* CẬP NHẬT CSS CHO MODAL ĐĂNG NHẬP */
-        #login-choice-modal .modal-content {
-            max-width: 420px;
-            background-color: var(--surface-color);
-        }
-        #login-choice-modal .modal-title {
-            color: var(--primary-light);
-            font-size: 1.75rem;
-            margin-bottom: 0.5rem;
-        }
-        #login-choice-modal .modal-body {
-            margin-bottom: 2rem;
-            font-size: 0.9rem;
-        }
-        #login-choice-modal .modal-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        #login-choice-modal .btn-social {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center; /* Để căn giữa cả icon và text */
-            gap: 0.75rem;
-            padding: 1rem;
-            text-align: center;
-            font-size: 0.95rem;
-            font-weight: 500;
-            position: relative;
-        }
-        #login-choice-modal .btn-social:hover {
-            border-color: var(--primary-color);
-            background-color: #21233a;
-        }
-        #login-choice-modal .btn-social svg {
-            position: absolute;
-            left: 1.5rem; /* Đặt icon ở bên trái */
-            stroke: var(--text-muted-color);
-            width: 20px;
-            height: 20px;
-        }
-
         #ai-insight-modal .modal-content { max-width: 550px; width: 90%; text-align: left; }
         #ai-insight-modal .modal-body { max-height: 70vh; overflow-y: auto; padding-right: 15px; }
         #ai-insight-modal h4 { color: var(--primary-light); margin-top: 1rem; margin-bottom: 0.5rem; }
         #ai-insight-modal ul { list-style-position: inside; padding-left: 5px; }
         #ai-insight-modal li { margin-bottom: 0.5rem; }
-
         .footer { background-color: var(--surface-color); border-top: 1px solid var(--border-color); margin-top: 4rem; padding: 3rem 0 1rem 0; }
         .footer-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
         .footer-title { color: var(--primary-light); font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
@@ -166,7 +126,6 @@
 </head>
 <body>
     <div class="loader-overlay" id="loader"><div class="loader-pulse"><div></div><div></div></div></div>
-
     <header class="header">
         <div class="logo" id="logo"><span class="logo-trend">Trend</span>Pulse</div>
         <div class="ai-status-indicator" id="ai-status-indicator"><span id="ai-status-text"></span></div>
@@ -220,26 +179,7 @@
     </section>
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
-    
-    <!-- CẬP NHẬT HTML CHO MODAL ĐĂNG NHẬP -->
-    <div class="modal-overlay" id="login-choice-modal">
-        <div class="modal-content">
-            <button class="modal-close" data-close="login-choice-modal">&times;</button>
-            <h3 class="modal-title">Sign In</h3>
-            <p class="modal-body">Choose an account to continue to TrendPulse.</p>
-            <div class="modal-actions">
-                <button class="btn-social" id="login-google-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    <span>Sign in with Google</span>
-                </button>
-                <button class="btn-social" id="login-work-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-                    <span>Sign in with Work/School</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
+    <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span></span></button><button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></button></div></div></div>
     <div class="modal-overlay" id="trending-board-modal"><div class="modal-content" id="trending-board-content"><button class="modal-close" data-close="trending-board-modal">&times;</button><h3 class="modal-title"></h3><div id="hot-trends-container"><h4></h4><canvas id="hot-trends-chart"></canvas></div><div class="leaderboards-container" id="category-leaderboards"></div></div></div>
     <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
     <div class="modal-overlay" id="about-modal"><div class="modal-content"><button class="modal-close" data-close="about-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p></div></div>
@@ -254,7 +194,7 @@
         <div class="footer-bottom"><p></p></div>
     </footer>
 
-<script>
+    <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- INSECURE API MANAGER (AS PER YOUR REQUEST) ---
         // WARNING: THIS IS NOT SAFE FOR PRODUCTION. YOUR API KEY IS EXPOSED.
@@ -394,8 +334,7 @@
         function populateCategoryFilters() { categories = [...new Set(allTrends.map(t => t.category))].sort(); DOM.filterButtonsContainer.innerHTML = ['All', ...categories].map(category => `<button class="filter-btn ${category === 'All' ? 'active' : ''}" data-filter="${category}">${category}</button>`).join(''); };
         function populatePreferenceCheckboxes() { DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}"> ${category}</label></div>`).join(''); };
         function updateUIForFilter() { if (currentFilter.type === 'tag') { document.querySelector('#trending-header-text').textContent = `${t('Trends for')} #${currentFilter.value}`; DOM.clearFilterBtn.classList.remove('hidden'); DOM.filterButtonsContainer.classList.add('hidden'); } else { document.querySelector('#trending-header-text').textContent = t('Trending Now'); DOM.clearFilterBtn.classList.add('hidden'); DOM.filterButtonsContainer.classList.remove('hidden'); document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value)); } displayedTrends.main = 0; displayTrends(); };
-
-        // CẬP NHẬT: Hàm render bảng xếp hạng
+        
         function generateCategoryLeaderboards(containerId, categoriesToShow) {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -404,14 +343,10 @@
                 const trendsInCategory = allTrends.filter(t => t.category === category);
                 if (trendsInCategory.length === 0) return;
 
-                // Sắp xếp theo ngày để tìm trend mới nhất
                 const sortedByDate = [...trendsInCategory].sort((a, b) => new Date(b.date) - new Date(a.date));
                 const newestTrend = sortedByDate[0];
-
-                // Sắp xếp theo điểm nóng để tìm trend hot nhất
                 const sortedByHotness = [...trendsInCategory].sort((a, b) => b.hotnessScore - a.hotnessScore);
                 
-                // Kết hợp: Lấy trend mới nhất và 2 trend hot nhất (không trùng lặp)
                 let topTrends = [newestTrend];
                 for (const trend of sortedByHotness) {
                     if (topTrends.length < 3 && !topTrends.find(t => t.id === trend.id)) {
@@ -421,8 +356,8 @@
                 
                 const leaderboardDiv = document.createElement('div');
                 leaderboardDiv.className = 'leaderboard-widget';
-                let listItems = topTrends.map(t => `<li><span>${truncateText(t.title, 25)}</span><span class="stat-display">${(t.hotnessScore * 100).toFixed(0)} 🔥</span></li>`).join('');
-                leaderboardDiv.innerHTML = `<h4>Top in ${category}</h4><ol>${listItems}</ol>`;
+                let listItems = topTrends.map(t => `<li>${truncateText(t.title, 35)}</li>`).join('');
+                leaderboardDiv.innerHTML = `<h4>Top in ${category}</h4><ul>${listItems}</ul>`;
                 container.appendChild(leaderboardDiv);
             });
         }
@@ -634,4 +569,3 @@
     </script>
 </body>
 </html>
-
