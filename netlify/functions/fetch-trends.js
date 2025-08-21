@@ -13,14 +13,21 @@ async function fetchWithTimeout(url, ms = 7000) {
   }
 }
 
-// fetch-trends.js
+// netlify/functions/fetch-trends.js
+
+/* 
+  Netlify runtime: Node 18+ (có sẵn fetch)
+  -> Không cần node-fetch hay cheerio
+*/
+
+// ============ Handler ============
 
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
   };
 
   if (event.httpMethod === "OPTIONS") {
@@ -33,9 +40,11 @@ exports.handler = async (event) => {
       bbcWorld,
       vnexpressIntl,
       yahooFinance,
-      appleMusic,
+      appleMusicVN,
       variety,
+      ignGaming,
       ventureBeatAI,
+      youtubeVN,
       googleNewsVN,
       cnnWorld,
       theVerge,
@@ -47,9 +56,11 @@ exports.handler = async (event) => {
       fetchBBCWorld(),
       fetchVnExpressInternational(),
       fetchYahooFinance(),
-      fetchAppleMusic(),
+      fetchAppleMusicVN(),
       fetchVariety(),
+      fetchIGNGaming(),
       fetchVentureBeatAI(),
+      fetchYouTubeTrendingVN(),
       fetchGoogleNewsVN(),
       fetchCNNWorld(),
       fetchTheVerge(),
@@ -58,14 +69,17 @@ exports.handler = async (event) => {
       fetchAlJazeeraAll()
     ]);
 
+    // Gộp & chuẩn hoá
     let trends = [
       ...hackerNews,
       ...bbcWorld,
       ...vnexpressIntl,
       ...yahooFinance,
-      ...appleMusic,
+      ...appleMusicVN,
       ...variety,
+      ...ignGaming,
       ...ventureBeatAI,
+      ...youtubeVN,
       ...googleNewsVN,
       ...cnnWorld,
       ...theVerge,
@@ -76,17 +90,16 @@ exports.handler = async (event) => {
       .filter(Boolean)
       .map((t) => ({
         ...t,
-        views: Number.isFinite(Number(t.views)) ? Number(t.views) : undefined,
-        engagement: Number.isFinite(Number(t.engagement)) ? Number(t.engagement) : undefined,
-        votes: Number.isFinite(Number(t.votes)) ? Number(t.votes) : 0
+        views: toNumOrUndef(t.views),
+        engagement: toNumOrUndef(t.engagement),
+        votes: toNumOrZero(t.votes),
       }))
-      .sort(
-        (a, b) =>
-          (Number(b.views) || Number(b.engagement) || Number(b.votes) || 0) -
-          (Number(a.views) || Number(a.engagement) || Number(a.votes) || 0)
-      );
+      .sort((a, b) => (
+        (b.views ?? b.engagement ?? b.votes ?? 0) -
+        (a.views ?? a.engagement ?? a.votes ?? 0)
+      ));
 
-    // Assign incremental ids
+    // Gán id tăng dần
     trends = trends.map((t, i) => ({ ...t, id: i + 1 }));
 
     return {
@@ -100,9 +113,11 @@ exports.handler = async (event) => {
           bbcWorld: bbcWorld.length,
           vnexpressIntl: vnexpressIntl.length,
           yahooFinance: yahooFinance.length,
-          appleMusic: appleMusic.length,
+          appleMusicVN: appleMusicVN.length,
           variety: variety.length,
+          ignGaming: ignGaming.length,
           ventureBeatAI: ventureBeatAI.length,
+          youtubeVN: youtubeVN.length,
           googleNewsVN: googleNewsVN.length,
           cnnWorld: cnnWorld.length,
           theVerge: theVerge.length,
@@ -126,279 +141,271 @@ exports.handler = async (event) => {
   }
 };
 
-// Hacker News
+// ============ Helpers ============
+
+function toNumOrUndef(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+function toNumOrZero(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+function decodeHtmlEntities(str = "") {
+  return str
+    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+function getTag(block, tag) {
+  // Ưu tiên CDATA, fallback text
+  const cdata = new RegExp(`<${tag}><!\\[CDATA\\[(.*?)\\]\\]><\\/${tag}>`, "is");
+  const plain = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, "i");
+  let m = block.match(cdata) || block.match(plain);
+  return m ? decodeHtmlEntities(m[1].trim()) : "";
+}
+function rssItems(xml, max = 25) {
+  const items = [];
+  const reg = /<item[\s\S]*?>([\s\S]*?)<\/item>/gi;
+  let m;
+  while ((m = reg.exec(xml)) && items.length < max) {
+    items.push(m[1]);
+  }
+  return items;
+}
+function toDateStr(d) {
+  const dt = d ? new Date(d) : new Date();
+  return isNaN(dt.getTime()) ? new Date().toLocaleDateString("en-US") : dt.toLocaleDateString("en-US");
+}
+
+// ============ Sources ============
+
+// Tech → Hacker News
 async function fetchHackerNewsFrontpage() {
   try {
-    const url = "https://hnrss.org/frontpage";
-    const res = await fetch(url);
+    const res = await fetch("https://hnrss.org/frontpage");
     if (!res.ok) throw new Error(`HackerNews HTTP ${res.status}`);
     const xml = await res.text();
 
-    const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
     let rank = 500;
-
-    while ((match = itemRegex.exec(xml)) && items.length < 25) {
-      const block = match[1];
-      const title =
-        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-          block.match(/<title>(.*?)<\/title>/) ||
-          [])[1] || "Hacker News";
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
-      const pubDate =
-        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
-      const description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || "";
-
-      items.push({
-        title,
-        description,
-        category: "Tech",
-        tags: ["HackerNews"],
-        votes: rank--,
-        source: link,
-        date: new Date(pubDate).toLocaleDateString("en-US"),
-        submitter: "Hacker News Frontpage"
-      });
-    }
-    return items;
+    return rssItems(xml, 25).map(block => ({
+      title: getTag(block, "title") || "Hacker News",
+      description: getTag(block, "description") || "",
+      category: "Tech",
+      tags: ["HackerNews"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "Hacker News Frontpage"
+    }));
   } catch (e) {
     console.warn("Hacker News fetch failed", e.message);
     return [];
   }
 }
 
-// BBC
+// World → BBC
 async function fetchBBCWorld() {
   try {
-    const url = "https://feeds.bbci.co.uk/news/world/rss.xml";
-    const res = await fetch(url);
+    const res = await fetch("https://feeds.bbci.co.uk/news/world/rss.xml");
     if (!res.ok) throw new Error(`BBC HTTP ${res.status}`);
     const xml = await res.text();
 
-    const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
-    let rank = 180;
-
-    while ((match = itemRegex.exec(xml)) && items.length < 25) {
-      const block = match[1];
-      const title =
-        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-          block.match(/<title>(.*?)<\/title>/) ||
-          [])[1] || "BBC News";
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
-      const pubDate =
-        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
-      const description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || "";
-
-      items.push({
-        title,
-        description,
-        category: "World",
-        tags: ["BBCWorld"],
-        votes: rank--,
-        source: link,
-        date: new Date(pubDate).toLocaleDateString("en-US"),
-        submitter: "BBC World News"
-      });
-    }
-
-    return items;
+    let rank = 300;
+    return rssItems(xml, 25).map(block => ({
+      title: getTag(block, "title") || "BBC News",
+      description: getTag(block, "description") || "",
+      category: "World",
+      tags: ["BBCWorld"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "BBC World"
+    }));
   } catch (e) {
     console.warn("BBC World fetch failed", e.message);
     return [];
   }
 }
 
-// VnExpress
+// News → VnExpress (International)
 async function fetchVnExpressInternational() {
   try {
-    const url = "https://e.vnexpress.net/rss/news.rss";
-    const res = await fetch(url);
+    const res = await fetch("https://e.vnexpress.net/rss/news.rss");
     if (!res.ok) throw new Error(`VnExpress HTTP ${res.status}`);
     const xml = await res.text();
-    const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
-    let rank = 200;
 
-    while ((match = itemRegex.exec(xml)) && items.length < 25) {
-      const block = match[1];
-      const title =
-        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-          block.match(/<title>(.*?)<\/title>/) ||
-          [])[1] || "VnExpress News";
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
-      const pubDate =
-        (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || new Date().toUTCString();
-      const description =
-        (block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) ||
-          block.match(/<description>(.*?)<\/description>/) ||
-          [])[1] || "";
-      items.push({
-        title,
-        description,
-        category: "News",
-        tags: ["VnExpressInternational"],
-        votes: rank--,
-        source: link,
-        date: new Date(pubDate).toLocaleDateString("en-US"),
-        submitter: "VnExpress International"
-      });
-    }
-    return items;
+    let rank = 260;
+    return rssItems(xml, 25).map(block => ({
+      title: getTag(block, "title") || "VnExpress News",
+      description: getTag(block, "description") || "",
+      category: "News",
+      tags: ["VnExpressInternational"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "VnExpress International"
+    }));
   } catch (e) {
-    console.warn("VnExpress International fetch failed", e.message);
+    console.warn("VnExpress fetch failed", e.message);
     return [];
   }
 }
 
-// Yahoo Finance
+// Finance → Yahoo Finance
 async function fetchYahooFinance() {
   try {
-    const url = "https://feeds.finance.yahoo.com/rss/2.0/headline?s=yhoo&region=US&lang=en-US";
-    const res = await fetch(url);
+    const res = await fetch("https://feeds.finance.yahoo.com/rss/2.0/headline?s=yhoo&region=US&lang=en-US");
     if (!res.ok) throw new Error(`YahooFinance HTTP ${res.status}`);
     const xml = await res.text();
 
-    const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
-    let rank = 160;
-
-    while ((match = itemRegex.exec(xml)) && items.length < 20) {
-      const block = match[1];
-      const title =
-        (block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
-          block.match(/<title>(.*?)<\/title>/) ||
-          [])[1] || "Yahoo Finance";
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
-      const description =
-        (block.match(/<description>(.*?)<\/description>/) || [])[1] || "";
-
-      items.push({
-        title,
-        description,
-        category: "Finance",
-        tags: ["YahooFinance"],
-        votes: rank--,
-        source: link,
-        date: new Date().toLocaleDateString("en-US"),
-        submitter: "Yahoo Finance"
-      });
-    }
-    return items;
+    let rank = 240;
+    return rssItems(xml, 20).map(block => ({
+      title: getTag(block, "title") || "Yahoo Finance",
+      description: getTag(block, "description") || "",
+      category: "Finance",
+      tags: ["YahooFinance"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "Yahoo Finance"
+    }));
   } catch (e) {
     console.warn("Yahoo Finance fetch failed", e.message);
     return [];
   }
 }
 
-// Apple Music
-async function fetchAppleMusic() {
+// Music → Apple Music Top Songs (Vietnam)
+async function fetchAppleMusicVN() {
   try {
-    const url =
-      "https://rss.applemarketingtools.com/api/v2/us/music/most-played/10/songs.json";
-    const res = await fetch(url);
+    const res = await fetch("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/20/songs.json");
     if (!res.ok) throw new Error(`Apple Music HTTP ${res.status}`);
     const json = await res.json();
 
-    return json.feed.results.map((song, i) => ({
-      title: song.name,
-      description: song.artistName,
+    return (json?.feed?.results || []).map((song, i) => ({
+      title: `${song.name} - ${song.artistName}`,
+      description: "Apple Music Top Songs (VN)",
       category: "Music",
-      tags: ["AppleMusic"],
-      votes: 150 - i,
+      tags: ["AppleMusic", "Vietnam"],
+      votes: 220 - i,
       source: song.url,
-      date: new Date().toLocaleDateString("en-US"),
-      submitter: "Apple Music"
+      date: toDateStr(),
+      submitter: "Apple Music VN"
     }));
   } catch (e) {
-    console.warn("Apple Music fetch failed", e.message);
+    console.warn("Apple Music VN fetch failed", e.message);
     return [];
   }
 }
 
-// Variety
+// Media → Variety
 async function fetchVariety() {
   try {
-    const url = "https://variety.com/feed/";
-    const res = await fetch(url);
+    const res = await fetch("https://variety.com/feed/");
     if (!res.ok) throw new Error(`Variety HTTP ${res.status}`);
     const xml = await res.text();
-    const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
-    let rank = 140;
 
-    while ((match = itemRegex.exec(xml)) && items.length < 15) {
-      const block = match[1];
-      const title =
-        (block.match(/<title>(.*?)<\/title>/) || [])[1] || "Variety";
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
-      const description =
-        (block.match(/<description>(.*?)<\/description>/) || [])[1] || "";
-
-      items.push({
-        title,
-        description,
-        category: "Media",
-        tags: ["Variety"],
-        votes: rank--,
-        source: link,
-        date: new Date().toLocaleDateString("en-US"),
-        submitter: "Variety"
-      });
-    }
-    return items;
+    let rank = 210;
+    return rssItems(xml, 20).map(block => ({
+      title: getTag(block, "title") || "Variety",
+      description: getTag(block, "description") || "",
+      category: "Media",
+      tags: ["Variety"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "Variety"
+    }));
   } catch (e) {
     console.warn("Variety fetch failed", e.message);
     return [];
   }
 }
 
+// Gaming → IGN
+async function fetchIGNGaming() {
+  try {
+    const res = await fetch("https://feeds.ign.com/ign/games-all");
+    if (!res.ok) throw new Error(`IGN HTTP ${res.status}`);
+    const xml = await res.text();
 
-// VentureBeat AI
+    let rank = 200;
+    return rssItems(xml, 20).map(block => ({
+      title: getTag(block, "title") || "IGN Gaming",
+      description: getTag(block, "description") || "",
+      category: "Gaming",
+      tags: ["IGN"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "IGN"
+    }));
+  } catch (e) {
+    console.warn("IGN Gaming fetch failed", e.message);
+    return [];
+  }
+}
+
+// AI → VentureBeat AI
 async function fetchVentureBeatAI() {
   try {
-    const url = "https://venturebeat.com/category/ai/feed/";
-    const res = await fetch(url);
+    const res = await fetch("https://venturebeat.com/category/ai/feed/");
     if (!res.ok) throw new Error(`VentureBeat HTTP ${res.status}`);
     const xml = await res.text();
-    const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
-    let rank = 100;
 
-    while ((match = itemRegex.exec(xml)) && items.length < 15) {
-      const block = match[1];
-      const title =
-        (block.match(/<title>(.*?)<\/title>/) || [])[1] || "VentureBeat AI";
-      const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || "#";
-      const description =
-        (block.match(/<description>(.*?)<\/description>/) || [])[1] || "";
-
-      items.push({
-        title,
-        description,
-        category: "AI",
-        tags: ["VentureBeat"],
-        votes: rank--,
-        source: link,
-        date: new Date().toLocaleDateString("en-US"),
-        submitter: "VentureBeat AI"
-      });
-    }
-    return items;
+    let rank = 190;
+    return rssItems(xml, 20).map(block => ({
+      title: getTag(block, "title") || "VentureBeat AI",
+      description: getTag(block, "description") || "",
+      category: "AI",
+      tags: ["VentureBeat"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "VentureBeat AI"
+    }));
   } catch (e) {
     console.warn("VentureBeat AI fetch failed", e.message);
+    return [];
+  }
+}
+
+// Social → YouTube Trending (VN)
+async function fetchYouTubeTrendingVN() {
+  try {
+    const res = await fetch("https://www.youtube.com/feeds/videos.xml?chart=mostPopular&regionCode=VN");
+    if (!res.ok) throw new Error(`YouTube VN HTTP ${res.status}`);
+    const xml = await res.text();
+
+    // YouTube feed dùng <entry> thay vì <item>
+    const entries = [];
+    const reg = /<entry[\s\S]*?>([\s\S]*?)<\/entry>/gi;
+    let m; let rank = 180;
+    while ((m = reg.exec(xml)) && entries.length < 20) {
+      const block = m[1];
+      const title = decodeHtmlEntities((block.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "YouTube");
+      const linkMatch = block.match(/<link[^>]*href="([^"]+)"/i);
+      const link = linkMatch ? linkMatch[1] : "#";
+      const updated = (block.match(/<updated>(.*?)<\/updated>/i) || [])[1];
+
+      entries.push({
+        title,
+        description: "YouTube Trending VN",
+        category: "Social",
+        tags: ["YouTube", "Vietnam"],
+        votes: rank--,
+        source: link,
+        date: toDateStr(updated),
+        submitter: "YouTube Trending VN"
+      });
+    }
+    return entries;
+  } catch (e) {
+    console.warn("YouTube VN fetch failed", e.message);
     return [];
   }
 }
@@ -546,3 +553,4 @@ async function fetchAlJazeeraAll() {
     return [];
   }
 }
+
