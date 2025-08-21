@@ -213,31 +213,6 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- INSECURE API MANAGER (AS PER YOUR REQUEST) ---
-        // WARNING: THIS IS NOT SAFE FOR PRODUCTION. YOUR API KEY IS EXPOSED.
-        class GeminiAPIManager {
-            constructor(apiKey) { this.apiKey = apiKey; this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'; }
-            createStructuredSummaryPrompt(trend) { return `Analyze the trend: "${trend.title}". Respond ONLY with a valid JSON object with this structure: {"successScore": <a number between 0-100 for the trend's potential>,"summary": "<a one-paragraph summary of the trend's potential>","historicalData": [<array of 4 numbers for interest over the last 4 months>],"futureProjection": [<array of 1 number for a forecast for the next 7 days>]}`; }
-            createDetailedAnalysisPrompt(trend) { return `Analyze the trend: "${trend.title}" (Category: ${trend.category}). Description: "${trend.description}". Provide a detailed professional analysis in English. Structure your response using markdown with these EXACT sections:\n### Analysis of "${trend.title}" Trend\n<A paragraph explaining the core concept.>\n### Actionable Suggestions for Viral Content\n* **Real-World Case Studies:** <suggestion>\n* **"Horror Stories" & Solutions:** <suggestion>\n### Primary Target Audience\n* <Audience 1>\n* <Audience 2>\n### Most Suitable Platforms\n* **Platform 1 (e.g., YouTube):** <reason>\n* **Platform 2 (e.g., LinkedIn):** <reason>`; }
-            async analyzeTrend(trend, analysisType = 'summary') {
-                const isSummary = analysisType === 'summary';
-                const prompt = isSummary ? this.createStructuredSummaryPrompt(trend) : this.createDetailedAnalysisPrompt(trend);
-                const generationConfig = { temperature: 0.7, maxOutputTokens: 2048, };
-                if (isSummary) { generationConfig.responseMimeType = "application/json"; }
-                try {
-                    const response = await fetch(`${this.baseURL}?key=${this.apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig }) });
-                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
-                    const data = await response.json();
-                    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) { if (data.candidates && data.candidates[0].finishReason === 'SAFETY') { return "The analysis for this trend was blocked due to sensitivity."; } throw new Error('Invalid response format from Gemini API'); }
-                    const textContent = data.candidates[0].content.parts[0].text;
-                    if (isSummary) { return JSON.parse(textContent); } else { return this.formatDetailedInsight(textContent); }
-                } catch (error) { console.error("Gemini API request failed:", error); throw new Error("AI analysis is currently unavailable."); }
-            }
-            formatDetailedInsight(markdownText) { return markdownText.replace(/### (.*?)\n/g, '<h4>$1</h4>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^\* (.*$)/gm, '<li>$1</li>').replace(/<li>/g, '<ul><li>').replace(/<\/li>\n<ul>/g, '</li><li>').replace(/<\/li>(\s*<h)/g, '</li></ul>$1').replace(/\n/g, '<br>').concat('</ul>'); }
-            async checkAPIStatus() { try { const response = await fetch(`${this.baseURL}?key=${this.apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] }) }); return response.ok; } catch (error) { return false; } }
-        }
-        window.GeminiAPIManager = GeminiAPIManager;
-
         // --- STATE & DATA ---
         let user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [] };
         const TRENDS_PER_PAGE = 5;
@@ -277,6 +252,32 @@
             } catch (e) { console.warn('Live trends not available.', e.message); DOM.trendsList.innerHTML = `<p style="text-align: center; color: var(--text-muted-color);">Could not load trends. Please try again later.</p>`; return []; }
         }
 
+        // --- SỬA LỖI: Thêm lại hàm bị thiếu ---
+        async function analyzeTrendSecurely(trend, analysisType) {
+            try {
+                const response = await fetch('/.netlify/functions/analyze-trend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trend, analysisType })
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server function error: ${response.status} ${errorText}`);
+                }
+                const result = await response.json();
+                if (!result.success) throw new Error(result.message || 'Analysis failed on the server');
+                
+                if (analysisType === 'summary') {
+                    return JSON.parse(result.data);
+                }
+                const formatDetailedInsight = (markdownText) => markdownText.replace(/### (.*?)\n/g, '<h4>$1</h4>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^\* (.*$)/gm, '<li>$1</li>').replace(/<li>/g, '<ul><li>').replace(/<\/li>\n<ul>/g, '</li><li>').replace(/<\/li>(\s*<h)/g, '</li></ul>$1').replace(/\n/g, '<br>').concat('</ul>');
+                return formatDetailedInsight(result.data);
+            } catch (error) {
+                console.error("Secure analysis request failed:", error);
+                throw error;
+            }
+        }
+
         function preprocessTrends(trends) {
             if (!trends || trends.length === 0) return [];
             trends.forEach(trend => {
@@ -284,7 +285,6 @@
                 trend.interactions = (trend.votes || 0) * (Math.random() * 5 + 1);
                 trend.searches = (trend.votes || 0) * (Math.random() * 2 + 0.5);
             });
-            // SỬA LỖI: Đảm bảo maxValues không bao giờ là 0 hoặc -Infinity
             const maxValues = { 
                 views: Math.max(1, ...trends.map(t => t.views)), 
                 interactions: Math.max(1, ...trends.map(t => t.interactions)), 
@@ -560,6 +560,7 @@
     </script>
 </body>
 </html>
+
 
 
 
