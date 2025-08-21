@@ -13,15 +13,6 @@ async function fetchWithTimeout(url, ms = 7000) {
   }
 }
 
-// netlify/functions/fetch-trends.js
-
-/* 
-  Netlify runtime: Node 18+ (có sẵn fetch)
-  -> Không cần node-fetch hay cheerio
-*/
-
-// ============ Handler ============
-
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -44,7 +35,6 @@ exports.handler = async (event) => {
       variety,
       ignGaming,
       ventureBeatAI,
-      youtubeVN,
       googleNewsVN,
       cnnWorld,
       theVerge,
@@ -60,7 +50,6 @@ exports.handler = async (event) => {
       fetchVariety(),
       fetchIGNGaming(),
       fetchVentureBeatAI(),
-      fetchYouTubeTrendingVN(),
       fetchGoogleNewsVN(),
       fetchCNNWorld(),
       fetchTheVerge(),
@@ -79,7 +68,6 @@ exports.handler = async (event) => {
       ...variety,
       ...ignGaming,
       ...ventureBeatAI,
-      ...youtubeVN,
       ...googleNewsVN,
       ...cnnWorld,
       ...theVerge,
@@ -117,7 +105,6 @@ exports.handler = async (event) => {
           variety: variety.length,
           ignGaming: ignGaming.length,
           ventureBeatAI: ventureBeatAI.length,
-          youtubeVN: youtubeVN.length,
           googleNewsVN: googleNewsVN.length,
           cnnWorld: cnnWorld.length,
           theVerge: theVerge.length,
@@ -243,7 +230,7 @@ async function fetchVnExpressInternational() {
       title: getTag(block, "title") || "VnExpress News",
       description: getTag(block, "description") || "",
       category: "News",
-      tags: ["VnExpressInternational"],
+      tags: ["VnExpressInternational", "Vietnam"],
       votes: rank--,
       source: getTag(block, "link") || "#",
       date: toDateStr(getTag(block, "pubDate")),
@@ -370,42 +357,6 @@ async function fetchVentureBeatAI() {
     }));
   } catch (e) {
     console.warn("VentureBeat AI fetch failed", e.message);
-    return [];
-  }
-}
-
-// Social → YouTube Trending (VN)
-async function fetchYouTubeTrendingVN() {
-  try {
-    const res = await fetch("https://www.youtube.com/feeds/videos.xml?chart=mostPopular&regionCode=VN");
-    if (!res.ok) throw new Error(`YouTube VN HTTP ${res.status}`);
-    const xml = await res.text();
-
-    // YouTube feed dùng <entry> thay vì <item>
-    const entries = [];
-    const reg = /<entry[\s\S]*?>([\s\S]*?)<\/entry>/gi;
-    let m; let rank = 180;
-    while ((m = reg.exec(xml)) && entries.length < 20) {
-      const block = m[1];
-      const title = decodeHtmlEntities((block.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "YouTube");
-      const linkMatch = block.match(/<link[^>]*href="([^"]+)"/i);
-      const link = linkMatch ? linkMatch[1] : "#";
-      const updated = (block.match(/<updated>(.*?)<\/updated>/i) || [])[1];
-
-      entries.push({
-        title,
-        description: "YouTube Trending VN",
-        category: "Social",
-        tags: ["YouTube", "Vietnam"],
-        votes: rank--,
-        source: link,
-        date: toDateStr(updated),
-        submitter: "YouTube Trending VN"
-      });
-    }
-    return entries;
-  } catch (e) {
-    console.warn("YouTube VN fetch failed", e.message);
     return [];
   }
 }
