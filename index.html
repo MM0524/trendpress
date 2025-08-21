@@ -23,6 +23,17 @@
         @keyframes pulse { 0% { top: 36px; left: 36px; width: 0; height: 0; opacity: 1; } 100% { top: 0px; left: 0px; width: 72px; height: 72px; opacity: 0; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* CẬP NHẬT: Wrapper để căn giữa nội dung */
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - var(--header-height) - 1px); /* Chiều cao viewport trừ header */
+        }
+        .main-container, .for-u-container {
+            flex-grow: 1; /* Cho phép container chính giãn ra để chiếm không gian */
+        }
+        
         .header { display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; height: var(--header-height); animation: fadeIn 0.5s ease-out; }
         .logo { font-size: 1.8rem; font-weight: 700; cursor: pointer; }
         .logo-trend { color: var(--primary-light); }
@@ -39,9 +50,10 @@
         .btn-outline { background: transparent; color: var(--primary-light); border: 1px solid var(--primary-light); font-size: 0.8rem; padding: 0.3rem 0.8rem; }
         .btn-outline:hover { background: var(--primary-light); color: white; }
         .analyze-trend-btn { margin-right: 0.5rem; }
-        .main-container, .for-u-container { animation: slideInUp 0.6s ease-out; }
-        .main-container { display: grid; grid-template-columns: 1fr; gap: 2rem; padding: 2rem; max-width: 900px; margin: auto; }
-        .for-u-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; max-width: 1400px; margin: auto; }
+        
+        .main-container { display: grid; grid-template-columns: 1fr; gap: 2rem; padding: 2rem; max-width: 900px; margin: auto; animation: slideInUp 0.6s ease-out; }
+        .for-u-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
+        
         .trending-container, .for-u-content, .leaderboard-panel { background-color: var(--surface-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
         .trending-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
         .trending-title-group { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 600; }
@@ -153,30 +165,35 @@
             <button class="hamburger-menu" id="hamburger-menu"><span></span><span></span><span></span></button>
         </div>
     </header>
-    <main class="main-container" id="main-view-container">
-        <div class="demo-banner"><h2></h2><p></p></div>
-        <section class="trending-container">
-            <div class="trending-header">
-                <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><span id="trending-header-text"></span></div>
-                 <button class="btn btn-secondary hidden" id="clear-filter-btn"></button>
+    
+    <!-- CẬP NHẬT HTML: Thêm wrapper để căn giữa -->
+    <div class="main-content-wrapper">
+        <main class="main-container" id="main-view-container">
+            <div class="demo-banner"><h2></h2><p></p></div>
+            <section class="trending-container">
+                <div class="trending-header">
+                    <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><span id="trending-header-text"></span></div>
+                     <button class="btn btn-secondary hidden" id="clear-filter-btn"></button>
+                </div>
+                <div class="filter-buttons" id="filter-buttons"></div>
+                <div id="trends-list"></div>
+                <div id="trends-footer"><button class="btn btn-primary" id="load-more-btn"></button></div>
+            </section>
+        </main>
+        <section class="for-u-container hidden" id="for-u-view-container">
+            <div class="for-u-content">
+                <div class="trending-header">
+                    <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg><span></span></div>
+                </div>
+                <div id="for-u-trends-list"></div>
+                <div id="for-u-trends-footer"><button class="btn btn-primary" id="for-u-load-more-btn"></button></div>
             </div>
-            <div class="filter-buttons" id="filter-buttons"></div>
-            <div id="trends-list"></div>
-            <div id="trends-footer"><button class="btn btn-primary" id="load-more-btn"></button></div>
+            <aside class="leaderboard-panel" id="for-u-leaderboard-panel">
+                 <h3></h3><div id="for-u-leaderboards"></div>
+            </aside>
         </section>
-    </main>
-    <section class="for-u-container hidden" id="for-u-view-container">
-        <div class="for-u-content">
-            <div class="trending-header">
-                <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg><span></span></div>
-            </div>
-            <div id="for-u-trends-list"></div>
-            <div id="for-u-trends-footer"><button class="btn btn-primary" id="for-u-load-more-btn"></button></div>
-        </div>
-        <aside class="leaderboard-panel" id="for-u-leaderboard-panel">
-             <h3></h3><div id="for-u-leaderboards"></div>
-        </aside>
-    </section>
+    </div>
+
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
     <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span></span></button><button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></button></div></div></div>
@@ -543,5 +560,6 @@
     </script>
 </body>
 </html>
+
 
 
