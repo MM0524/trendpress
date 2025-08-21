@@ -199,7 +199,7 @@
         // --- INSECURE API MANAGER (AS PER YOUR REQUEST) ---
         // WARNING: THIS IS NOT SAFE FOR PRODUCTION. YOUR API KEY IS EXPOSED.
         class GeminiAPIManager {
-            constructor(apiKey) { this.apiKey = apiKey;  this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'; }
+            constructor(apiKey) { this.apiKey = apiKey; this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'; }
             createStructuredSummaryPrompt(trend) { return `Analyze the trend: "${trend.title}". Respond ONLY with a valid JSON object with this structure: {"successScore": <a number between 0-100 for the trend's potential>,"summary": "<a one-paragraph summary of the trend's potential>","historicalData": [<array of 4 numbers for interest over the last 4 months>],"futureProjection": [<array of 1 number for a forecast for the next 7 days>]}`; }
             createDetailedAnalysisPrompt(trend) { return `Analyze the trend: "${trend.title}" (Category: ${trend.category}). Description: "${trend.description}". Provide a detailed professional analysis in English. Structure your response using markdown with these EXACT sections:\n### Analysis of "${trend.title}" Trend\n<A paragraph explaining the core concept.>\n### Actionable Suggestions for Viral Content\n* **Real-World Case Studies:** <suggestion>\n* **"Horror Stories" & Solutions:** <suggestion>\n### Primary Target Audience\n* <Audience 1>\n* <Audience 2>\n### Most Suitable Platforms\n* **Platform 1 (e.g., YouTube):** <reason>\n* **Platform 2 (e.g., LinkedIn):** <reason>`; }
             async analyzeTrend(trend, analysisType = 'summary') {
