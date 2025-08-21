@@ -270,49 +270,27 @@
                 const res = await fetch('/.netlify/functions/fetch-trends');
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                if (data.success && Array.isArray(data.trends)) {
-                    // CẬP NHẬT MỚI: Mô phỏng dữ liệu và tính điểm nóng
-                    return preprocessTrends(data.trends);
-                }
-                return [];
-            } catch (e) {
-                console.warn('Live trends not available.', e.message);
-                DOM.trendsList.innerHTML = `<p style="text-align: center; color: var(--text-muted-color);">Could not load trends. Please try again later.</p>`;
-                return [];
-            }
+                return (data.success && Array.isArray(data.trends)) ? preprocessTrends(data.trends) : [];
+            } catch (e) { console.warn('Live trends not available.', e.message); DOM.trendsList.innerHTML = `<p style="text-align: center; color: var(--text-muted-color);">Could not load trends. Please try again later.</p>`; return []; }
         }
 
         function preprocessTrends(trends) {
             trends.forEach(trend => {
-                // Bước 1: Mô phỏng dữ liệu còn thiếu
-                trend.views = (trend.votes || 0) * (Math.random() * 50 + 10); // views gấp 10-60 lần votes
-                trend.interactions = (trend.votes || 0) * (Math.random() * 5 + 1); // interactions gấp 1-6 lần votes
-                trend.searches = (trend.votes || 0) * (Math.random() * 2 + 0.5); // searches gấp 0.5-2.5 lần votes
+                trend.views = (trend.votes || 0) * (Math.random() * 50 + 10);
+                trend.interactions = (trend.votes || 0) * (Math.random() * 5 + 1);
+                trend.searches = (trend.votes || 0) * (Math.random() * 2 + 0.5);
             });
-
-            // Bước 2: Tính toán điểm nóng
-            const maxValues = {
-                views: Math.max(...trends.map(t => t.views)),
-                interactions: Math.max(...trends.map(t => t.interactions)),
-                searches: Math.max(...trends.map(t => t.searches)),
-                votes: Math.max(...trends.map(t => t.votes)),
-            };
-
-            trends.forEach(trend => {
-                trend.hotnessScore = calculateHotnessScore(trend, maxValues);
-            });
-
+            const maxValues = { views: Math.max(1, ...trends.map(t => t.views)), interactions: Math.max(1, ...trends.map(t => t.interactions)), searches: Math.max(1, ...trends.map(t => t.searches)), votes: Math.max(1, ...trends.map(t => t.votes)), };
+            trends.forEach(trend => { trend.hotnessScore = calculateHotnessScore(trend, maxValues); });
             return trends;
         }
 
         function calculateHotnessScore(trend, maxValues) {
             const weights = { views: 0.2, interactions: 0.4, searches: 0.3, votes: 0.1 };
-
             const normViews = (trend.views / maxValues.views) || 0;
             const normInteractions = (trend.interactions / maxValues.interactions) || 0;
             const normSearches = (trend.searches / maxValues.searches) || 0;
             const normVotes = (trend.votes / maxValues.votes) || 0;
-            
             return (normViews * weights.views) + (normInteractions * weights.interactions) + (normSearches * weights.searches) + (normVotes * weights.votes);
         }
 
@@ -402,18 +380,18 @@
                 trendsForChart = followedTrendsData;
                 chartTitleEl.textContent = t('Your Followed Trends');
             } else {
-                // SỬA ĐỔI CHÍNH: Sắp xếp theo hotnessScore và lấy top 5
                 trendsForChart = [...allTrends].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
                 chartTitleEl.textContent = t('Top 5 Hot Trends');
             }
 
+            // CẬP NHẬT LOGIC: Tự động xác định khoảng thời gian cho biểu đồ
             const allDates = trendsForChart.map(t => new Date(t.date)).filter(d => !isNaN(d));
             let startDate = new Date(new Date().setMonth(new Date().getMonth() - 6)), endDate = new Date();
             if (allDates.length > 0) {
-                const minDate = new Date(Math.min(...allDates));
-                const maxDate = new Date(Math.max(...allDates));
-                startDate = new Date(new Date(minDate).setMonth(minDate.getMonth() - 2));
-                endDate = new Date(new Date(maxDate).setMonth(maxDate.getMonth() + 2));
+                const minDateMs = Math.min(...allDates.map(d => d.getTime()));
+                const maxDateMs = Math.max(...allDates.map(d => d.getTime()));
+                startDate = new Date(new Date(minDateMs).setMonth(new Date(minDateMs).getMonth() - 2));
+                endDate = new Date(new Date(maxDateMs).setMonth(new Date(maxDateMs).getMonth() + 2));
             }
             const monthKeys = generateMonthRange(startDate, endDate);
             const labels = monthKeys.map(monthKeyToLabel);
@@ -435,7 +413,6 @@
                 </div>
                 <div>
                      <h4>${t('Interest Over Time')}</h4>
-                    <canvas id="analysis-chart"></canvas>
                 </div>
             `;
             renderAnalysisChart(analysisData.historicalData, analysisData.futureProjection);
@@ -445,15 +422,16 @@
              const modalBody = document.getElementById('ai-insight-body');
              modalBody.innerHTML = htmlContent;
              const baseValue = getTrendMetric(trend);
-             const fakeHistory = [baseValue * 0.8, baseValue * 0.9, baseValue, baseValue * 0.95];
-             const fakeFuture = [baseValue * 1.05, baseValue * 1.1, baseValue * 1.15];
+             const fakeHistory = [baseValue * 0.8, baseValue * 0.9, baseValue, baseValue * 0.95].map(v => Math.round(v));
+             const fakeFuture = [baseValue * 1.05, baseValue * 1.1, baseValue * 1.15].map(v => Math.round(v));
              renderAnalysisChart(fakeHistory, fakeFuture);
         }
 
         function renderAnalysisChart(historicalData, futureProjection) {
             if (analysisChart) analysisChart.destroy();
+            const modalBody = document.getElementById('ai-insight-body');
             const canvas = document.createElement('canvas');
-            document.getElementById('ai-insight-body').appendChild(canvas);
+            modalBody.appendChild(canvas);
 
             const labels = ['-3 Mo', '-2 Mo', '-1 Mo', 'Now', '+1 Mo', '+2 Mo', '+3 Mo'];
             const lastHistoricalPoint = historicalData[historicalData.length - 1];
@@ -481,7 +459,29 @@
         function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
         function generateMonthRange(start, end) { const res = []; let d = new Date(start); d.setDate(1); while (d <= end) { res.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); d.setMonth(d.getMonth() + 1); } return res; }
         function monthKeyToLabel(key) { const [y, m] = key.split('-'); return `${m}/${y.slice(-2)}`; }
-        function generateSeriesForMonths(trend, monthKeys) { const baseVotes = getTrendMetric(trend); const trendDate = new Date(trend.date || Date.now()); const anchorKey = `${trendDate.getFullYear()}-${String(trendDate.getMonth() + 1).padStart(2, '0')}`; const anchorIndex = monthKeys.indexOf(anchorKey); const series = new Array(monthKeys.length).fill(null); if (anchorIndex !== -1) { for (let i = 0; i < monthKeys.length; i++) { const dist = i - anchorIndex; const decay = Math.exp(-Math.abs(dist) * 0.4); series[i] = Math.max(0, Math.round(baseVotes * decay * (1 + (Math.random() - 0.5) * 0.2))); } } return series; }
+        
+        // CẬP NHẬT LOGIC: Hàm giả lập dữ liệu thông minh hơn
+        function generateSeriesForMonths(trend, monthKeys) { 
+            const baseMetric = getTrendMetric(trend); 
+            const trendDate = new Date(trend.date || Date.now()); 
+            const anchorKey = `${trendDate.getFullYear()}-${String(trendDate.getMonth() + 1).padStart(2, '0')}`; 
+            const anchorIndex = monthKeys.indexOf(anchorKey);
+            const series = new Array(monthKeys.length).fill(null);
+            if (anchorIndex !== -1) { 
+                for (let i = 0; i < monthKeys.length; i++) { 
+                    const dist = i - anchorIndex;
+                    // Bắt đầu tăng trưởng 2 tháng trước đỉnh
+                    if (dist >= -2) {
+                        const decay = Math.exp(-Math.pow(dist / 2, 2)); // Gaussian decay for a smoother curve
+                        series[i] = Math.max(0, Math.round(baseMetric * decay * (1 + (Math.random() - 0.5) * 0.1)));
+                    } else {
+                        series[i] = 0; // Bằng 0 trước khi trend bắt đầu
+                    }
+                } 
+            } 
+            return series; 
+        }
+
         function getColorPalette(count) { const base = [{ stroke: '#A100FF' }, { stroke: '#00C8FF' }, { stroke: '#00E696' }, { stroke: '#FFB400' }, { stroke: '#FF6384' }]; while (base.length < count) base.push({ stroke: `hsl(${Math.random() * 360}, 90%, 60%)` }); return base; }
 
         async function checkAIStatus() {
@@ -490,13 +490,9 @@
                 const isOnline = await geminiManager.checkAPIStatus();
                 const statusIndicator = document.getElementById('ai-status-indicator');
                 const statusText = document.getElementById('ai-status-text');
-                if (isOnline) {
-                    statusIndicator.className = 'ai-status-indicator online';
-                    statusText.textContent = t('AI: Ready');
-                } else {
-                    statusIndicator.className = 'ai-status-indicator offline';
-                    statusText.textContent = t('AI: Unavailable');
-                }
+                statusIndicator.classList.toggle('online', isOnline);
+                statusIndicator.classList.toggle('offline', !isOnline);
+                statusText.textContent = t(isOnline ? 'AI: Ready' : 'AI: Unavailable');
             } catch (error) {
                 const statusIndicator = document.getElementById('ai-status-indicator');
                 const statusText = document.getElementById('ai-status-text');
@@ -517,9 +513,7 @@
                 const isFollowed = user.followedTrends.includes(trendId);
                 user.followedTrends = isFollowed ? user.followedTrends.filter(id => id !== trendId) : [...user.followedTrends, trendId];
                 displayTrends();
-                if (document.getElementById('trending-board-modal')?.classList.contains('show')) {
-                    createHotTrendsChart();
-                }
+                if (document.getElementById('trending-board-modal')?.classList.contains('show')) { createHotTrendsChart(); }
             }
             
             if (e.target.closest('.analyze-trend-btn')) {
@@ -581,7 +575,8 @@
         
         initializeApp();
     });
-    </script>
+</script>
 </body>
 </html>
+
 
