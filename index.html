@@ -197,9 +197,24 @@
         // --- INSECURE API MANAGER (AS PER YOUR REQUEST) ---
         // WARNING: THIS IS NOT SAFE FOR PRODUCTION. YOUR API KEY IS EXPOSED.
         class GeminiAPIManager {
-            constructor(apiKey) { this.apiKey = apiKey; this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'; }
-            createStructuredSummaryPrompt(trend) { return `Analyze the trend: "${trend.title}". Respond ONLY with a valid JSON object with this structure: {"successScore": <a number between 0-100 for the trend's potential>,"summary": "<a one-paragraph summary of the trend's potential>","historicalData": [<array of 4 numbers for interest over the last 4 months>],"futureProjection": [<array of 3 numbers for a forecast for the next 3 months>]}`; }
-            createDetailedAnalysisPrompt(trend) { return `Analyze the trend: "${trend.title}" (Category: ${trend.category}). Description: "${trend.description}". Provide a detailed professional analysis in English. Structure your response using markdown with these EXACT sections:\n### Analysis of "${trend.title}" Trend\n<A paragraph explaining the core concept.>\n### Actionable Suggestions for Viral Content\n* **Real-World Case Studies:** <suggestion>\n* **"Horror Stories" & Solutions:** <suggestion>\n### Primary Target Audience\n* <Audience 1>\n* <Audience 2>\n### Most Suitable Platforms\n* **Platform 1 (e.g., YouTube):** <reason>\n* **Platform 2 (e.g., LinkedIn):** <reason>`; }
+            constructor(apiKey) {
+                this.apiKey = apiKey;
+                this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+            }
+            
+            // CẬP NHẬT: Prompt giờ chỉ yêu cầu Score và Summary để đảm bảo tính nhất quán
+            createStructuredSummaryPrompt(trend) {
+                return `Analyze the trend: "${trend.title}". Respond ONLY with a valid JSON object with this structure:
+                {
+                  "successScore": <a number between 0-100 for the trend's potential>,
+                  "summary": "<a one-paragraph summary of the trend's potential>"
+                }`;
+            }
+
+            createDetailedAnalysisPrompt(trend) {
+                return `Analyze the trend: "${trend.title}" (Category: ${trend.category}). Description: "${trend.description}". Provide a detailed professional analysis in English. Structure your response using markdown with these EXACT sections:\n### Analysis of "${trend.title}" Trend\n<A paragraph explaining the core concept.>\n### Actionable Suggestions for Viral Content\n* **Real-World Case Studies:** <suggestion>\n* **"Horror Stories" & Solutions:** <suggestion>\n### Primary Target Audience\n* <Audience 1>\n* <Audience 2>\n### Most Suitable Platforms\n* **Platform 1 (e.g., YouTube):** <reason>\n* **Platform 2 (e.g., LinkedIn):** <reason>`;
+            }
+
             async analyzeTrend(trend, analysisType = 'summary') {
                 const isSummary = analysisType === 'summary';
                 const prompt = isSummary ? this.createStructuredSummaryPrompt(trend) : this.createDetailedAnalysisPrompt(trend);
@@ -209,7 +224,7 @@
                     const response = await fetch(`${this.baseURL}?key=${this.apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig }) });
                     if (!response.ok) throw new Error(`API Error: ${response.status}`);
                     const data = await response.json();
-                    if (!data.candidates || !data.candidates[0].content) { if (data.candidates && data.candidates[0].finishReason === 'SAFETY') { return "The analysis for this trend was blocked due to sensitivity."; } throw new Error('Invalid response format from Gemini API'); }
+                    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) { if (data.candidates && data.candidates[0].finishReason === 'SAFETY') { return "The analysis for this trend was blocked due to sensitivity."; } throw new Error('Invalid response format from Gemini API'); }
                     const textContent = data.candidates[0].content.parts[0].text;
                     if (isSummary) { return JSON.parse(textContent); } else { return this.formatDetailedInsight(textContent); }
                 } catch (error) { console.error("Gemini API request failed:", error); throw new Error("AI analysis is currently unavailable."); }
@@ -243,21 +258,7 @@
             { selector: '#nav-top-trends', key: 'Top Trends' }, { selector: '#nav-trending-board', key: 'Trending Board' }, { selector: '#nav-for-u a', key: 'For U' }, { selector: '#nav-about', key: 'About' }, { selector: '#sign-in-btn', key: 'Sign In' }, { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' }, { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' }, { selector: '#login-google-btn span', key: 'Sign in with Google' }, { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' }, { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' }, { selector: '#trending-header-text', key: 'Trending Now' }, { selector: '#clear-filter-btn', key: 'Show All Trends' }, { selector: '#load-more-btn', key: 'Load More' }, { selector: '#for-u-load-more-btn', key: 'Load More' }, { selector: '.for-u-container .trending-title-group span', key: 'For You' }, { selector: '#preferences-modal .modal-title', key: 'Welcome! Set Your Preferences' }, { selector: '#preferences-modal .modal-body', key: "Select the categories you're interested in for a personalized experience." }, { selector: '#save-preferences-btn', key: 'Save Preferences' }, { selector: '#premium-modal .modal-title', key: 'Premium Access Required' }, { selector: '#premium-modal .modal-body', key: 'Please sign in with a company or school email to view the Trending Board.' }, { selector: '#premium-login-btn', key: 'Log In' }, { selector: '#login-choice-modal .modal-title', key: 'Sign In' }, { selector: '#login-choice-modal .modal-body', key: 'Choose an account to continue to TrendPulse.' }, { selector: '#trending-board-modal .modal-title', key: 'Trending Board Dashboard' }, { selector: '#for-u-leaderboard-panel h3', key: 'Category Leaderboards' }, { selector: '#about-modal .modal-title', key: 'About TrendPulse' }, { selector: '#about-modal .modal-body', key: "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights." }, { selector: '.footer-section:nth-child(1) .footer-description', key: 'Footer Description' }, { selector: '.footer-section:nth-child(2) .footer-title', key: 'Quick Links' }, { selector: '#footer-top-trends', key: 'Top Trends' }, { selector: '#footer-trending-board', key: 'Trending Board' }, { selector: '#footer-about', key: 'About' }, { selector: '.footer-section:nth-child(3) .footer-title', key: 'Features' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(1)', key: 'AI Analysis' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(2)', key: 'Trend Prediction' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(3)', key: 'Leaderboards' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(4)', key: 'Personal Recommendations' }, { selector: '.footer-section:nth-child(4) .footer-title', key: 'Contact' }, { selector: '.footer-section:nth-child(4) .footer-contact p:nth-child(1)', key: 'Email: info@trendpulse.com' }, { selector: '.footer-section:nth-child(4) .footer-contact p:nth-child(2)', key: 'Support: support@trendpulse.com' },
         ];
         
-        const DOM = {
-            body: document.body, mainNav: document.getElementById('main-nav'), hamburgerMenu: document.getElementById('hamburger-menu'),
-            logo: document.getElementById('logo'), signInBtn: document.getElementById('sign-in-btn'), userMenu: document.getElementById('user-menu'),
-            userEmailBtn: document.getElementById('user-email-btn'), dropdownHeader: document.getElementById('dropdown-user-email'),
-            userDropdown: document.getElementById('user-dropdown'), dropdownSignOut: document.getElementById('dropdown-sign-out'),
-            dropdownWorkSchool: document.getElementById('dropdown-work-school'), navTopTrends: document.getElementById('nav-top-trends'),
-            navTrendingBoard: document.getElementById('nav-trending-board'), navForU: document.getElementById('nav-for-u'),
-            navAbout: document.getElementById('nav-about'), modalCloses: document.querySelectorAll('.modal-close'),
-            mainViewContainer: document.getElementById('main-view-container'), forUViewContainer: document.getElementById('for-u-view-container'),
-            trendsList: document.getElementById('trends-list'), forUTrendsList: document.getElementById('for-u-trends-list'),
-            loadMoreBtn: document.getElementById('load-more-btn'), forULoadMoreBtn: document.getElementById('for-u-load-more-btn'),
-            filterButtonsContainer: document.getElementById('filter-buttons'), clearFilterBtn: document.getElementById('clear-filter-btn'),
-            preferencesGrid: document.getElementById('preferences-grid'), savePreferencesBtn: document.getElementById('save-preferences-btn'),
-        };
-
+        const DOM = { body: document.body, mainNav: document.getElementById('main-nav'), hamburgerMenu: document.getElementById('hamburger-menu'), logo: document.getElementById('logo'), signInBtn: document.getElementById('sign-in-btn'), userMenu: document.getElementById('user-menu'), userEmailBtn: document.getElementById('user-email-btn'), dropdownHeader: document.getElementById('dropdown-user-email'), userDropdown: document.getElementById('user-dropdown'), dropdownSignOut: document.getElementById('dropdown-sign-out'), dropdownWorkSchool: document.getElementById('dropdown-work-school'), navTopTrends: document.getElementById('nav-top-trends'), navTrendingBoard: document.getElementById('nav-trending-board'), navForU: document.getElementById('nav-for-u'), navAbout: document.getElementById('nav-about'), modalCloses: document.querySelectorAll('.modal-close'), mainViewContainer: document.getElementById('main-view-container'), forUViewContainer: document.getElementById('for-u-view-container'), trendsList: document.getElementById('trends-list'), forUTrendsList: document.getElementById('for-u-trends-list'), loadMoreBtn: document.getElementById('load-more-btn'), forULoadMoreBtn: document.getElementById('for-u-load-more-btn'), filterButtonsContainer: document.getElementById('filter-buttons'), clearFilterBtn: document.getElementById('clear-filter-btn'), preferencesGrid: document.getElementById('preferences-grid'), savePreferencesBtn: document.getElementById('save-preferences-btn'), };
         function t(key) { return (translations[currentLanguage] && translations[currentLanguage][key]) || key; }
         function openModal(modalId) { document.getElementById(modalId).classList.add('show'); }
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
@@ -300,23 +301,7 @@
             trendCard.dataset.trendId = trend.id;
             const { title: localizedTitle, description: localizedDesc } = getLocalizedTrendText(trend);
             const isFollowed = user.followedTrends.includes(trend.id);
-            trendCard.innerHTML = `
-                <div class="trend-card-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
-                    <h3 class="trend-title" style="flex-grow: 1;">${localizedTitle}</h3>
-                    <div class="trend-meta"><span class="trend-meta-submitter">by ${trend.submitter}</span><span class="trend-meta-date"><br>on ${trend.date}</span></div>
-                </div>
-                <p class="trend-description">${localizedDesc}</p>
-                <div class="trend-footer">
-                    <div class="trend-tags">
-                        <span class="tag category">${trend.category}</span>
-                        ${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${tag}">#${tag}</span>`).join('')}
-                    </div>
-                    <div class="trend-actions">
-                        <a href="${trend.source}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a>
-                        <button class="btn btn-outline analyze-trend-btn">${t('🔍 Analyze')}</button>
-                        <button class="btn btn-follow ${isFollowed ? 'followed' : ''}">${isFollowed ? t('Following') : t('❤️ Follow')}</button>
-                    </div>
-                </div>`;
+            trendCard.innerHTML = `<div class="trend-card-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;"><h3 class="trend-title" style="flex-grow: 1;">${localizedTitle}</h3><div class="trend-meta"><span class="trend-meta-submitter">by ${trend.submitter}</span><span class="trend-meta-date"><br>on ${trend.date}</span></div></div><p class="trend-description">${localizedDesc}</p><div class="trend-footer"><div class="trend-tags"><span class="tag category">${trend.category}</span>${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${tag}">#${tag}</span>`).join('')}</div><div class="trend-actions"><a href="${trend.source}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a><button class="btn btn-outline analyze-trend-btn">${t('🔍 Analyze')}</button><button class="btn btn-follow ${isFollowed ? 'followed' : ''}">${isFollowed ? t('Following') : t('❤️ Follow')}</button></div></div>`;
             return trendCard;
         };
 
@@ -338,11 +323,9 @@
             const listElement = currentView === 'main' ? DOM.trendsList : DOM.forUTrendsList;
             const footerButton = currentView === 'main' ? DOM.loadMoreBtn : DOM.forULoadMoreBtn;
             const trendsToFilter = getVisibleTrends();
-            
             listElement.innerHTML = '';
             const trendsToDisplay = trendsToFilter.slice(0, displayedTrends[currentView] || TRENDS_PER_PAGE);
             trendsToDisplay.forEach(trend => listElement.appendChild(createTrendCard(trend)));
-            
             if (displayedTrends[currentView] === 0) { displayedTrends[currentView] = trendsToDisplay.length; }
             footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length);
         };
@@ -398,6 +381,8 @@
         
         function renderSummaryAnalysis(analysisData) {
             const modalBody = document.getElementById('ai-insight-body');
+            // TỰ TẠO DỮ LIỆU BIỂU ĐỒ DỰA TRÊN ĐIỂM SỐ
+            const chartData = generateChartDataFromScore(analysisData.successScore);
             modalBody.innerHTML = `
                 <div style="margin-bottom: 1rem;">
                     <h4>${t('Success Score')}</h4>
@@ -407,18 +392,15 @@
                     <h4>${t('Summary')}</h4>
                     <p>${analysisData.summary}</p>
                 </div>
-                <div>
-                     <h4>${t('Interest Over Time')}</h4>
-                </div>
-            `;
-            renderAnalysisChart(analysisData.historicalData, analysisData.futureProjection);
+                <div><h4>${t('Interest Over Time')}</h4></div>`;
+            renderAnalysisChart(chartData.historicalData, chartData.futureProjection);
         }
 
         function renderDetailedAnalysis(htmlContent, trend) {
              const modalBody = document.getElementById('ai-insight-body');
              modalBody.innerHTML = htmlContent;
              const baseValue = getCombinedMetric(trend);
-             const fakeHistory = [baseValue * 0.2, baseValue * 0.5, baseValue * 0.8, baseValue];
+             const fakeHistory = [baseValue * 0.2, baseValue * 0.5, baseValue * 0.8, baseValue].map(v => Math.round(v));
              const fakeFuture = [baseValue * 0.9, baseValue * 0.7, baseValue * 0.5].map(v => Math.round(v));
              renderAnalysisChart(fakeHistory, fakeFuture);
         }
@@ -428,10 +410,8 @@
             const modalBody = document.getElementById('ai-insight-body');
             const canvas = document.createElement('canvas');
             modalBody.appendChild(canvas);
-
             const labels = ['-3 Mo', '-2 Mo', '-1 Mo', 'Now', '+1 Mo', '+2 Mo', '+3 Mo'];
             const lastHistoricalPoint = historicalData[historicalData.length - 1];
-            
             analysisChart = new Chart(canvas.getContext('2d'), {
                 type: 'line',
                 data: {
@@ -445,6 +425,7 @@
             });
         }
         
+        // --- UTILITY FUNCTIONS ---
         function getCombinedMetric(trend) { return (trend.views || 0) + (trend.interactions || 0) + (trend.searches || 0); }
         function getLocalizedTrendText(trend) { return currentLanguage === 'vi' ? { title: trend.title_vi || trend.title, description: trend.description_vi || trend.description } : { title: trend.title_en || trend.title, description: trend.description_en || trend.description }; }
         function truncateText(text = '', maxLength = 180) { if (text.length <= maxLength) return text; const cut = text.slice(0, maxLength); return cut.slice(0, cut.lastIndexOf(' ', maxLength) || maxLength) + '…'; }
@@ -465,15 +446,27 @@
             if (anchorIndex !== -1) { 
                 for (let i = 0; i < monthKeys.length; i++) { 
                     const dist = i - anchorIndex;
-                    if (dist >= -2) {
-                        const decay = Math.exp(-Math.pow(dist / 2, 2));
-                        series[i] = Math.max(0, Math.round(peakMetric * decay * (1 + (Math.random() - 0.5) * 0.1)));
-                    } else {
-                        series[i] = 0;
-                    }
+                    if (dist >= -2) { const decay = Math.exp(-Math.pow(dist / 2, 2)); series[i] = Math.max(0, Math.round(peakMetric * decay * (1 + (Math.random() - 0.5) * 0.1))); } 
+                    else { series[i] = 0; }
                 } 
             } 
             return series; 
+        }
+
+        // HÀM MỚI: Tự tạo dữ liệu biểu đồ logic từ điểm số
+        function generateChartDataFromScore(score, baseMetric = 500) {
+            const growthFactor = (score - 50) / 250; // Map score [0, 100] to a growth factor, e.g., [-0.2, 0.2]
+            
+            let historicalData = [baseMetric * 0.4, baseMetric * 0.6, baseMetric * 0.8, baseMetric];
+            let futureProjection = [];
+            let lastValue = baseMetric;
+
+            for (let i = 0; i < 3; i++) {
+                lastValue = lastValue * (1 + growthFactor + (Math.random() - 0.5) * 0.05);
+                futureProjection.push(Math.max(0, Math.round(lastValue)));
+            }
+
+            return { historicalData, futureProjection };
         }
 
         function getColorPalette(count) { const base = [{ stroke: '#A100FF' }, { stroke: '#00C8FF' }, { stroke: '#00E696' }, { stroke: '#FFB400' }, { stroke: '#FF6384' }]; while (base.length < count) base.push({ stroke: `hsl(${Math.random() * 360}, 90%, 60%)` }); return base; }
@@ -570,8 +563,9 @@
         
         initializeApp();
     });
-    </script>
+</script>
 </body>
 </html>
+
 
 
