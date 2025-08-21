@@ -36,7 +36,12 @@ exports.handler = async (event) => {
       appleMusic,
       variety,
       ventureBeatAI,
-      redditTrends
+      googleNewsVN,
+      cnnWorld,
+      theVerge,
+      techCrunch,
+      wired,
+      alJazeera
     ] = await Promise.all([
       fetchHackerNewsFrontpage(),
       fetchBBCWorld(),
@@ -45,7 +50,12 @@ exports.handler = async (event) => {
       fetchAppleMusic(),
       fetchVariety(),
       fetchVentureBeatAI(),
-      fetchRedditTrends()
+      fetchGoogleNewsVN(),
+      fetchCNNWorld(),
+      fetchTheVerge(),
+      fetchTechCrunch(),
+      fetchWired(),
+      fetchAlJazeeraAll()
     ]);
 
     let trends = [
@@ -56,7 +66,12 @@ exports.handler = async (event) => {
       ...appleMusic,
       ...variety,
       ...ventureBeatAI,
-      ...redditTrends
+      ...googleNewsVN,
+      ...cnnWorld,
+      ...theVerge,
+      ...techCrunch,
+      ...wired,
+      ...alJazeera
     ]
       .filter(Boolean)
       .map((t) => ({
@@ -88,7 +103,12 @@ exports.handler = async (event) => {
           appleMusic: appleMusic.length,
           variety: variety.length,
           ventureBeatAI: ventureBeatAI.length,
-          reddit: redditTrends.length
+          googleNewsVN: googleNewsVN.length,
+          cnnWorld: cnnWorld.length,
+          theVerge: theVerge.length,
+          techCrunch: techCrunch.length,
+          wired: wired.length,
+          alJazeera: alJazeera.length
         }
       })
     };
@@ -383,30 +403,146 @@ async function fetchVentureBeatAI() {
   }
 }
 
-// Reddit Trends
-async function fetchRedditTrends() {
+// News → Google News Vietnam
+async function fetchGoogleNewsVN() {
   try {
-    const res = await fetch(
-      "https://www.reddit.com/r/trendingsubreddits/top.json?limit=10",
-      {
-        headers: { "User-Agent": "trend-fetcher-bot/1.0" }
-      }
-    );
-    if (!res.ok) throw new Error(`Reddit HTTP ${res.status}`);
-    const json = await res.json();
+    const res = await fetch("https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi");
+    if (!res.ok) throw new Error(`Google News HTTP ${res.status}`);
+    const xml = await res.text();
 
-    return json.data.children.map((c, i) => ({
-      title: c.data.title,
-      description: c.data.selftext || "",
-      category: "Social",
-      tags: ["Reddit"],
-      votes: c.data.ups || 50 - i,
-      source: "https://reddit.com" + c.data.permalink,
-      date: new Date(c.data.created_utc * 1000).toLocaleDateString("en-US"),
-      submitter: c.data.author || "Reddit User"
+    let rank = 170;
+    return rssItems(xml, 20).map(block => ({
+      title: getTag(block, "title") || "Google News",
+      description: getTag(block, "description") || "",
+      category: "News",
+      tags: ["GoogleNews", "Vietnam"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "Google News VN"
     }));
   } catch (e) {
-    console.warn("Reddit fetch failed:", e.message);
+    console.warn("Google News VN fetch failed", e.message);
+    return [];
+  }
+}
+
+// World → CNN World
+async function fetchCNNWorld() {
+  try {
+    const res = await fetch("https://rss.cnn.com/rss/edition_world.rss");
+    if (!res.ok) throw new Error(`CNN HTTP ${res.status}`);
+    const xml = await res.text();
+
+    let rank = 165;
+    return rssItems(xml, 15).map(block => ({
+      title: getTag(block, "title") || "CNN World",
+      description: getTag(block, "description") || "",
+      category: "World",
+      tags: ["CNN"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "CNN World"
+    }));
+  } catch (e) {
+    console.warn("CNN World fetch failed", e.message);
+    return [];
+  }
+}
+
+// Tech Media → The Verge
+async function fetchTheVerge() {
+  try {
+    const res = await fetch("https://www.theverge.com/rss/index.xml");
+    if (!res.ok) throw new Error(`The Verge HTTP ${res.status}`);
+    const xml = await res.text();
+
+    let rank = 160;
+    return rssItems(xml, 15).map(block => ({
+      title: getTag(block, "title") || "The Verge",
+      description: getTag(block, "description") || "",
+      category: "Tech",
+      tags: ["TheVerge"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "The Verge"
+    }));
+  } catch (e) {
+    console.warn("The Verge fetch failed", e.message);
+    return [];
+  }
+}
+
+// Tech → TechCrunch
+async function fetchTechCrunch() {
+  try {
+    const res = await fetch("https://techcrunch.com/feed/");
+    if (!res.ok) throw new Error(`TechCrunch HTTP ${res.status}`);
+    const xml = await res.text();
+
+    let rank = 155;
+    return rssItems(xml, 15).map(block => ({
+      title: getTag(block, "title") || "TechCrunch",
+      description: getTag(block, "description") || "",
+      category: "Tech",
+      tags: ["TechCrunch"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "TechCrunch"
+    }));
+  } catch (e) {
+    console.warn("TechCrunch fetch failed", e.message);
+    return [];
+  }
+}
+
+// Tech → WIRED
+async function fetchWired() {
+  try {
+    const res = await fetch("https://www.wired.com/feed/rss");
+    if (!res.ok) throw new Error(`Wired HTTP ${res.status}`);
+    const xml = await res.text();
+
+    let rank = 150;
+    return rssItems(xml, 15).map(block => ({
+      title: getTag(block, "title") || "WIRED",
+      description: getTag(block, "description") || "",
+      category: "Tech",
+      tags: ["Wired"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "WIRED"
+    }));
+  } catch (e) {
+    console.warn("Wired fetch failed", e.message);
+    return [];
+  }
+}
+
+// World → Al Jazeera (All)
+async function fetchAlJazeeraAll() {
+  try {
+    const res = await fetch("https://www.aljazeera.com/xml/rss/all.xml");
+    if (!res.ok) throw new Error(`Al Jazeera HTTP ${res.status}`);
+    const xml = await res.text();
+
+    let rank = 145;
+    return rssItems(xml, 15).map(block => ({
+      title: getTag(block, "title") || "Al Jazeera",
+      description: getTag(block, "description") || "",
+      category: "World",
+      tags: ["AlJazeera"],
+      votes: rank--,
+      source: getTag(block, "link") || "#",
+      date: toDateStr(getTag(block, "pubDate")),
+      submitter: "Al Jazeera"
+    }));
+  } catch (e) {
+    console.warn("Al Jazeera fetch failed", e.message);
     return [];
   }
 }
