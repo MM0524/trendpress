@@ -2,7 +2,7 @@
 const fetch = require("node-fetch");
 
 // ===== Helpers =====
-async function fetchWithTimeout(url, options = {}, ms = 7000) {
+async function fetchWithTimeout(url, options = {}, ms = 9000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
@@ -40,11 +40,11 @@ function getTag(block, tag) {
   return m ? decodeHtmlEntities(m[1].trim()) : "";
 }
 
-function rssItems(xml, max = 8) {
+function rssItems(xml) {
   const items = [];
   const reg = /<item[\s\S]*?>([\s\S]*?)<\/item>/gi;
   let m;
-  while ((m = reg.exec(xml)) && items.length < max) {
+  while ((m = reg.exec(xml))) {
     items.push(m[1]);
   }
   return items;
@@ -162,6 +162,23 @@ async function fetchGoogleNewsVN() {
     source: getTag(block, "link"),
     date: toDateStr(getTag(block, "pubDate")),
     submitter: "Google News VN",
+  }));
+}
+
+// BBC World News
+async function fetchBBCWorld() {
+  const res = await fetchWithTimeout("http://feeds.bbci.co.uk/news/world/rss.xml");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "News",
+    tags: ["BBC", "WorldNews"],
+    votes: 360 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "BBC World News",
   }));
 }
 
@@ -292,6 +309,22 @@ async function fetchVariety() {
   }));
 }
 
+// Deadline (Hollywood Entertainment)
+async function fetchDeadline() {
+  const res = await fetchWithTimeout("https://deadline.com/feed/");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Entertainment",
+    tags: ["Deadline", "Showbiz", "Hollywood"],
+    votes: 340 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "Deadline",
+  }));
+}
 // Kênh14 (Vietnam Entertainment)
 async function fetchKenh14() {
   const res = await fetchWithTimeout("https://kenh14.vn/giai-tri.rss");
@@ -359,9 +392,10 @@ exports.handler = async (event) => {
       fetchAppleMusicMostPlayedVN(),
       fetchAppleMusicNewReleasesVN(),
       fetchVariety(),
+      fetchDeadline(),
       fetchKenh14(),
       fetchZingNewsEntertainment(),
-
+      fetchBBCWorld(),
     ];
 
     const results = await Promise.allSettled(sources);
