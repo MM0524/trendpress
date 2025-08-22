@@ -40,7 +40,6 @@ exports.handler = async (event) => {
         fetchGoogleNewsVN(),
         fetchYahooFinance(),
         fetchCNBCFinance(),
-        fetchBloomberg(),
         fetchVariety(),
         fetchHollywoodReporter(),
         fetchWired(),
