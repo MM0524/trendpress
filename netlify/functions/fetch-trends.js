@@ -1,13 +1,17 @@
-import Parser from "rss-parser";
+// File: netlify/functions/fetch-trends.js
+const fetch = require("node-fetch");
 
-const parser = new Parser();
-
-// ================== Helper Functions ==================
+// ===== Helpers =====
 async function fetchWithTimeout(url, options = {}, ms = 7000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      // Một số site cần UA
+      headers: { "User-Agent": "Mozilla/5.0 (TrendsBot/1.0)" , ...(options.headers || {}) },
+    });
     return res;
   } catch (err) {
     throw new Error(`Timeout or network error for ${url}: ${err.message}`);
@@ -16,21 +20,44 @@ async function fetchWithTimeout(url, options = {}, ms = 7000) {
   }
 }
 
-function toDateStr(date) {
-  return date ? new Date(date).toISOString() : new Date().toISOString();
-}
-
-function rssItems(xml) {
-  return xml.split("<item>").slice(1).map(block => block.split("</item>")[0]);
+function decodeHtmlEntities(str = "") {
+  return str
+    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 }
 
 function getTag(block, tag) {
-  const regex = new RegExp(`<${tag}.*?>([\\s\\S]*?)<\\/${tag}>`);
-  const match = block.match(regex);
-  return match ? match[1].trim() : "";
+  const cdata = new RegExp(
+    `<${tag}><!\\[CDATA\\[(.*?)\\]\\]><\\/${tag}>`,
+    "is"
+  );
+  const plain = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, "i");
+  const m = block.match(cdata) || block.match(plain);
+  return m ? decodeHtmlEntities(m[1].trim()) : "";
 }
 
-// ================== Sources ==================
+function rssItems(xml, max = 8) {
+  const items = [];
+  const reg = /<item[\s\S]*?>([\s\S]*?)<\/item>/gi;
+  let m;
+  while ((m = reg.exec(xml)) && items.length < max) {
+    items.push(m[1]);
+  }
+  return items;
+}
+
+function toDateStr(d) {
+  const dt = d ? new Date(d) : new Date();
+  return isNaN(dt.getTime())
+    ? new Date().toISOString().split("T")[0]
+    : dt.toISOString().split("T")[0];
+}
+
+// ===== Sources =====
 
 // Hacker News
 async function fetchHackerNewsFrontpage() {
@@ -68,18 +95,18 @@ async function fetchTheVerge() {
 
 // IGN Gaming
 async function fetchIGNGaming() {
-  const res = await fetchWithTimeout("https://feeds.feedburner.com/ign/games-all");
+  const res = await fetchWithTimeout("https://feeds.ign.com/ign/games-all");
   if (!res.ok) return [];
   const xml = await res.text();
   return rssItems(xml).map((block, i) => ({
     title: getTag(block, "title"),
     description: getTag(block, "description"),
     category: "Gaming",
-    tags: ["IGN"],
+    tags: ["IGN", "Games"],
     votes: 430 - i,
     source: getTag(block, "link"),
     date: toDateStr(getTag(block, "pubDate")),
-    submitter: "IGN Gaming",
+    submitter: "IGN",
   }));
 }
 
@@ -92,24 +119,26 @@ async function fetchVentureBeatAI() {
     title: getTag(block, "title"),
     description: getTag(block, "description"),
     category: "AI",
-    tags: ["VentureBeat"],
+    tags: ["VentureBeat", "AI"],
     votes: 420 - i,
     source: getTag(block, "link"),
     date: toDateStr(getTag(block, "pubDate")),
-    submitter: "VentureBeat AI",
+    submitter: "VentureBeat",
   }));
 }
 
-// MIT Technology Review
+// MIT Technology Review (AI tag)
 async function fetchMITTech() {
-  const res = await fetchWithTimeout("https://www.technologyreview.com/feed/");
+  const res = await fetchWithTimeout(
+    "https://www.technologyreview.com/feed/tag/artificial-intelligence/"
+  );
   if (!res.ok) return [];
   const xml = await res.text();
   return rssItems(xml).map((block, i) => ({
     title: getTag(block, "title"),
     description: getTag(block, "description"),
     category: "AI",
-    tags: ["MITTechReview"],
+    tags: ["MITTechReview", "AI"],
     votes: 415 - i,
     source: getTag(block, "link"),
     date: toDateStr(getTag(block, "pubDate")),
@@ -117,9 +146,11 @@ async function fetchMITTech() {
   }));
 }
 
-// Google News VIETNAM ✅
+// Google News VIETNAM (thay VnExpress)
 async function fetchGoogleNewsVN() {
-  const res = await fetchWithTimeout("https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi");
+  const res = await fetchWithTimeout(
+    "https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi"
+  );
   if (!res.ok) return [];
   const xml = await res.text();
   return rssItems(xml).map((block, i) => ({
@@ -136,7 +167,7 @@ async function fetchGoogleNewsVN() {
 
 // Yahoo Finance
 async function fetchYahooFinance() {
-  const res = await fetchWithTimeout("https://finance.yahoo.com/news/rssindex");
+  const res = await fetchWithTimeout("https://finance.yahoo.com/rss/topstories");
   if (!res.ok) return [];
   const xml = await res.text();
   return rssItems(xml).map((block, i) => ({
@@ -153,22 +184,24 @@ async function fetchYahooFinance() {
 
 // CNBC Finance
 async function fetchCNBCFinance() {
-  const res = await fetchWithTimeout("https://www.cnbc.com/id/10000664/device/rss/rss.html");
+  const res = await fetchWithTimeout(
+    "https://www.cnbc.com/id/10000664/device/rss/rss.html"
+  );
   if (!res.ok) return [];
   const xml = await res.text();
   return rssItems(xml).map((block, i) => ({
     title: getTag(block, "title"),
     description: getTag(block, "description"),
     category: "Finance",
-    tags: ["CNBC"],
+    tags: ["CNBC", "Markets"],
     votes: 390 - i,
     source: getTag(block, "link"),
     date: toDateStr(getTag(block, "pubDate")),
-    submitter: "CNBC Finance",
+    submitter: "CNBC",
   }));
 }
 
-// DTCK (Vietnam Stocks)
+// DTCK (Việt Nam – Chứng khoán)
 async function fetchDTCK() {
   const res = await fetchWithTimeout("https://tinnhanhchungkhoan.vn/rss/home.rss");
   if (!res.ok) return [];
@@ -185,16 +218,16 @@ async function fetchDTCK() {
   }));
 }
 
-// Science Magazine
+// Science Magazine (AAAS) – News
 async function fetchScienceMagazine() {
-  const res = await fetchWithTimeout("https://www.sciencemag.org/rss/news_current.xml");
+  const res = await fetchWithTimeout("https://www.science.org/rss/news_current.xml");
   if (!res.ok) return [];
   const xml = await res.text();
   return rssItems(xml).map((block, i) => ({
     title: getTag(block, "title"),
     description: getTag(block, "description"),
     category: "Science",
-    tags: ["ScienceMagazine"],
+    tags: ["ScienceMag"],
     votes: 370 - i,
     source: getTag(block, "link"),
     date: toDateStr(getTag(block, "pubDate")),
@@ -219,61 +252,114 @@ async function fetchNewScientist() {
   }));
 }
 
-// 🔹 Apple Music Vietnam - New Releases 
-async function fetchAppleMusicNewReleasesVN() { 
-  const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/100/songs.json"); 
-  if (!res.ok) return []; const json = await res.json(); 
-  return json.feed.results.map((item, i) => ({ 
-    title: item.name, description: item.artistName, 
-    category: "Music", 
-    tags: ["AppleMusic", "Vietnam", "NewReleases"], 
-    votes: 480 - i, // cho điểm thấp hơn  
-    source: item.url, 
-    date: toDateStr(item.releaseDate || new Date().toISOString()), 
-    submitter: "Apple Music" 
-  })); 
+// Apple Music VN – Most Played
+async function fetchAppleMusicMostPlayedVN() {
+  const res = await fetchWithTimeout(
+    "https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json"
+  );
+  if (!res.ok) return [];
+  const json = await res.json();
+  return json.feed.results.map((item, i) => ({
+    title: item.name,
+    description: item.artistName,
+    category: "Music",
+    tags: ["AppleMusic", "Vietnam", "MostPlayed"],
+    votes: 500 - i,
+    source: item.url,
+    date: toDateStr(item.releaseDate || new Date().toISOString()),
+    submitter: "Apple Music",
+  }));
 }
 
-async function fetchAppleMusicMostPlayedVN() { 
-  const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json"); 
-  if (!res.ok) return []; 
-  const json = await res.json(); 
-  return json.feed.results.map((item, i) => ({ 
-    title: item.name, 
-    description: item.artistName, 
-    category: "Music", 
-    tags: ["AppleMusic", "Vietnam", "MostPlayed"], 
-    votes: 500 - i, source: item.url, 
-    date: toDateStr(item.releaseDate || new Date().toISOString()), 
-    submitter: "Apple Music" 
-  })); 
+// Apple Music VN – New Releases
+async function fetchAppleMusicNewReleasesVN() {
+  const res = await fetchWithTimeout(
+    "https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/100/songs.json"
+  );
+  if (!res.ok) return [];
+  const json = await res.json();
+  return json.feed.results.map((item, i) => ({
+    title: item.name,
+    description: item.artistName,
+    category: "Music",
+    tags: ["AppleMusic", "Vietnam", "NewReleases"],
+    votes: 480 - i,
+    source: item.url,
+    date: toDateStr(item.releaseDate || new Date().toISOString()),
+    submitter: "Apple Music",
+  }));
 }
 
-// ================== Handler ==================
-export async function handler() {
-  const sources = [
-    fetchHackerNewsFrontpage(),
-    fetchTheVerge(),
-    fetchIGNGaming(),
-    fetchVentureBeatAI(),
-    fetchMITTech(),
-    fetchGoogleNewsVN(),  
-    fetchYahooFinance(),
-    fetchCNBCFinance(),
-    fetchDTCK(),
-    fetchScienceMagazine(),
-    fetchNewScientist(),
-    fetchAppleMusicNewReleasesVN(),
-    fetchAppleMusicMostPlayedVN(),
-  ];
-
-  const results = await Promise.allSettled(sources);
-  const data = results
-    .filter(r => r.status === "fulfilled")
-    .flatMap(r => r.value);
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify(data, null, 2),
+// ===== Netlify Function Handler =====
+exports.handler = async (event) => {
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
   };
-}
+
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 204,
+      headers: {
+        ...headers,
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    };
+  }
+
+  try {
+    const sources = [
+      fetchHackerNewsFrontpage(),
+      fetchTheVerge(),
+      fetchIGNGaming(),
+      fetchVentureBeatAI(),
+      fetchMITTech(),
+      fetchGoogleNewsVN(), 
+      fetchYahooFinance(),
+      fetchCNBCFinance(),
+      fetchDTCK(),      
+      fetchScienceMagazine(),
+      fetchNewScientist(),
+      fetchAppleMusicMostPlayedVN(),
+      fetchAppleMusicNewReleasesVN(),
+    ];
+
+    const results = await Promise.allSettled(sources);
+
+    let trends = [];
+    for (const r of results) {
+      if (r.status === "fulfilled" && Array.isArray(r.value)) {
+        trends.push(...r.value);
+      } else if (r.status === "rejected") {
+        console.warn("A source failed to fetch:", r.reason?.message || r.reason);
+      }
+    }
+
+    if (trends.length === 0) {
+      throw new Error("All data sources failed to respond in time.");
+    }
+
+    trends = trends
+      .filter(Boolean)
+      .sort((a, b) => (b.votes || 0) - (a.votes || 0))
+      .map((t, i) => ({ ...t, id: i + 1 }));
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ success: true, trends }),
+    };
+  } catch (err) {
+    console.error("fetch-trends handler error", err);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        success: false,
+        error: "Failed to fetch live trends",
+        message: err.message,
+      }),
+    };
+  }
+};
