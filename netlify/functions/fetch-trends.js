@@ -40,7 +40,9 @@ exports.handler = async (event) => {
         fetchBloomberg(),
         fetchVariety(),
         fetchWired(),
-        fetchBillboardVietnamHot100(),
+        fetchAppleMusicMostPlayedVN(),
+        fetchAppleMusicNewReleasesVN(),
+
     ];
 
     // TỐI ƯU: Dùng Promise.allSettled để không bị thất bại hoàn toàn nếu một nguồn lỗi
@@ -213,38 +215,37 @@ async function fetchWired() {
     }));
 }
 
-// 🔹 Billboard Vietnam Hot 100 (scraping HTML)
-async function fetchBillboardVietnamHot100() {
-  const url = "https://billboardvn.vn/charts/vn-hot-100/";
-  try {
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) return [];
-    const html = await res.text();
-    const $ = cheerio.load(html);
-
-    const results = [];
-    $(".chart-item").each((i, el) => {
-      const title = $(el).find(".title").text().trim();
-      const artist = $(el).find(".artist").text().trim();
-      const position = $(el).find(".position").text().trim();
-
-      if (title && artist) {
-        results.push({
-          title: `${title} - ${artist}`,
-          description: `Hạng #${position} trên Billboard Vietnam Hot 100`,
-          category: "Music",
-          tags: ["BillboardVietnamHot100"],
-          votes: 500 - i,
-          source: url,
-          date: new Date().toISOString().split("T")[0],
-          submitter: "Billboard Vietnam"
-        });
-      }
-    });
-
-    return results;
-  } catch (err) {
-    console.warn("Billboard VN fetch failed:", err.message);
-    return [];
-  }
+// 🔹 Apple Music Vietnam - Most Played
+async function fetchAppleMusicMostPlayedVN() {
+  const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json");
+  if (!res.ok) return [];
+  const json = await res.json();
+  return json.feed.results.map((item, i) => ({
+    title: item.name,
+    description: item.artistName,
+    category: "Music",
+    tags: ["AppleMusic", "Vietnam", "MostPlayed"],
+    votes: 500 - i,
+    source: item.url,
+    date: toDateStr(item.releaseDate || new Date().toISOString()),
+    submitter: "Apple Music"
+  }));
 }
+
+// 🔹 Apple Music Vietnam - New Releases
+async function fetchAppleMusicNewReleasesVN() {
+  const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/100/songs.json");
+  if (!res.ok) return [];
+  const json = await res.json();
+  return json.feed.results.map((item, i) => ({
+    title: item.name,
+    description: item.artistName,
+    category: "Music",
+    tags: ["AppleMusic", "Vietnam", "NewReleases"],
+    votes: 480 - i, // cho điểm thấp hơn MostPlayed 1 chút để dễ sắp xếp
+    source: item.url,
+    date: toDateStr(item.releaseDate || new Date().toISOString()),
+    submitter: "Apple Music"
+  }));
+}
+
