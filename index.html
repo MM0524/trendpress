@@ -223,7 +223,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         // --- STATE & DATA ---
         let user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [] };
-        const TRENDS_PER_PAGE = 5;
+        const TRENDS_PER_PAGE = 20;
         let displayedTrends = { main: 0, forU: 0 };
         let currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '' };
         let currentView = 'main';
@@ -281,16 +281,21 @@
         function calculateHotnessScore(trend, maxValues) { const weights = { views: 0.2, interactions: 0.4, searches: 0.3, votes: 0.1 }; const normViews = (trend.views / maxValues.views) || 0; const normInteractions = (trend.interactions / maxValues.interactions) || 0; const normSearches = (trend.searches / maxValues.searches) || 0; const normVotes = (trend.votes / maxValues.votes) || 0; return (normViews * weights.views) + (normInteractions * weights.interactions) + (normSearches * weights.searches) + (normVotes * weights.votes); }
         function applyTranslations() { i18nBindings.forEach(b => { const el = document.querySelector(b.selector); if (el) { el.textContent = t(b.key); } }); document.querySelector('.footer-bottom p').textContent = `© 2024 TrendPulse. ${t('All rights reserved.')}`; document.getElementById('ai-status-text').textContent = t('AI: Checking...'); }
         function updateLanguageToggleUI() { document.getElementById('language-toggle').textContent = currentLanguage === 'vi' ? 'VN' : 'EN'; }
-        function createTrendCard(trend) { const trendCard = document.createElement('div'); trendCard.className = 'trend-card'; trendCard.dataset.trendId = trend.id; const { title: localizedTitle, description: localizedDesc } = getLocalizedTrendText(trend); const isFollowed = user.followedTrends.includes(trend.id); trendCard.innerHTML = `<div class="trend-card-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;"><h3 class="trend-title" style="flex-grow: 1;">${localizedTitle}</h3><div class="trend-meta"><span class="trend-meta-submitter">by ${trend.submitter}</span><span class="trend-meta-date"><br>on ${trend.date}</span></div></div><p class="trend-description">${localizedDesc}</p><div class="trend-footer"><div class="trend-tags"><span class="tag category">${trend.category}</span>${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${tag}">#${tag}</span>`).join('')}</div><div class="trend-actions"><a href="${trend.source}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a><button class="btn btn-outline analyze-trend-btn">${t('🔍 Analyze')}</button><button class="btn btn-follow ${isFollowed ? 'followed' : ''}">${isFollowed ? t('Following') : t('❤️ Follow')}</button></div></div>`; return trendCard; };
+        function createTrendCard(trend) { if (!trend || !trend.title) return document.createElement('div'); const trendCard = document.createElement('div'); trendCard.className = 'trend-card'; trendCard.dataset.trendId = trend.id; const { title: localizedTitle, description: localizedDesc } = getLocalizedTrendText(trend); const isFollowed = user.followedTrends.includes(trend.id); trendCard.innerHTML = `<div class="trend-card-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;"><h3 class="trend-title" style="flex-grow: 1;">${localizedTitle}</h3><div class="trend-meta"><span class="trend-meta-submitter">by ${trend.submitter}</span><span class="trend-meta-date"><br>on ${trend.date}</span></div></div><p class="trend-description">${localizedDesc}</p><div class="trend-footer"><div class="trend-tags"><span class="tag category">${trend.category}</span>${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${tag}">#${tag}</span>`).join('')}</div><div class="trend-actions"><a href="${trend.source}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a><button class="btn btn-outline analyze-trend-btn">${t('🔍 Analyze')}</button><button class="btn btn-follow ${isFollowed ? 'followed' : ''}">${isFollowed ? t('Following') : t('❤️ Follow')}</button></div></div>`; return trendCard; };
         function getVisibleTrends() {
-            let filtered = [...allTrends];
             if (currentView === 'forU') {
                 const preferenceTrends = allTrends.filter(t => user.preferences.includes(t.category));
                 const followedTrendsData = allTrends.filter(t => user.followedTrends.includes(t.id));
                 const combined = [...followedTrendsData, ...preferenceTrends];
                 const uniqueTrendIds = new Set(combined.map(t => t.id));
-                return Array.from(uniqueTrendIds).map(id => allTrends.find(t => t.id === id));
+                
+                // SỬA LỖI: Thêm .filter(Boolean) để loại bỏ các giá trị undefined
+                return Array.from(uniqueTrendIds)
+                    .map(id => allTrends.find(t => t.id === id))
+                    .filter(Boolean); 
             }
+            
+            let filtered = [...allTrends];
             if (currentFilter.type === 'category' && currentFilter.value !== 'All') { filtered = filtered.filter(t => t.category === currentFilter.value); } 
             if (currentFilter.hashtag) { filtered = filtered.filter(t => (t.tags || []).includes(currentFilter.hashtag)); }
             if (currentFilter.searchTerm) { const term = currentFilter.searchTerm.toLowerCase(); filtered = filtered.filter(t => t.title.toLowerCase().includes(term) || t.description.toLowerCase().includes(term)); }
@@ -441,3 +446,4 @@
     </script>
 </body>
 </html>
+
