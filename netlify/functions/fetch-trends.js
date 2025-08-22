@@ -201,23 +201,6 @@ async function fetchCNBCFinance() {
   }));
 }
 
-// DTCK (Việt Nam – Chứng khoán)
-async function fetchDTCK() {
-  const res = await fetchWithTimeout("https://tinnhanhchungkhoan.vn/rss/home.rss");
-  if (!res.ok) return [];
-  const xml = await res.text();
-  return rssItems(xml).map((block, i) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Finance",
-    tags: ["DTCK", "VietnamStocks", "Vietnam"],
-    votes: 385 - i,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "DTCK",
-  }));
-}
-
 // Science Magazine (AAAS) – News
 async function fetchScienceMagazine() {
   const res = await fetchWithTimeout("https://www.science.org/rss/news_current.xml");
@@ -290,6 +273,59 @@ async function fetchAppleMusicNewReleasesVN() {
   }));
 }
 
+// ================== Entertainment Sources ==================
+
+// Variety (Entertainment Global)
+async function fetchVariety() {
+  const res = await fetchWithTimeout("https://variety.com/feed/");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Entertainment",
+    tags: ["Variety", "Global"],
+    votes: 360 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "Variety",
+  }));
+}
+
+// Kênh14 (Vietnam Entertainment)
+async function fetchKenh14() {
+  const res = await fetchWithTimeout("https://kenh14.vn/giai-tri.rss");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Entertainment",
+    tags: ["Kenh14", "Vietnam"],
+    votes: 350 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "Kênh14",
+  }));
+}
+
+// Zing News (Vietnam Entertainment)
+async function fetchZingNewsEntertainment() {
+  const res = await fetchWithTimeout("https://zingnews.vn/rss/giai-tri.rss");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Entertainment",
+    tags: ["ZingNews", "Vietnam"],
+    votes: 340 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "Zing News",
+  }));
+}
+
 // ===== Netlify Function Handler =====
 exports.handler = async (event) => {
   const headers = {
@@ -317,12 +353,15 @@ exports.handler = async (event) => {
       fetchMITTech(),
       fetchGoogleNewsVN(), 
       fetchYahooFinance(),
-      fetchCNBCFinance(),
-      fetchDTCK(),      
+      fetchCNBCFinance(),  
       fetchScienceMagazine(),
       fetchNewScientist(),
       fetchAppleMusicMostPlayedVN(),
       fetchAppleMusicNewReleasesVN(),
+      fetchVariety(),
+      fetchKenh14(),
+      fetchZingNewsEntertainment(),
+
     ];
 
     const results = await Promise.allSettled(sources);
