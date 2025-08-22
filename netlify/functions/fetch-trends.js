@@ -36,6 +36,11 @@ exports.handler = async (event) => {
         fetchIGNGaming(),
         fetchVentureBeatAI(),
         fetchGoogleNewsVN(),
+        fetchYahooFinance(),
+        fetchBloomberg(),
+        fetchVariety(),
+        fetchWired(),
+        fetchAppleMusicVN(),
     ];
 
     // TỐI ƯU: Dùng Promise.allSettled để không bị thất bại hoàn toàn nếu một nguồn lỗi
@@ -139,3 +144,90 @@ async function fetchGoogleNewsVN() {
     const xml = await res.text();
     return rssItems(xml).map((block, i) => ({ title: getTag(block, "title"), description: getTag(block, "description"), category: "News", tags: ["GoogleNews", "Vietnam"], votes: 300 - i, source: getTag(block, "link"), date: toDateStr(getTag(block, "pubDate")), submitter: "Google News VN" }));
 }
+
+// 🔹 Yahoo Finance
+async function fetchYahooFinance() {
+    const res = await fetchWithTimeout("https://finance.yahoo.com/rss/topstories");
+    if (!res.ok) return [];
+    const xml = await res.text();
+    return rssItems(xml).map((block, i) => ({
+        title: getTag(block, "title"),
+        description: getTag(block, "description"),
+        category: "Finance",
+        tags: ["YahooFinance"],
+        votes: 500 - i,
+        source: getTag(block, "link"),
+        date: toDateStr(getTag(block, "pubDate")),
+        submitter: "Yahoo Finance"
+    }));
+}
+
+// 🔹 Bloomberg
+async function fetchBloomberg() {
+    const res = await fetchWithTimeout("https://www.bloomberg.com/feed/podcast/etf-report.xml");
+    if (!res.ok) return [];
+    const xml = await res.text();
+    return rssItems(xml).map((block, i) => ({
+        title: getTag(block, "title"),
+        description: getTag(block, "description"),
+        category: "Finance",
+        tags: ["Bloomberg"],
+        votes: 500 - i,
+        source: getTag(block, "link"),
+        date: toDateStr(getTag(block, "pubDate")),
+        submitter: "Bloomberg"
+    }));
+}
+
+// 🔹 Variety
+async function fetchVariety() {
+    const res = await fetchWithTimeout("https://variety.com/feed/");
+    if (!res.ok) return [];
+    const xml = await res.text();
+    return rssItems(xml).map((block, i) => ({
+        title: getTag(block, "title"),
+        description: getTag(block, "description"),
+        category: "Media",
+        tags: ["Variety"],
+        votes: 500 - i,
+        source: getTag(block, "link"),
+        date: toDateStr(getTag(block, "pubDate")),
+        submitter: "Variety"
+    }));
+}
+
+// 🔹 Wired
+async function fetchWired() {
+    const res = await fetchWithTimeout("https://www.wired.com/feed/rss");
+    if (!res.ok) return [];
+    const xml = await res.text();
+    return rssItems(xml).map((block, i) => ({
+        title: getTag(block, "title"),
+        description: getTag(block, "description"),
+        category: "Tech",
+        tags: ["Wired"],
+        votes: 500 - i,
+        source: getTag(block, "link"),
+        date: toDateStr(getTag(block, "pubDate")),
+        submitter: "Wired"
+    }));
+}
+
+// 🔹 Apple Music Vietnam Top Songs
+async function fetchAppleMusicVN() {
+    const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/10/songs.json");
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.feed.results.map((item, i) => ({
+        title: item.name,
+        description: item.artistName,
+        category: "Music",
+        tags: ["AppleMusic", "Vietnam"],
+        votes: 500 - i,
+        source: item.url,
+        date: toDateStr(item.releaseDate || new Date().toISOString()),
+        submitter: "Apple Music"
+    }));
+}
+
+
