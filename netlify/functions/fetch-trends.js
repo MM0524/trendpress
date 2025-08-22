@@ -213,28 +213,38 @@ async function fetchWired() {
     }));
 }
 
-// Thay thế Apple Music bằng Billboard Vietnam Hot 100
+// 🔹 Billboard Vietnam Hot 100 (scraping HTML)
 async function fetchBillboardVietnamHot100() {
-  const url = 'https://raw.githubusercontent.com/mhollingshead/billboard-hot-100/main/recent.json';
+  const url = "https://billboardvn.vn/charts/vn-hot-100/";
   try {
     const res = await fetchWithTimeout(url);
     if (!res.ok) return [];
-    const json = await res.json();
-    const date = json.date;
-    return json.data.map((song, idx) => ({
-      title: song.song,
-      description: song.artist,
-      category: 'Music',
-      tags: ['BillboardVietnamHot100'],
-      votes: 500 - song.this_week, 
-      source: 'https://www.facebook.com/billboardvietnam/posts/pfbid0Ere4V5pyLKUkZXVsMaeguC1qy5HDinr7CJmd3cAeMsi7pG5Pm6m5ENqHNcfgmsEwl?locale=vi_VN', 
-      date: toDateStr(date),
-      submitter: 'Billboard Vietnam'
-    }));
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    const results = [];
+    $(".chart-item").each((i, el) => {
+      const title = $(el).find(".title").text().trim();
+      const artist = $(el).find(".artist").text().trim();
+      const position = $(el).find(".position").text().trim();
+
+      if (title && artist) {
+        results.push({
+          title: `${title} - ${artist}`,
+          description: `Hạng #${position} trên Billboard Vietnam Hot 100`,
+          category: "Music",
+          tags: ["BillboardVietnamHot100"],
+          votes: 500 - i,
+          source: url,
+          date: new Date().toISOString().split("T")[0],
+          submitter: "Billboard Vietnam"
+        });
+      }
+    });
+
+    return results;
   } catch (err) {
-    console.warn("Billboard Vietnam fetch failed:", err.message);
+    console.warn("Billboard VN fetch failed:", err.message);
     return [];
   }
 }
-
-
