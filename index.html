@@ -545,7 +545,7 @@
         document.getElementById('login-work-btn')?.addEventListener('click', () => signIn('work'));
         DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
         DOM.forULoadMoreBtn.addEventListener('click', loadMoreTrends);
-        DOM.savePreferencesBtn.addEventListener('click', () => { user.preferences = [...document.querySelectorAll('#preferences-grid input:checked')].map(cb => cb.value); user.hasSetPreferences = true; closeModal('preferences-modal'); switchView('forU'); });
+        DOM.savePreferencesBtn.addEventListener('click', () => { user.preferences = [...document.querySelectorAll('#preferences-grid input:checked')].map(cb => cb.value); user.hasSetPreferences = true; closeModal('preferences-modal'); switchView('forU'); generateCategoryLeaderboards('for-u-leaderboards', user.preferences); });
         [DOM.trendsList, DOM.forUTrendsList].forEach(list => list.addEventListener('click', handleInteraction));
         DOM.filterButtonsContainer.addEventListener('click', (e) => { if (e.target.matches('.filter-btn')) { currentFilter = { type: 'category', value: e.target.dataset.filter }; updateUIForFilter(); } });
         DOM.clearFilterBtn.addEventListener('click', () => { currentFilter = { type: 'category', value: 'All' }; updateUIForFilter(); });
@@ -557,4 +557,5 @@
     </script>
 </body>
 </html>
+
 
