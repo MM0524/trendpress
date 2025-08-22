@@ -40,7 +40,7 @@ exports.handler = async (event) => {
         fetchBloomberg(),
         fetchVariety(),
         fetchWired(),
-        fetchAppleMusicVN(),
+        fetchBillboardVietnamHot100(),
     ];
 
     // TỐI ƯU: Dùng Promise.allSettled để không bị thất bại hoàn toàn nếu một nguồn lỗi
@@ -213,21 +213,28 @@ async function fetchWired() {
     }));
 }
 
-// 🔹 Apple Music Vietnam Top Songs
-async function fetchAppleMusicVN() {
-    const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/10/songs.json");
+// Thay thế Apple Music bằng Billboard Vietnam Hot 100
+async function fetchBillboardVietnamHot100() {
+  const url = 'https://raw.githubusercontent.com/mhollingshead/billboard-hot-100/main/recent.json';
+  try {
+    const res = await fetchWithTimeout(url);
     if (!res.ok) return [];
     const json = await res.json();
-    return json.feed.results.map((item, i) => ({
-        title: item.name,
-        description: item.artistName,
-        category: "Music",
-        tags: ["AppleMusic", "Vietnam"],
-        votes: 500 - i,
-        source: item.url,
-        date: toDateStr(item.releaseDate || new Date().toISOString()),
-        submitter: "Apple Music"
+    const date = json.date;
+    return json.data.map((song, idx) => ({
+      title: song.song,
+      description: song.artist,
+      category: 'Music',
+      tags: ['BillboardVietnamHot100'],
+      votes: 500 - song.this_week, 
+      source: 'https://www.facebook.com/billboardvietnam/posts/pfbid0Ere4V5pyLKUkZXVsMaeguC1qy5HDinr7CJmd3cAeMsi7pG5Pm6m5ENqHNcfgmsEwl?locale=vi_VN', 
+      date: toDateStr(date),
+      submitter: 'Billboard Vietnam'
     }));
+  } catch (err) {
+    console.warn("Billboard Vietnam fetch failed:", err.message);
+    return [];
+  }
 }
 
 
