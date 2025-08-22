@@ -38,6 +38,7 @@ exports.handler = async (event) => {
         fetchGoogleNewsVN(),
         fetchYahooFinance(),
         fetchCNBCFinance(),
+        fetchCafeF(),
         fetchVariety(),
         fetchHollywoodReporter(),
         fetchWired(),
@@ -190,6 +191,23 @@ async function fetchCNBCFinance() {
     source: getTag(block, "link"),
     date: toDateStr(getTag(block, "pubDate")),
     submitter: "CNBC"
+  }));
+}
+
+// CafeF - Toàn trang
+async function fetchCafeF() {
+  const res = await fetchWithTimeout("https://cafef.vn/trang-chu.rss");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Stock",
+    tags: ["CafeF", "VietnamStocks", "Vietnam"],
+    votes: 410 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "CafeF"
   }));
 }
 
