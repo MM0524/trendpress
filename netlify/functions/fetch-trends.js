@@ -30,7 +30,6 @@ exports.handler = async (event) => {
     // TỐI ƯU: Giảm số lượng nguồn tin để đảm bảo chạy dưới 10 giây
     const sources = [
         fetchHackerNewsFrontpage(),
-        fetchVnExpressInternational(),
         fetchTheVerge(),
         fetchTechCrunch(),
         fetchIGNGaming(),
@@ -42,9 +41,9 @@ exports.handler = async (event) => {
         fetchVariety(),
         fetchHollywoodReporter(),
         fetchWired(),
+        fetchNatureScience(),
         fetchAppleMusicMostPlayedVN(),
         fetchAppleMusicNewReleasesVN(),
-        fetchNatureScience(),
     ];
 
     // TỐI ƯU: Dùng Promise.allSettled để không bị thất bại hoàn toàn nếu một nguồn lỗi
@@ -105,13 +104,6 @@ async function fetchHackerNewsFrontpage() {
     if (!res.ok) return [];
     const xml = await res.text();
     return rssItems(xml).map((block, i) => ({ title: getTag(block, "title"), description: getTag(block, "description"), category: "Tech", tags: ["HackerNews"], votes: 500 - i, source: getTag(block, "link"), date: toDateStr(getTag(block, "pubDate")), submitter: "Hacker News" }));
-}
-
-async function fetchVnExpressInternational() {
-    const res = await fetchWithTimeout("https://vnexpress.net/rss/tin-moi-nhat.rss");
-    if (!res.ok) return [];
-    const xml = await res.text();
-    return rssItems(xml).map((block, i) => ({ title: getTag(block, "title"), description: getTag(block, "description"), category: "News", tags: ["VnExpress", "Vietnam"], votes: 450 - i, source: getTag(block, "link"), date: toDateStr(getTag(block, "pubDate")), submitter: "VnExpress" }));
 }
 
 async function fetchTheVerge() {
@@ -252,6 +244,23 @@ async function fetchWired() {
     }));
 }
 
+// Nature
+async function fetchNatureScience() {
+  const res = await fetchWithTimeout("https://www.nature.com/subjects/science/rss.xml");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Science",
+    tags: ["Nature"],
+    votes: 410 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "Nature"
+  }));
+}
+
 // 🔹 Apple Music Vietnam - Most Played
 async function fetchAppleMusicMostPlayedVN() {
   const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json");
@@ -286,19 +295,4 @@ async function fetchAppleMusicNewReleasesVN() {
   }));
 }
 
-// Nature
-async function fetchNatureScience() {
-  const res = await fetchWithTimeout("https://www.nature.com/subjects/science/rss.xml");
-  if (!res.ok) return [];
-  const xml = await res.text();
-  return rssItems(xml).map((block, i) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Science",
-    tags: ["Nature"],
-    votes: 410 - i,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Nature"
-  }));
-}
+
