@@ -41,7 +41,8 @@ exports.handler = async (event) => {
         fetchVariety(),
         fetchHollywoodReporter(),
         fetchWired(),
-        fetchNatureScience(),
+        fetchScienceMagazine(),
+        fetchScientificAmerican(),
         fetchAppleMusicMostPlayedVN(),
         fetchAppleMusicNewReleasesVN(),
     ];
@@ -244,20 +245,37 @@ async function fetchWired() {
     }));
 }
 
-// Nature
-async function fetchNatureScience() {
-  const res = await fetchWithTimeout("https://www.nature.com/subjects/science/rss.xml");
+// Science Magazine (AAAS) - News
+async function fetchScienceMagazine() {
+  const res = await fetchWithTimeout("https://www.science.org/rss/news_current.xml");
   if (!res.ok) return [];
   const xml = await res.text();
   return rssItems(xml).map((block, i) => ({
     title: getTag(block, "title"),
     description: getTag(block, "description"),
     category: "Science",
-    tags: ["Nature"],
-    votes: 410 - i,
+    tags: ["ScienceMag"],
+    votes: 500 - i,
     source: getTag(block, "link"),
     date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Nature"
+    submitter: "Science Magazine"
+  }));
+}
+
+// Scientific American
+async function fetchScientificAmerican() {
+  const res = await fetchWithTimeout("https://www.scientificamerican.com/feed/rss/");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Science",
+    tags: ["ScientificAmerican"],
+    votes: 480 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "Scientific American"
   }));
 }
 
