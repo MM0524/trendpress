@@ -23,17 +23,8 @@
         @keyframes pulse { 0% { top: 36px; left: 36px; width: 0; height: 0; opacity: 1; } 100% { top: 0px; left: 0px; width: 72px; height: 72px; opacity: 0; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* CẬP NHẬT: Wrapper để căn giữa nội dung */
-        .main-content-wrapper {
-            display: flex;
-            flex-direction: column;
-            min-height: calc(100vh - var(--header-height) - 1px); /* Chiều cao viewport trừ header */
-        }
-        .main-container, .for-u-container {
-            flex-grow: 1; /* Cho phép container chính giãn ra để chiếm không gian */
-        }
-        
+        .main-content-wrapper { display: flex; flex-direction: column; min-height: calc(100vh - var(--header-height) - 1px); }
+        .main-container, .for-u-container { flex-grow: 1; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; height: var(--header-height); animation: fadeIn 0.5s ease-out; }
         .logo { font-size: 1.8rem; font-weight: 700; cursor: pointer; }
         .logo-trend { color: var(--primary-light); }
@@ -50,10 +41,8 @@
         .btn-outline { background: transparent; color: var(--primary-light); border: 1px solid var(--primary-light); font-size: 0.8rem; padding: 0.3rem 0.8rem; }
         .btn-outline:hover { background: var(--primary-light); color: white; }
         .analyze-trend-btn { margin-right: 0.5rem; }
-        
         .main-container { display: grid; grid-template-columns: 1fr; gap: 2rem; padding: 2rem; max-width: 900px; margin: auto; animation: slideInUp 0.6s ease-out; }
         .for-u-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
-        
         .trending-container, .for-u-content, .leaderboard-panel { background-color: var(--surface-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
         .trending-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
         .trending-title-group { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 600; }
@@ -62,8 +51,27 @@
         .filter-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
         .trend-card { background-color: var(--bg-color); padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem; transition: transform 0.3s ease, box-shadow 0.3s ease; animation: slideInUp 0.5s ease-out forwards; opacity: 0; }
         .trend-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
-        .trend-title { font-size: 1.25rem; font-weight: 600; cursor: pointer; transition: color 0.3s; }
+        .trend-title { font-size: 1.25rem; font-weight: 600; cursor: pointer; transition: color 0.3s; margin-bottom: 0.5rem; }
         .trend-title:hover { color: var(--primary-light); }
+        
+        /* CẬP NHẬT CSS CHO HÌNH ẢNH */
+        .trend-image-container {
+            width: 100%;
+            aspect-ratio: 16 / 9; /* Tỷ lệ khung hình 16:9 */
+            background-color: var(--bg-color); /* Màu nền cho trend không có ảnh */
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .trend-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Lấp đầy khung mà không bị méo */
+        }
+
         .trend-description { margin-bottom: 1rem; color: var(--text-muted-color); }
         .loading-spinner { width: 20px; height: 20px; border: 2px solid rgba(161, 0, 255, 0.1); border-top: 2px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -165,8 +173,6 @@
             <button class="hamburger-menu" id="hamburger-menu"><span></span><span></span><span></span></button>
         </div>
     </header>
-    
-    <!-- CẬP NHẬT HTML: Thêm wrapper để căn giữa -->
     <div class="main-content-wrapper">
         <main class="main-container" id="main-view-container">
             <div class="demo-banner"><h2></h2><p></p></div>
@@ -193,14 +199,12 @@
             </aside>
         </section>
     </div>
-
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
     <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span></span></button><button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></button></div></div></div>
     <div class="modal-overlay" id="trending-board-modal"><div class="modal-content" id="trending-board-content"><button class="modal-close" data-close="trending-board-modal">&times;</button><h3 class="modal-title"></h3><div id="hot-trends-container"><h4></h4><canvas id="hot-trends-chart"></canvas></div><div class="leaderboards-container" id="category-leaderboards"></div></div></div>
     <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
     <div class="modal-overlay" id="about-modal"><div class="modal-content"><button class="modal-close" data-close="about-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p></div></div>
-
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section"><h4 class="footer-title">TrendPulse</h4><p class="footer-description"></p></div>
@@ -211,8 +215,32 @@
         <div class="footer-bottom"><p></p></div>
     </footer>
 
-<script>
+    <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- INSECURE API MANAGER (AS PER YOUR REQUEST) ---
+        class GeminiAPIManager {
+            constructor(apiKey) { this.apiKey = apiKey; this.baseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'; }
+            createStructuredSummaryPrompt(trend) { return `Analyze the trend: "${trend.title}". Respond ONLY with a valid JSON object with this structure: {"successScore": <a number between 0-100 for the trend's potential>,"summary": "<a one-paragraph summary of the trend's potential>","historicalData": [<array of 4 numbers for interest over the last 4 months>],"futureProjection": [<array of 1 number for a forecast for the next 7 days>]}`; }
+            createDetailedAnalysisPrompt(trend) { return `Analyze the trend: "${trend.title}" (Category: ${trend.category}). Description: "${trend.description}". Provide a detailed professional analysis in English. Structure your response using markdown with these EXACT sections:\n### Analysis of "${trend.title}" Trend\n<A paragraph explaining the core concept.>\n### Actionable Suggestions for Viral Content\n* **Real-World Case Studies:** <suggestion>\n* **"Horror Stories" & Solutions:** <suggestion>\n### Primary Target Audience\n* <Audience 1>\n* <Audience 2>\n### Most Suitable Platforms\n* **Platform 1 (e.g., YouTube):** <reason>\n* **Platform 2 (e.g., LinkedIn):** <reason>`; }
+            async analyzeTrend(trend, analysisType = 'summary') {
+                const isSummary = analysisType === 'summary';
+                const prompt = isSummary ? this.createStructuredSummaryPrompt(trend) : this.createDetailedAnalysisPrompt(trend);
+                const generationConfig = { temperature: 0.7, maxOutputTokens: 2048, };
+                if (isSummary) { generationConfig.responseMimeType = "application/json"; }
+                try {
+                    const response = await fetch(`${this.baseURL}?key=${this.apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig }) });
+                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                    const data = await response.json();
+                    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) { if (data.candidates && data.candidates[0].finishReason === 'SAFETY') { return "The analysis for this trend was blocked due to sensitivity."; } throw new Error('Invalid response format from Gemini API'); }
+                    const textContent = data.candidates[0].content.parts[0].text;
+                    if (isSummary) { return JSON.parse(textContent); } else { return this.formatDetailedInsight(textContent); }
+                } catch (error) { console.error("Gemini API request failed:", error); throw new Error("AI analysis is currently unavailable."); }
+            }
+            formatDetailedInsight(markdownText) { return markdownText.replace(/### (.*?)\n/g, '<h4>$1</h4>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^\* (.*$)/gm, '<li>$1</li>').replace(/<li>/g, '<ul><li>').replace(/<\/li>\n<ul>/g, '</li><li>').replace(/<\/li>(\s*<h)/g, '</li></ul>$1').replace(/\n/g, '<br>').concat('</ul>'); }
+            async checkAPIStatus() { try { const response = await fetch(`${this.baseURL}?key=${this.apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] }) }); return response.ok; } catch (error) { return false; } }
+        }
+        window.GeminiAPIManager = GeminiAPIManager;
+
         // --- STATE & DATA ---
         let user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [] };
         const TRENDS_PER_PAGE = 5;
@@ -252,32 +280,6 @@
             } catch (e) { console.warn('Live trends not available.', e.message); DOM.trendsList.innerHTML = `<p style="text-align: center; color: var(--text-muted-color);">Could not load trends. Please try again later.</p>`; return []; }
         }
 
-        // --- SỬA LỖI: Thêm lại hàm bị thiếu ---
-        async function analyzeTrendSecurely(trend, analysisType) {
-            try {
-                const response = await fetch('/.netlify/functions/analyze-trend', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ trend, analysisType })
-                });
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Server function error: ${response.status} ${errorText}`);
-                }
-                const result = await response.json();
-                if (!result.success) throw new Error(result.message || 'Analysis failed on the server');
-                
-                if (analysisType === 'summary') {
-                    return JSON.parse(result.data);
-                }
-                const formatDetailedInsight = (markdownText) => markdownText.replace(/### (.*?)\n/g, '<h4>$1</h4>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^\* (.*$)/gm, '<li>$1</li>').replace(/<li>/g, '<ul><li>').replace(/<\/li>\n<ul>/g, '</li><li>').replace(/<\/li>(\s*<h)/g, '</li></ul>$1').replace(/\n/g, '<br>').concat('</ul>');
-                return formatDetailedInsight(result.data);
-            } catch (error) {
-                console.error("Secure analysis request failed:", error);
-                throw error;
-            }
-        }
-
         function preprocessTrends(trends) {
             if (!trends || trends.length === 0) return [];
             trends.forEach(trend => {
@@ -306,15 +308,35 @@
 
         function applyTranslations() { i18nBindings.forEach(b => { const el = document.querySelector(b.selector); if (el) { el.textContent = t(b.key); } }); document.querySelector('.footer-bottom p').textContent = `© 2024 TrendPulse. ${t('All rights reserved.')}`; document.getElementById('ai-status-text').textContent = t('AI: Checking...'); }
         function updateLanguageToggleUI() { document.getElementById('language-toggle').textContent = currentLanguage === 'vi' ? 'VN' : 'EN'; }
+
         function createTrendCard(trend) {
             const trendCard = document.createElement('div');
             trendCard.className = 'trend-card';
             trendCard.dataset.trendId = trend.id;
             const { title: localizedTitle, description: localizedDesc } = getLocalizedTrendText(trend);
             const isFollowed = user.followedTrends.includes(trend.id);
-            trendCard.innerHTML = `<div class="trend-card-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;"><h3 class="trend-title" style="flex-grow: 1;">${localizedTitle}</h3><div class="trend-meta"><span class="trend-meta-submitter">by ${trend.submitter}</span><span class="trend-meta-date"><br>on ${trend.date}</span></div></div><p class="trend-description">${localizedDesc}</p><div class="trend-footer"><div class="trend-tags"><span class="tag category">${trend.category}</span>${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${tag}">#${tag}</span>`).join('')}</div><div class="trend-actions"><a href="${trend.source}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a><button class="btn btn-outline analyze-trend-btn">${t('🔍 Analyze')}</button><button class="btn btn-follow ${isFollowed ? 'followed' : ''}">${isFollowed ? t('Following') : t('❤️ Follow')}</button></div></div>`;
+            // CẬP NHẬT HTML: Thêm image container
+            const imageHtml = trend.image ? `<div class="trend-image-container"><img src="${trend.image}" alt="${localizedTitle}"></div>` : '<div class="trend-image-container"></div>';
+
+            trendCard.innerHTML = `
+                <h3 class="trend-title">${localizedTitle}</h3>
+                <div class="trend-meta" style="font-size: 0.8rem; margin-bottom: 1rem; color: var(--text-muted-color);">by ${trend.submitter} on ${trend.date}</div>
+                ${imageHtml}
+                <p class="trend-description">${truncateText(localizedDesc, 150)}</p>
+                <div class="trend-footer">
+                    <div class="trend-tags">
+                        <span class="tag category">${trend.category}</span>
+                        ${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${tag}">#${tag}</span>`).join('')}
+                    </div>
+                    <div class="trend-actions">
+                        <a href="${trend.source}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a>
+                        <button class="btn btn-outline analyze-trend-btn">${t('🔍 Analyze')}</button>
+                        <button class="btn btn-follow ${isFollowed ? 'followed' : ''}">${isFollowed ? t('Following') : t('❤️ Follow')}</button>
+                    </div>
+                </div>`;
             return trendCard;
         };
+
         function getVisibleTrends() {
             if (currentView === 'forU') {
                 const preferenceTrends = allTrends.filter(t => user.preferences.includes(t.category));
@@ -328,6 +350,7 @@
                 else { return allTrends; }
             }
         }
+        
         function displayTrends() {
             const listElement = currentView === 'main' ? DOM.trendsList : DOM.forUTrendsList;
             const footerButton = currentView === 'main' ? DOM.loadMoreBtn : DOM.forULoadMoreBtn;
@@ -338,6 +361,7 @@
             if (displayedTrends[currentView] === 0) { displayedTrends[currentView] = trendsToDisplay.length; }
             footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length);
         };
+        
         function loadMoreTrends() {
             const listElement = currentView === 'main' ? DOM.trendsList : DOM.forUTrendsList;
             const footerButton = currentView === 'main' ? DOM.loadMoreBtn : DOM.forULoadMoreBtn;
@@ -348,12 +372,14 @@
             displayedTrends[currentView] += nextTrends.length;
             footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length);
         }
+        
         function switchView(view) { currentView = view; displayedTrends[view] = 0; displayTrends(); DOM.mainViewContainer.classList.toggle('hidden', view !== 'main'); DOM.forUViewContainer.classList.toggle('hidden', view !== 'forU'); };
         function updateAuthUI() { DOM.body.className = ''; if (user.isLoggedIn) { DOM.body.classList.add('logged-in'); DOM.signInBtn.classList.add('hidden'); DOM.userMenu.classList.remove('hidden'); DOM.userEmailBtn.textContent = user.email; DOM.dropdownHeader.textContent = user.email; DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType === 'work'); if (user.accountType === 'work') DOM.body.classList.add('work-account-view'); } else { DOM.signInBtn.classList.remove('hidden'); DOM.userMenu.classList.add('hidden'); DOM.navForU.classList.add('hidden'); } displayTrends(); };
         function signIn(type) { user = { isLoggedIn: true, accountType: type, email: type === 'personal' ? 'user@gmail.com' : 'pro@company.com', preferences: [], hasSetPreferences: false, followedTrends: [] }; closeModal('login-choice-modal'); updateAuthUI(); if (type === 'work' && !user.hasSetPreferences) { populatePreferenceCheckboxes(); openModal('preferences-modal'); } };
         function populateCategoryFilters() { categories = [...new Set(allTrends.map(t => t.category))].sort(); DOM.filterButtonsContainer.innerHTML = ['All', ...categories].map(category => `<button class="filter-btn ${category === 'All' ? 'active' : ''}" data-filter="${category}">${category}</button>`).join(''); };
         function populatePreferenceCheckboxes() { DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}"> ${category}</label></div>`).join(''); };
         function updateUIForFilter() { if (currentFilter.type === 'tag') { document.querySelector('#trending-header-text').textContent = `${t('Trends for')} #${currentFilter.value}`; DOM.clearFilterBtn.classList.remove('hidden'); DOM.filterButtonsContainer.classList.add('hidden'); } else { document.querySelector('#trending-header-text').textContent = t('Trending Now'); DOM.clearFilterBtn.classList.add('hidden'); DOM.filterButtonsContainer.classList.remove('hidden'); document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value)); } displayedTrends.main = 0; displayTrends(); };
+        
         function generateCategoryLeaderboards(containerId, categoriesToShow) {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -373,6 +399,7 @@
                 container.appendChild(leaderboardDiv);
             });
         }
+
         function createHotTrendsChart() {
             const canvas = document.getElementById('hot-trends-chart');
             if (!canvas) return;
@@ -400,18 +427,21 @@
             const datasets = trendsForChart.map((t, idx) => ({ label: truncateText(t.title, 30), data: generateSeriesForMonths(t, monthKeys), borderColor: palette[idx].stroke, tension: 0.4, fill: false }));
             hotTrendsChart = new Chart(canvas.getContext('2d'), { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#8a8da0' } }, tooltip: { callbacks: { label: (ctx) => `${t('Engagement')}: ${formatNumber(ctx.parsed.y)}` } } }, scales: { x: { ticks: { color: '#8a8da0' } }, y: { ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, beginAtZero: true } } } });
         };
+        
         function renderSummaryAnalysis(analysisData) {
             const modalBody = document.getElementById('ai-insight-body');
             const chartData = generateChartDataFromScore(analysisData.successScore);
             modalBody.innerHTML = `<div style="margin-bottom: 1rem;"><h4>${t('Success Score')}</h4><p style="font-size: 2rem; font-weight: bold; color: var(--primary-light);">${analysisData.successScore.toFixed(0)}%</p></div><div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4><p>${analysisData.summary}</p></div><div><h4>${t('Interest Over Time')}</h4></div>`;
             renderAnalysisChart(chartData.historicalData, chartData.futureProjection);
         }
+
         function renderDetailedAnalysis(htmlContent, trend) {
              const modalBody = document.getElementById('ai-insight-body');
              modalBody.innerHTML = htmlContent;
              const { historicalData, futureProjection } = generateChartDataFromScore(75, getCombinedMetric(trend));
              renderAnalysisChart(historicalData, futureProjection);
         }
+
         function renderAnalysisChart(historicalData, futureProjection) {
             if (analysisChart) analysisChart.destroy();
             const canvas = document.createElement('canvas');
@@ -430,6 +460,7 @@
                 options: { responsive: true, plugins: { legend: { display: true, labels: { color: '#8a8da0' } } }, scales: { x: { ticks: { color: '#8a8da0' } }, y: { ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, beginAtZero: false } } }
             });
         }
+        
         function getCombinedMetric(trend) { return (trend.views || 0) + (trend.interactions || 0) + (trend.searches || 0); }
         function getLocalizedTrendText(trend) { return currentLanguage === 'vi' ? { title: trend.title_vi || trend.title, description: trend.description_vi || trend.description } : { title: trend.title_en || trend.title, description: trend.description_en || trend.description }; }
         function truncateText(text = '', maxLength = 180) { if (text.length <= maxLength) return text; const cut = text.slice(0, maxLength); return cut.slice(0, cut.lastIndexOf(' ', maxLength) || maxLength) + '…'; }
@@ -440,6 +471,7 @@
         function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
         function generateMonthRange(start, end) { const res = []; let d = new Date(start); d.setDate(1); while (d <= end) { res.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); d.setMonth(d.getMonth() + 1); } return res; }
         function monthKeyToLabel(key) { const [y, m] = key.split('-'); return `${m}/${y.slice(-2)}`; }
+        
         function generateSeriesForMonths(trend, monthKeys) { 
             const peakMetric = getCombinedMetric(trend); 
             const trendDate = new Date(trend.date || Date.now()); 
@@ -456,6 +488,7 @@
             } 
             return series; 
         }
+
         function generateChartDataFromScore(score, baseMetric = 500) {
             const growthFactor = (score - 50) / 500;
             let historicalData = [baseMetric * 0.4, baseMetric * 0.6, baseMetric * 0.8, baseMetric].map(v => Math.round(v));
@@ -465,6 +498,7 @@
             futureProjection.push(Math.max(0, Math.round(lastValue)));
             return { historicalData, futureProjection };
         }
+
         function getColorPalette(count) { const base = [{ stroke: '#A100FF' }, { stroke: '#00C8FF' }, { stroke: '#00E696' }, { stroke: '#FFB400' }, { stroke: '#FF6384' }]; while (base.length < count) base.push({ stroke: `hsl(${Math.random() * 360}, 90%, 60%)` }); return base; }
         function formatNumber(n){ if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'K'; return String(n); }
 
@@ -518,7 +552,7 @@
                  analyzeTrendSecurely(trend, 'detailed').then(htmlContent => { renderDetailedAnalysis(htmlContent, trend); }).catch(err => { modalBody.innerHTML = `<p style="color: #ff6b6b;">${t('Unable to analyze trend.')}</p>`; });
             }
 
-            if (e.target.matches('.tag.hashtag')) { switchView('main'); currentFilter = { type: 'tag', value: e.target.dataset.tag }; updateUIForFilter(); }
+            if (e.target.matches('.tag.hashtag')) { switchView('main'); currentFilter = { type: 'category', value: e.target.dataset.tag }; updateUIForFilter(); }
         }
         
         async function initializeApp() {
@@ -560,7 +594,3 @@
     </script>
 </body>
 </html>
-
-
-
-
