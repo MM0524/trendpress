@@ -2,17 +2,14 @@
 const fetch = require('node-fetch');
 
 // Helper: fetch với timeout để tránh bị treo
-async function fetchWithRetry(url, options = {}, ms = 7000, retries = 2) {
-  for (let i = 0; i <= retries; i++) {
-    try {
-      return await fetchWithTimeout(url, options, ms);
-    } catch (err) {
-      if (i === retries) throw err;
-      console.warn(`Retrying ${url} (${i + 1}/${retries})`);
-    }
-  }
+async function fetchWithTimeout(url, options = {}, ms = 7000) {
+  const controller = new AbortController(); 
+  const id = setTimeout(() => controller.abort(), ms); 
+  try { const res = await fetch(url, { ...options, signal: controller.signal }); clearTimeout(id); return res; } 
+  catch (err) { clearTimeout(id); // Ném lỗi để Promise.allSettled có thể bắt được 
+  throw new Error(Timeout or network error for ${url}: ${err.message}); 
+              } 
 }
-
 
 exports.handler = async (event) => {
   const headers = {
