@@ -34,15 +34,19 @@ exports.handler = async (event) => {
         fetchTheVerge(),
         fetchTechCrunch(),
         fetchIGNGaming(),
+        fetchGameSpot(),
         fetchVentureBeatAI(),
+        fetchMITAIVN(),
         fetchGoogleNewsVN(),
         fetchYahooFinance(),
+        fetchCNBCFinance(),
         fetchBloomberg(),
         fetchVariety(),
+        fetchHollywoodReporter(),
         fetchWired(),
         fetchAppleMusicMostPlayedVN(),
         fetchAppleMusicNewReleasesVN(),
-
+        fetchNatureScience(),
     ];
 
     // TỐI ƯU: Dùng Promise.allSettled để không bị thất bại hoàn toàn nếu một nguồn lỗi
@@ -133,11 +137,45 @@ async function fetchIGNGaming() {
     return rssItems(xml).map((block, i) => ({ title: getTag(block, "title"), description: getTag(block, "description"), category: "Gaming", tags: ["IGN", "Games"], votes: 350 - i, source: getTag(block, "link"), date: toDateStr(getTag(block, "pubDate")), submitter: "IGN" }));
 }
 
+// GameSpot
+async function fetchGameSpot() {
+  const res = await fetchWithTimeout("https://www.gamespot.com/feeds/mashup/");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Gaming",
+    tags: ["GameSpot"],
+    votes: 430 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "GameSpot"
+  }));
+}
+
 async function fetchVentureBeatAI() {
     const res = await fetchWithTimeout("https://venturebeat.com/category/ai/feed/");
     if (!res.ok) return [];
     const xml = await res.text();
     return rssItems(xml).map((block, i) => ({ title: getTag(block, "title"), description: getTag(block, "description"), category: "AI", tags: ["VentureBeat", "AI"], votes: 420 - i, source: getTag(block, "link"), date: toDateStr(getTag(block, "pubDate")), submitter: "VentureBeat" }));
+}
+
+// MIT Technology Review - AI
+async function fetchMITAIVN() {
+  const res = await fetchWithTimeout("https://www.technologyreview.com/feed/tag/artificial-intelligence/");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "AI",
+    tags: ["MIT", "AI"],
+    votes: 450 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "MIT Tech Review"
+  }));
 }
 
 async function fetchGoogleNewsVN() {
@@ -164,21 +202,21 @@ async function fetchYahooFinance() {
     }));
 }
 
-// 🔹 Bloomberg
-async function fetchBloomberg() {
-    const res = await fetchWithTimeout("https://www.bloomberg.com/feed/podcast/etf-report.xml");
-    if (!res.ok) return [];
-    const xml = await res.text();
-    return rssItems(xml).map((block, i) => ({
-        title: getTag(block, "title"),
-        description: getTag(block, "description"),
-        category: "Finance",
-        tags: ["Bloomberg"],
-        votes: 500 - i,
-        source: getTag(block, "link"),
-        date: toDateStr(getTag(block, "pubDate")),
-        submitter: "Bloomberg"
-    }));
+// CNBC Finance
+async function fetchCNBCFinance() {
+  const res = await fetchWithTimeout("https://www.cnbc.com/id/10000664/device/rss/rss.html");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Finance",
+    tags: ["CNBC", "Markets"],
+    votes: 440 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "CNBC"
+  }));
 }
 
 // 🔹 Variety
@@ -197,6 +235,24 @@ async function fetchVariety() {
         submitter: "Variety"
     }));
 }
+
+// Hollywood Reporter
+async function fetchHollywoodReporter() {
+  const res = await fetchWithTimeout("https://www.hollywoodreporter.com/t/feed/");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Media",
+    tags: ["HollywoodReporter"],
+    votes: 420 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "Hollywood Reporter"
+  }));
+}
+
 
 // 🔹 Wired
 async function fetchWired() {
@@ -249,3 +305,19 @@ async function fetchAppleMusicNewReleasesVN() {
   }));
 }
 
+// Nature
+async function fetchNatureScience() {
+  const res = await fetchWithTimeout("https://www.nature.com/subjects/science/rss.xml");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Science",
+    tags: ["Nature"],
+    votes: 410 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "Nature"
+  }));
+}
