@@ -42,7 +42,7 @@ exports.handler = async (event) => {
         fetchHollywoodReporter(),
         fetchWired(),
         fetchScienceMagazine(),
-        fetchScientificAmerican(),
+        fetchNewScientist(),
         fetchAppleMusicMostPlayedVN(),
         fetchAppleMusicNewReleasesVN(),
     ];
@@ -262,20 +262,20 @@ async function fetchScienceMagazine() {
   }));
 }
 
-// Scientific American
-async function fetchScientificAmerican() {
-  const res = await fetchWithTimeout("https://www.scientificamerican.com/feed/rss/");
+// New Scientist
+async function fetchNewScientist() {
+  const res = await fetchWithTimeout("https://www.newscientist.com/feed/home/");
   if (!res.ok) return [];
   const xml = await res.text();
   return rssItems(xml).map((block, i) => ({
     title: getTag(block, "title"),
     description: getTag(block, "description"),
     category: "Science",
-    tags: ["ScientificAmerican"],
-    votes: 480 - i,
+    tags: ["NewScientist"],
+    votes: 470 - i,
     source: getTag(block, "link"),
     date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Scientific American"
+    submitter: "New Scientist"
   }));
 }
 
