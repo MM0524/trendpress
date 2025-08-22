@@ -34,7 +34,6 @@ exports.handler = async (event) => {
         fetchTheVerge(),
         fetchTechCrunch(),
         fetchIGNGaming(),
-        fetchGameSpot(),
         fetchVentureBeatAI(),
         fetchMITAIVN(),
         fetchGoogleNewsVN(),
@@ -134,23 +133,6 @@ async function fetchIGNGaming() {
     if (!res.ok) return [];
     const xml = await res.text();
     return rssItems(xml).map((block, i) => ({ title: getTag(block, "title"), description: getTag(block, "description"), category: "Gaming", tags: ["IGN", "Games"], votes: 350 - i, source: getTag(block, "link"), date: toDateStr(getTag(block, "pubDate")), submitter: "IGN" }));
-}
-
-// GameSpot
-async function fetchGameSpot() {
-  const res = await fetchWithTimeout("https://www.gamespot.com/feeds/mashup/");
-  if (!res.ok) return [];
-  const xml = await res.text();
-  return rssItems(xml).map((block, i) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Gaming",
-    tags: ["GameSpot"],
-    votes: 430 - i,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "GameSpot"
-  }));
 }
 
 async function fetchVentureBeatAI() {
