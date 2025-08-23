@@ -433,7 +433,7 @@ exports.handler = async (event) => {
 
     trends = trends
       .filter(Boolean)
-      .sort((a, b) => (b.votes || 0) - (a.votes || 0))
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
       .map((t, i) => ({ ...t, id: i + 1 }));
 
     return {
