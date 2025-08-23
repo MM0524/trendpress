@@ -9,8 +9,10 @@ async function fetchWithTimeout(url, options = {}, ms = 9000) {
     const res = await fetch(url, {
       ...options,
       signal: controller.signal,
-      // Một số site cần UA
-      headers: { "User-Agent": "Mozilla/5.0 (TrendsBot/1.0)" , ...(options.headers || {}) },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (TrendsBot/1.0)",
+        ...(options.headers || {}),
+      },
     });
     return res;
   } catch (err) {
@@ -31,10 +33,7 @@ function decodeHtmlEntities(str = "") {
 }
 
 function getTag(block, tag) {
-  const cdata = new RegExp(
-    `<${tag}><!\\[CDATA\\[(.*?)\\]\\]><\\/${tag}>`,
-    "is"
-  );
+  const cdata = new RegExp(`<${tag}><!\\[CDATA\\[(.*?)\\]\\]><\\/${tag}>`, "is");
   const plain = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, "i");
   const m = block.match(cdata) || block.match(plain);
   return m ? decodeHtmlEntities(m[1].trim()) : "";
@@ -44,16 +43,22 @@ function rssItems(xml) {
   const items = [];
   const reg = /<item[\s\S]*?>([\s\S]*?)<\/item>/gi;
   let m;
-  while ((m = reg.exec(xml))) {
-    items.push(m[1]);
-  }
+  while ((m = reg.exec(xml))) items.push(m[1]);
   return items;
 }
 
-function formatDate(d) {
+// ---- Date helpers (FIX) ----
+function toDateStr(d) {
   const dt = d ? new Date(d) : new Date();
-  if (isNaN(dt.getTime())) return "";
-  return dt.toISOString().split("T")[0]; // YYYY-MM-DD
+  return isNaN(dt.getTime())
+    ? new Date().toISOString().split("T")[0]
+    : dt.toISOString().split("T")[0]; // YYYY-MM-DD
+}
+
+function toSortValue(d) {
+  // dùng để sort theo thời gian gốc; fallback = 0 để xuống cuối
+  const dt = d ? new Date(d) : null;
+  return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0;
 }
 
 // ===== Sources =====
@@ -63,16 +68,20 @@ async function fetchHackerNewsFrontpage() {
   const res = await fetchWithTimeout("https://hnrss.org/frontpage");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Tech",
-    tags: ["HackerNews"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Hacker News",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Tech",
+      tags: ["HackerNews"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Hacker News",
+    };
+  });
 }
 
 // The Verge
@@ -80,16 +89,20 @@ async function fetchTheVerge() {
   const res = await fetchWithTimeout("https://www.theverge.com/rss/index.xml");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Tech",
-    tags: ["TheVerge"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "The Verge",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Tech",
+      tags: ["TheVerge"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "The Verge",
+    };
+  });
 }
 
 // IGN Gaming
@@ -97,16 +110,20 @@ async function fetchIGNGaming() {
   const res = await fetchWithTimeout("https://feeds.ign.com/ign/games-all");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Gaming",
-    tags: ["IGN", "Games"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "IGN",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Gaming",
+      tags: ["IGN", "Games"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "IGN",
+    };
+  });
 }
 
 // VentureBeat AI
@@ -114,50 +131,66 @@ async function fetchVentureBeatAI() {
   const res = await fetchWithTimeout("https://venturebeat.com/category/ai/feed/");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "AI",
-    tags: ["VentureBeat", "AI"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "VentureBeat",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "AI",
+      tags: ["VentureBeat", "AI"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "VentureBeat",
+    };
+  });
 }
 
 // MIT Technology Review (AI tag)
 async function fetchMITTech() {
-  const res = await fetchWithTimeout("https://www.technologyreview.com/feed/tag/artificial-intelligence/");
+  const res = await fetchWithTimeout(
+    "https://www.technologyreview.com/feed/tag/artificial-intelligence/"
+  );
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "AI",
-    tags: ["MITTechReview", "AI"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "MIT Tech Review",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "AI",
+      tags: ["MITTechReview", "AI"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "MIT Tech Review",
+    };
+  });
 }
 
 // Google News VIETNAM
 async function fetchGoogleNewsVN() {
-  const res = await fetchWithTimeout("https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi");
+  const res = await fetchWithTimeout(
+    "https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi"
+  );
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "News",
-    tags: ["GoogleNewsVN", "Vietnam"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Google News VN",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "News",
+      tags: ["GoogleNewsVN", "Vietnam"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Google News VN",
+    };
+  });
 }
 
 // BBC World News
@@ -165,16 +198,20 @@ async function fetchBBCWorld() {
   const res = await fetchWithTimeout("https://feeds.bbci.co.uk/news/world/rss.xml");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "News",
-    tags: ["BBC", "WorldNews"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "BBC World News",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "News",
+      tags: ["BBC", "WorldNews"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "BBC World News",
+    };
+  });
 }
 
 // Yahoo Finance
@@ -182,33 +219,43 @@ async function fetchYahooFinance() {
   const res = await fetchWithTimeout("https://finance.yahoo.com/rss/topstories");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Finance",
-    tags: ["YahooFinance"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Yahoo Finance",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Finance",
+      tags: ["YahooFinance"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Yahoo Finance",
+    };
+  });
 }
 
 // CNBC Finance
 async function fetchCNBCFinance() {
-  const res = await fetchWithTimeout("https://www.cnbc.com/id/10000664/device/rss/rss.html");
+  const res = await fetchWithTimeout(
+    "https://www.cnbc.com/id/10000664/device/rss/rss.html"
+  );
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Finance",
-    tags: ["CNBC", "Markets"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "CNBC",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Finance",
+      tags: ["CNBC", "Markets"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "CNBC",
+    };
+  });
 }
 
 // Science Magazine (AAAS) – News
@@ -216,16 +263,20 @@ async function fetchScienceMagazine() {
   const res = await fetchWithTimeout("https://www.science.org/rss/news_current.xml");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Science",
-    tags: ["ScienceMag"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Science Magazine",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Science",
+      tags: ["ScienceMag"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Science Magazine",
+    };
+  });
 }
 
 // New Scientist
@@ -233,50 +284,66 @@ async function fetchNewScientist() {
   const res = await fetchWithTimeout("https://www.newscientist.com/feed/home/");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Science",
-    tags: ["NewScientist"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "New Scientist",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Science",
+      tags: ["NewScientist"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "New Scientist",
+    };
+  });
 }
 
 // Apple Music VN – Most Played
 async function fetchAppleMusicMostPlayedVN() {
-  const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json");
+  const res = await fetchWithTimeout(
+    "https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json"
+  );
   if (!res.ok) return [];
   const json = await res.json();
-  return json.feed.results.map((item, i) => ({
-    title: item.name,
-    description: item.artistName,
-    category: "Music",
-    tags: ["AppleMusic", "Vietnam", "MostPlayed"],
-    votes: 500 - i,
-    source: item.url,
-    date: toDateStr(item.releaseDate || new Date().toISOString()),
-    submitter: "Apple Music",
-  }));
+  return json.feed.results.map((item, i) => {
+    const pub = item.releaseDate || new Date().toISOString();
+    return {
+      title: item.name,
+      description: item.artistName,
+      category: "Music",
+      tags: ["AppleMusic", "Vietnam", "MostPlayed"],
+      votes: 0,
+      source: item.url,
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Apple Music",
+    };
+  });
 }
 
 // Apple Music VN – New Releases
 async function fetchAppleMusicNewReleasesVN() {
-  const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/100/songs.json");
+  const res = await fetchWithTimeout(
+    "https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/100/songs.json"
+  );
   if (!res.ok) return [];
   const json = await res.json();
-  return json.feed.results.map((item, i) => ({
-    title: item.name,
-    description: item.artistName,
-    category: "Music",
-    tags: ["AppleMusic", "Vietnam", "NewReleases"],
-    votes: 480 - i,
-    source: item.url,
-    date: toDateStr(item.releaseDate || new Date().toISOString()),
-    submitter: "Apple Music",
-  }));
+  return json.feed.results.map((item, i) => {
+    const pub = item.releaseDate || new Date().toISOString();
+    return {
+      title: item.name,
+      description: item.artistName,
+      category: "Music",
+      tags: ["AppleMusic", "Vietnam", "NewReleases"],
+      votes: 0,
+      source: item.url,
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Apple Music",
+    };
+  });
 }
 
 // ================== Entertainment Sources ==================
@@ -286,16 +353,20 @@ async function fetchVariety() {
   const res = await fetchWithTimeout("https://variety.com/feed/");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Entertainment",
-    tags: ["Variety", "Global"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Variety",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Entertainment",
+      tags: ["Variety", "Global"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Variety",
+    };
+  });
 }
 
 // Deadline (Hollywood Entertainment)
@@ -303,32 +374,41 @@ async function fetchDeadline() {
   const res = await fetchWithTimeout("https://deadline.com/feed/");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Entertainment",
-    tags: ["Deadline", "Showbiz", "Hollywood"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Deadline",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Entertainment",
+      tags: ["Deadline", "Showbiz", "Hollywood"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Deadline",
+    };
+  });
 }
+
 // Kênh14 (Vietnam Entertainment)
 async function fetchKenh14() {
   const res = await fetchWithTimeout("https://kenh14.vn/giai-tri.rss");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Entertainment",
-    tags: ["Kenh14", "Vietnam"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Kênh14",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Entertainment",
+      tags: ["Kenh14", "Vietnam"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Kênh14",
+    };
+  });
 }
 
 // Zing News (Vietnam Entertainment)
@@ -336,16 +416,20 @@ async function fetchZingNewsEntertainment() {
   const res = await fetchWithTimeout("https://zingnews.vn/rss/giai-tri.rss");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Entertainment",
-    tags: ["ZingNews", "Vietnam"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Zing News",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Entertainment",
+      tags: ["ZingNews", "Vietnam"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Zing News",
+    };
+  });
 }
 
 // ESPN World Sports
@@ -353,135 +437,167 @@ async function fetchESPN() {
   const res = await fetchWithTimeout("https://www.espn.com/espn/rss/news");
   if (!res.ok) return [];
   const xml = await res.text();
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Sports",
-    tags: ["ESPN", "WorldSports"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "ESPN",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Sports",
+      tags: ["ESPN", "WorldSports"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "ESPN",
+    };
+  });
 }
 
+// Logistics
 async function fetchLogistics() {
   const res = await fetchWithTimeout("https://www.freightwaves.com/feed");
   if (!res.ok) return [];
   const xml = await res.text();
-
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Logistics",
-    tags: ["Logistics", "SupplyChain"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "FreightWaves",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Logistics",
+      tags: ["Logistics", "SupplyChain"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "FreightWaves",
+    };
+  });
 }
 
+// Cybernews
 async function fetchCybernews() {
   const res = await fetchWithTimeout("https://cybernews.com/feed/");
   if (!res.ok) return [];
   const xml = await res.text();
-
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Cybersecurity",
-    tags: ["Cybernews", "Security"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Cybernews",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Cybersecurity",
+      tags: ["Cybernews", "Security"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Cybernews",
+    };
+  });
 }
 
+// Healthcare
 async function fetchHealthcare() {
   const res = await fetchWithTimeout("https://www.medicalnewstoday.com/rss");
   if (!res.ok) return [];
   const xml = await res.text();
-
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Healthcare",
-    tags: ["MedicalNewsToday", "Health"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Medical News Today",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Healthcare",
+      tags: ["MedicalNewsToday", "Health"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Medical News Today",
+    };
+  });
 }
 
+// Education
 async function fetchEducation() {
   const res = await fetchWithTimeout("https://www.chronicle.com/section/News/6/feed");
   if (!res.ok) return [];
   const xml = await res.text();
-
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Education",
-    tags: ["Chronicle", "Education"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "The Chronicle of Higher Education",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Education",
+      tags: ["Chronicle", "Education"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "The Chronicle of Higher Education",
+    };
+  });
 }
 
+// Environment
 async function fetchEnvironment() {
   const res = await fetchWithTimeout("https://www.nationalgeographic.com/environment/rss");
   if (!res.ok) return [];
   const xml = await res.text();
-
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Environment",
-    tags: ["NationalGeographic", "Environment"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "National Geographic",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Environment",
+      tags: ["NationalGeographic", "Environment"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "National Geographic",
+    };
+  });
 }
 
+// Politics (Reuters)
 async function fetchPolitics() {
-  const res = await fetchWithTimeout("http://feeds.reuters.com/Reuters/worldNews");
+  const res = await fetchWithTimeout("https://feeds.reuters.com/Reuters/worldNews");
   if (!res.ok) return [];
   const xml = await res.text();
-
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Politics",
-    tags: ["Reuters", "Politics"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Reuters World News",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Politics",
+      tags: ["Reuters", "Politics"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Reuters World News",
+    };
+  });
 }
 
+// Travel
 async function fetchTravel() {
   const res = await fetchWithTimeout("https://www.lonelyplanet.com/news/rss");
   if (!res.ok) return [];
   const xml = await res.text();
-
-  return rssItems(xml).map((block) => ({
-    title: getTag(block, "title"),
-    description: getTag(block, "description"),
-    category: "Travel",
-    tags: ["LonelyPlanet", "Travel"],
-    votes: 0,
-    source: getTag(block, "link"),
-    date: toDateStr(getTag(block, "pubDate")),
-    submitter: "Lonely Planet",
-  }));
+  return rssItems(xml).map((block) => {
+    const pub = getTag(block, "pubDate");
+    return {
+      title: getTag(block, "title"),
+      description: getTag(block, "description"),
+      category: "Travel",
+      tags: ["LonelyPlanet", "Travel"],
+      votes: 0,
+      source: getTag(block, "link"),
+      date: toDateStr(pub),
+      sortKey: toSortValue(pub),
+      submitter: "Lonely Planet",
+    };
+  });
 }
 
 // ===== Netlify Function Handler =====
@@ -509,9 +625,9 @@ exports.handler = async (event) => {
       fetchIGNGaming(),
       fetchVentureBeatAI(),
       fetchMITTech(),
-      fetchGoogleNewsVN(), 
+      fetchGoogleNewsVN(),
       fetchYahooFinance(),
-      fetchCNBCFinance(),  
+      fetchCNBCFinance(),
       fetchScienceMagazine(),
       fetchNewScientist(),
       fetchAppleMusicMostPlayedVN(),
@@ -526,9 +642,9 @@ exports.handler = async (event) => {
       fetchCybernews(),
       fetchHealthcare(),
       fetchEducation(),
-      fetchEnvironment(), 
+      fetchEnvironment(),
       fetchPolitics(),
-      fetchTravel(), 
+      fetchTravel(),
     ];
 
     const results = await Promise.allSettled(sources);
@@ -547,10 +663,13 @@ exports.handler = async (event) => {
     }
 
     trends = trends
-    .filter(Boolean)
-    .sort((a, b) => new Date(b.dateRaw) - new Date(a.dateRaw)) // sort theo datetime gốc
-    .map((t, i) => ({ ...t, id: i + 1 }));
-    
+      .filter(Boolean)
+      .sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0)) // newest first
+      .map((t, i) => {
+        const { sortKey, ...rest } = t; // không trả sortKey ra ngoài
+        return { ...rest, id: i + 1 };
+      });
+
     return {
       statusCode: 200,
       headers,
