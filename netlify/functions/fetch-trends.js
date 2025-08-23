@@ -50,11 +50,10 @@ function rssItems(xml) {
   return items;
 }
 
-function toDateStr(d) {
+function formatDate(d) {
   const dt = d ? new Date(d) : new Date();
-  return isNaN(dt.getTime())
-    ? new Date().toISOString()
-    : dt.toISOString(); // giữ nguyên cả ngày + giờ
+  if (isNaN(dt.getTime())) return "";
+  return dt.toISOString().split("T")[0]; // YYYY-MM-DD
 }
 
 // ===== Sources =====
@@ -548,10 +547,10 @@ exports.handler = async (event) => {
     }
 
     trends = trends
-      .filter(Boolean)
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .map((t, i) => ({ ...t, id: i + 1 }));
-
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.dateRaw) - new Date(a.dateRaw)) // sort theo datetime gốc
+    .map((t, i) => ({ ...t, id: i + 1 }));
+    
     return {
       statusCode: 200,
       headers,
