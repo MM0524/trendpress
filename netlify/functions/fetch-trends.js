@@ -359,6 +359,23 @@ async function fetchZingNewsEntertainment() {
   }));
 }
 
+// ESPN World Sports
+async function fetchESPN() {
+  const res = await fetchWithTimeout("https://www.espn.com/espn/rss/news");
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block, i) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Sports",
+    tags: ["ESPN", "WorldSports"],
+    votes: 320 - i,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "ESPN",
+  }));
+}
+
 // ===== Netlify Function Handler =====
 exports.handler = async (event) => {
   const headers = {
@@ -396,6 +413,7 @@ exports.handler = async (event) => {
       fetchKenh14(),
       fetchZingNewsEntertainment(),
       fetchBBCWorld(),
+      fetchESPN(),
     ];
 
     const results = await Promise.allSettled(sources);
