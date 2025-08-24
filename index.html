@@ -362,14 +362,12 @@
         function renderDetailedAnalysis(htmlContent, trend) {
              const modalBody = document.getElementById('ai-insight-body');
              modalBody.innerHTML = htmlContent;
-             const { historicalData, futureProjection } = generateChartDataFromScore(75, getCombinedMetric(trend));
-             renderAnalysisChart(historicalData, futureProjection);
         }
         function renderAnalysisChart(historicalData, futureProjection) {
             if (analysisChart) analysisChart.destroy();
             const canvas = document.createElement('canvas');
             document.getElementById('ai-insight-body').appendChild(canvas);
-            const labels = ['-3 Mo', '-2 Mo', '-1 Mo', 'Now', '+7d'];
+            const labels = ['-1d', '-6h', '-3h', 'Now', '1d', '+4d', '+7d'];
             const lastHistoricalPoint = historicalData[historicalData.length - 1];
             analysisChart = new Chart(canvas.getContext('2d'), {
                 type: 'line',
@@ -523,4 +521,5 @@
     </script>
 </body>
 </html>
+
 
