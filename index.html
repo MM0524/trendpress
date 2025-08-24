@@ -367,7 +367,7 @@
             if (analysisChart) analysisChart.destroy();
             const canvas = document.createElement('canvas');
             document.getElementById('ai-insight-body').appendChild(canvas);
-            const labels = ['-1d', '-6h', '-3h', 'Now', '1d', '+4d', '+7d'];
+            const labels = ['-1d', '-6h', '-3h', 'Now', '+1d', '+4d', '+7d'];
             const lastHistoricalPoint = historicalData[historicalData.length - 1];
             analysisChart = new Chart(canvas.getContext('2d'), {
                 type: 'line',
@@ -521,5 +521,6 @@
     </script>
 </body>
 </html>
+
 
 
