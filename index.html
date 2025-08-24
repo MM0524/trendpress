@@ -258,7 +258,7 @@
                 const response = await fetch('/.netlify/functions/analyze-trend', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ trend, analysisType })
+                    body: JSON.stringify({ trend, analysisType, language: currentLanguage })
                 });
                 if (!response.ok) { const errorText = await response.text(); throw new Error(`Server function error: ${response.status} ${errorText}`); }
                 const result = await response.json();
@@ -295,10 +295,10 @@
             const trendsToDisplay = trendsToFilter.slice(0, displayedTrends[currentView] || TRENDS_PER_PAGE);
             trendsToDisplay.forEach(trend => listElement.appendChild(createTrendCard(trend)));
             if (displayedTrends[currentView] === 0) { displayedTrends[currentView] = trendsToDisplay.length; }
-            footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length);
+            footerButton.classList.toggle('hidden', trendsToDisplay.length === 0 || displayedTrends[currentView] >= trendsToFilter.length);
         };
-        function loadMoreTrends() { const currentCount = displayedTrends[currentView]; displayedTrends[currentView] = currentCount + TRENDS_PER_PAGE; displayTrends(); }
-        function switchView(view) { currentView = view; displayedTrends.main = 0; displayedTrends.forU = 0; displayTrends(); DOM.mainViewContainer.classList.toggle('hidden', view !== 'main'); DOM.forUViewContainer.classList.toggle('hidden', view !== 'forU'); };
+        function loadMoreTrends() { displayedTrends[currentView] += TRENDS_PER_PAGE; displayTrends(); }
+        function switchView(view) { currentView = view; displayedTrends.main = 0; displayedTrends.forU = 0; displayTrends(); updateActiveNav(view); };
         function updateAuthUI() { DOM.body.className = ''; if (user.isLoggedIn) { DOM.body.classList.add('logged-in'); DOM.signInBtn.classList.add('hidden'); DOM.userMenu.classList.remove('hidden'); DOM.userEmailBtn.textContent = user.email; DOM.dropdownHeader.textContent = user.email; DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType === 'work'); if (user.accountType === 'work') DOM.body.classList.add('work-account-view'); } else { DOM.signInBtn.classList.remove('hidden'); DOM.userMenu.classList.add('hidden'); DOM.navForU.classList.add('hidden'); } displayTrends(); };
         function signIn(type) { user = { isLoggedIn: true, accountType: type, email: type === 'personal' ? 'user@gmail.com' : 'pro@company.com', preferences: [], hasSetPreferences: false, followedTrends: [] }; closeModal('login-choice-modal'); updateAuthUI(); if (type === 'work' && !user.hasSetPreferences) { populatePreferenceCheckboxes(); openModal('preferences-modal'); } };
         function populateCategoryFilters() { categories = [...new Set(allTrends.map(t => t.category))].sort(); DOM.filterButtonsContainer.innerHTML = ['All', ...categories].map(category => `<button class="filter-btn ${category === 'All' ? 'active' : ''}" data-filter="${category}">${category}</button>`).join(''); };
@@ -362,6 +362,8 @@
         function renderDetailedAnalysis(htmlContent, trend) {
              const modalBody = document.getElementById('ai-insight-body');
              modalBody.innerHTML = htmlContent;
+             const { historicalData, futureProjection } = generateChartDataFromScore(75, getCombinedMetric(trend));
+             renderAnalysisChart(historicalData, futureProjection);
         }
         function renderAnalysisChart(historicalData, futureProjection) {
             if (analysisChart) analysisChart.destroy();
@@ -369,16 +371,17 @@
             document.getElementById('ai-insight-body').appendChild(canvas);
             const labels = ['-1d', '-6h', '-3h', 'Now', '+1d', '+4d', '+7d'];
             const lastHistoricalPoint = historicalData[historicalData.length - 1];
+            const projectionData = [ null, null, null, lastHistoricalPoint, futureProjection[0] || null, futureProjection[1] || null, futureProjection[2] || null ];
             analysisChart = new Chart(canvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Historical', data: historicalData, borderColor: '#00C8FF', tension: 0.4 },
-                        { label: 'Projection', data: [null, null, null, lastHistoricalPoint, ...futureProjection], borderColor: '#A100FF', borderDash: [5, 5], tension: 0.4 }
+                        { label: 'Historical', data: [...historicalData, null, null, null], borderColor: '#00C8FF', tension: 0.1, pointBackgroundColor: '#00C8FF', pointBorderColor: '#fff', pointHoverRadius: 7 },
+                        { label: 'Projection', data: projectionData, borderColor: '#A100FF', borderDash: [5, 5], tension: 0.4, pointBackgroundColor: '#A100FF', pointBorderColor: '#fff', pointHoverRadius: 7 }
                     ]
                 },
-                options: { responsive: true, plugins: { legend: { display: true, labels: { color: '#8a8da0' } } }, scales: { x: { ticks: { color: '#8a8da0' } }, y: { ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, beginAtZero: false } } }
+                options: { responsive: true, plugins: { legend: { display: true, labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 } } }, scales: { x: { grid: { display: false }, ticks: { color: '#8a8da0' } }, y: { grid: { color: 'rgba(255, 255, 255, 0.1)'}, ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, beginAtZero: false } } }
             });
         }
         function getCombinedMetric(trend) { return (trend.views || 0) + (trend.interactions || 0) + (trend.searches || 0); }
@@ -408,17 +411,20 @@
             return series; 
         }
         function generateChartDataFromScore(score, baseMetric = 500) {
-            const growthFactor = (score - 50) / 500;
-            let historicalData = [baseMetric * 0.4, baseMetric * 0.6, baseMetric * 0.8, baseMetric].map(v => Math.round(v));
+            const growthFactor = (score - 50) / 250;
+            let historicalData = [baseMetric * 0.4, baseMetric * 0.7, baseMetric * 0.9, baseMetric].map(v => Math.round(v));
             let futureProjection = [];
             let lastValue = baseMetric;
-            lastValue = lastValue * (1 + growthFactor + (Math.random() - 0.5) * 0.05);
-            futureProjection.push(Math.max(0, Math.round(lastValue)));
+            let next1d = lastValue * (1 + growthFactor * 0.2 + (Math.random() - 0.5) * 0.05);
+            futureProjection.push(Math.max(0, Math.round(next1d)));
+            let next4d = next1d * (1 + growthFactor * 0.1 + (Math.random() - 0.5) * 0.05);
+            futureProjection.push(Math.max(0, Math.round(next4d)));
+            let next7d = next4d * (1 + growthFactor * 0.05 + (Math.random() - 0.5) * 0.05);
+            futureProjection.push(Math.max(0, Math.round(next7d)));
             return { historicalData, futureProjection };
         }
         function getColorPalette(count) { const base = [{ stroke: '#A100FF' }, { stroke: '#00C8FF' }, { stroke: '#00E696' }, { stroke: '#FFB400' }, { stroke: '#FF6384' }]; while (base.length < count) base.push({ stroke: `hsl(${Math.random() * 360}, 90%, 60%)` }); return base; }
         function formatNumber(n){ if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'K'; return String(n); }
-
         async function checkAIStatus() {
             try {
                 const response = await fetch("/.netlify/functions/analyze-trend", { method: 'GET' });
@@ -436,40 +442,46 @@
                 console.error('AI Status Check Failed:', error);
             }
         }
-
+        function updateActiveNav(activeView) {
+            document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active-link'));
+            if (activeView === 'main') { DOM.navTopTrends.classList.add('active-link'); } 
+            else if (activeView === 'forU') { DOM.navForU.querySelector('a').classList.add('active-link'); } 
+            else if (activeView === 'trendingBoard') { DOM.navTrendingBoard.classList.add('active-link'); }
+        }
         function handleInteraction(e) {
-            const trendCard = e.target.closest('.trend-card');
-            if (!trendCard) return;
-            const trendId = parseInt(trendCard.dataset.trendId);
-            const trend = allTrends.find(t => t.id === trendId);
+            const targetElement = e.target;
+            const trendCard = targetElement.closest('.trend-card');
+            const leaderboardItem = targetElement.closest('.leaderboard-widget li');
             
-            if (e.target.closest('.btn-follow')) {
+            if (!trendCard && !leaderboardItem) return;
+
+            const trendId = parseInt(trendCard?.dataset.trendId || leaderboardItem?.dataset.trendId);
+            const trend = allTrends.find(t => t.id === trendId);
+            if (!trend) return;
+
+            if (targetElement.closest('.btn-follow')) {
                 if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
                 const isFollowed = user.followedTrends.includes(trendId);
                 user.followedTrends = isFollowed ? user.followedTrends.filter(id => id !== trendId) : [...user.followedTrends, trendId];
                 displayTrends();
                 if (currentView === 'forU') { generateCategoryLeaderboards('for-u-leaderboards', user.preferences); }
                 if (document.getElementById('trending-board-modal')?.classList.contains('show')) { createHotTrendsChart(); }
-            }
-            
-            if (e.target.closest('.analyze-trend-btn') || e.target.closest('.trend-title')) {
+            } else if (targetElement.closest('.analyze-trend-btn')) {
                  if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
-                 const isSummary = e.target.closest('.analyze-trend-btn');
-                 const analysisType = isSummary ? 'summary' : 'detailed';
-                 const titleKey = isSummary ? 'AI Analysis Summary for' : 'AI Deep Dive for';
-                 document.getElementById('ai-insight-title').textContent = `${t(titleKey)} "${truncateText(trend.title, 20)}"`;
+                 document.getElementById('ai-insight-title').textContent = `${t('AI Analysis Summary for')} "${truncateText(trend.title, 20)}"`;
                  const modalBody = document.getElementById('ai-insight-body');
                  modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align:center; margin-top:1rem;">${t('Analyzing trend...')}</p>`;
                  openModal('ai-insight-modal');
-                 analyzeTrendSecurely(trend, analysisType).then(data => {
-                    if (isSummary) { renderSummaryAnalysis(data); } 
-                    else { renderDetailedAnalysis(data, trend); }
-                 }).catch(err => { modalBody.innerHTML = `<p style="color: #ff6b6b;">${t('Unable to analyze trend.')}</p>`; });
-            }
-
-            if (e.target.matches('.tag.hashtag')) { switchView('main'); currentFilter.hashtag = e.target.dataset.tag; updateUIForFilter(); }
+                 analyzeTrendSecurely(trend, 'summary').then(analysisData => { renderSummaryAnalysis(analysisData); }).catch(err => { modalBody.innerHTML = `<p style="color: #ff6b6b;">${t('Unable to analyze trend.')}</p>`; });
+            } else if (targetElement.closest('.trend-title') || leaderboardItem) {
+                 if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
+                 document.getElementById('ai-insight-title').textContent = `${t('AI Deep Dive for')} "${truncateText(trend.title, 20)}"`;
+                 const modalBody = document.getElementById('ai-insight-body');
+                 modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align:center; margin-top:1rem;">${t('Analyzing trend...')}</p>`;
+                 openModal('ai-insight-modal');
+                 analyzeTrendSecurely(trend, 'detailed').then(htmlContent => { renderDetailedAnalysis(htmlContent, trend); }).catch(err => { modalBody.innerHTML = `<p style="color: #ff6b6b;">${t('Unable to analyze trend.')}</p>`; });
+            } else if (targetElement.matches('.tag.hashtag')) { switchView('main'); currentFilter.hashtag = targetElement.dataset.tag; updateUIForFilter(); }
         }
-        
         async function initializeApp() {
             applyTranslations();
             updateLanguageToggleUI();
@@ -479,9 +491,9 @@
             populateHashtagFilters();
             updateAuthUI();
             checkAIStatus();
+            updateActiveNav('main');
             document.getElementById('loader')?.classList.add('loader-hidden');
         }
-
         DOM.hamburgerMenu.addEventListener('click', () => DOM.mainNav.classList.toggle('nav-active'));
         DOM.logo.addEventListener('click', () => switchView('main'));
         DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
@@ -490,16 +502,16 @@
         DOM.userEmailBtn.addEventListener('click', () => DOM.userDropdown.classList.toggle('show'));
         DOM.dropdownSignOut.addEventListener('click', () => { user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [] }; updateAuthUI(); DOM.userDropdown.classList.remove('show'); switchView('main'); });
         DOM.dropdownWorkSchool.addEventListener('click', () => { signIn('work'); DOM.userDropdown.classList.remove('show'); });
-        DOM.navAbout.addEventListener('click', () => openModal('about-modal'));
-        DOM.navTrendingBoard.addEventListener('click', () => { if (user.isLoggedIn && user.accountType === 'work') { openModal('trending-board-modal'); createHotTrendsChart(); } else { openModal('premium-modal'); } });
+        DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
+        DOM.navTrendingBoard.addEventListener('click', () => { if (user.isLoggedIn && user.accountType === 'work') { openModal('trending-board-modal'); createHotTrendsChart(); updateActiveNav('trendingBoard'); } else { openModal('premium-modal'); } });
         document.getElementById('premium-login-btn')?.addEventListener('click', () => { closeModal('premium-modal'); openModal('login-choice-modal'); });
-        DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => closeModal(btn.closest('.modal-overlay').id)));
+        DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => { closeModal(btn.closest('.modal-overlay').id); updateActiveNav(currentView); }));
         document.getElementById('login-google-btn')?.addEventListener('click', () => signIn('personal'));
         document.getElementById('login-work-btn')?.addEventListener('click', () => signIn('work'));
         DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
         DOM.forULoadMoreBtn.addEventListener('click', loadMoreTrends);
         DOM.savePreferencesBtn.addEventListener('click', () => { user.preferences = [...document.querySelectorAll('#preferences-grid input:checked')].map(cb => cb.value); user.hasSetPreferences = true; closeModal('preferences-modal'); switchView('forU'); generateCategoryLeaderboards('for-u-leaderboards', user.preferences); });
-        [DOM.trendsList, DOM.forUTrendsList].forEach(list => list.addEventListener('click', handleInteraction));
+        [DOM.trendsList, DOM.forUTrendsList, document.getElementById('for-u-leaderboards')].forEach(list => list.addEventListener('click', handleInteraction));
         DOM.filterButtonsContainer.addEventListener('click', (e) => { if (e.target.matches('.filter-btn')) { currentFilter.type = 'category'; currentFilter.value = e.target.dataset.filter; updateUIForFilter(); } });
         DOM.searchInput.addEventListener('input', (e) => { currentFilter.searchTerm = e.target.value; displayedTrends.main = 0; displayTrends(); });
         DOM.hashtagList.addEventListener('click', (e) => {
@@ -515,12 +527,8 @@
         });
         document.addEventListener('click', (e) => { if (DOM.userMenu && !DOM.userMenu.contains(e.target)) { DOM.userDropdown.classList.remove('show'); }});
         document.getElementById('language-toggle')?.addEventListener('click', () => { currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi'; localStorage.setItem('lang', currentLanguage); applyTranslations(); updateLanguageToggleUI(); displayTrends(); if (document.getElementById('trending-board-modal')?.classList.contains('show')) createHotTrendsChart(); });
-        
         initializeApp();
     });
     </script>
 </body>
 </html>
-
-
-
