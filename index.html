@@ -263,7 +263,9 @@
                 if (!response.ok) { const errorText = await response.text(); throw new Error(`Server function error: ${response.status} ${errorText}`); }
                 const result = await response.json();
                 if (!result.success) throw new Error(result.message || 'Analysis failed on the server');
-                if (analysisType === 'summary') { return JSON.parse(result.data); }
+                if (analysisType === 'summary') {
+                    return JSON.parse(result.data);
+                }
                 const formatDetailedInsight = (markdownText) => markdownText.replace(/### (.*?)\n/g, '<h4>$1</h4>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^\* (.*$)/gm, '<li>$1</li>').replace(/<li>/g, '<ul><li>').replace(/<\/li>\n<ul>/g, '</li><li>').replace(/<\/li>(\s*<h)/g, '</li></ul>$1').replace(/\n/g, '<br>').concat('</ul>');
                 return formatDetailedInsight(result.data);
             } catch (error) { console.error("Secure analysis request failed:", error); throw error; }
@@ -295,10 +297,10 @@
             const trendsToDisplay = trendsToFilter.slice(0, displayedTrends[currentView] || TRENDS_PER_PAGE);
             trendsToDisplay.forEach(trend => listElement.appendChild(createTrendCard(trend)));
             if (displayedTrends[currentView] === 0) { displayedTrends[currentView] = trendsToDisplay.length; }
-            footerButton.classList.toggle('hidden', trendsToDisplay.length === 0 || displayedTrends[currentView] >= trendsToFilter.length);
+            footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length);
         };
         function loadMoreTrends() { displayedTrends[currentView] += TRENDS_PER_PAGE; displayTrends(); }
-        function switchView(view) { currentView = view; displayedTrends.main = 0; displayedTrends.forU = 0; displayTrends(); updateActiveNav(view); };
+        function switchView(view) { currentView = view; localStorage.setItem('currentView', view); displayedTrends.main = 0; displayedTrends.forU = 0; DOM.mainViewContainer.classList.toggle('hidden', view !== 'main'); DOM.forUViewContainer.classList.toggle('hidden', view !== 'forU'); displayTrends(); updateActiveNav(view); };
         function updateAuthUI() { DOM.body.className = ''; if (user.isLoggedIn) { DOM.body.classList.add('logged-in'); DOM.signInBtn.classList.add('hidden'); DOM.userMenu.classList.remove('hidden'); DOM.userEmailBtn.textContent = user.email; DOM.dropdownHeader.textContent = user.email; DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType === 'work'); if (user.accountType === 'work') DOM.body.classList.add('work-account-view'); } else { DOM.signInBtn.classList.remove('hidden'); DOM.userMenu.classList.add('hidden'); DOM.navForU.classList.add('hidden'); } displayTrends(); };
         function signIn(type) { user = { isLoggedIn: true, accountType: type, email: type === 'personal' ? 'user@gmail.com' : 'pro@company.com', preferences: [], hasSetPreferences: false, followedTrends: [] }; closeModal('login-choice-modal'); updateAuthUI(); if (type === 'work' && !user.hasSetPreferences) { populatePreferenceCheckboxes(); openModal('preferences-modal'); } };
         function populateCategoryFilters() { categories = [...new Set(allTrends.map(t => t.category))].sort(); DOM.filterButtonsContainer.innerHTML = ['All', ...categories].map(category => `<button class="filter-btn ${category === 'All' ? 'active' : ''}" data-filter="${category}">${category}</button>`).join(''); };
@@ -362,8 +364,6 @@
         function renderDetailedAnalysis(htmlContent, trend) {
              const modalBody = document.getElementById('ai-insight-body');
              modalBody.innerHTML = htmlContent;
-             const { historicalData, futureProjection } = generateChartDataFromScore(75, getCombinedMetric(trend));
-             renderAnalysisChart(historicalData, futureProjection);
         }
         function renderAnalysisChart(historicalData, futureProjection) {
             if (analysisChart) analysisChart.destroy();
@@ -452,13 +452,10 @@
             const targetElement = e.target;
             const trendCard = targetElement.closest('.trend-card');
             const leaderboardItem = targetElement.closest('.leaderboard-widget li');
-            
             if (!trendCard && !leaderboardItem) return;
-
             const trendId = parseInt(trendCard?.dataset.trendId || leaderboardItem?.dataset.trendId);
             const trend = allTrends.find(t => t.id === trendId);
             if (!trend) return;
-
             if (targetElement.closest('.btn-follow')) {
                 if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
                 const isFollowed = user.followedTrends.includes(trendId);
@@ -485,13 +482,15 @@
         async function initializeApp() {
             applyTranslations();
             updateLanguageToggleUI();
+            DOM.mainViewContainer.classList.toggle('hidden', currentView !== 'main');
+            DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
             allTrends = await fetchLiveTrends();
             applyTrendOrdering();
             populateCategoryFilters();
             populateHashtagFilters();
             updateAuthUI();
             checkAIStatus();
-            updateActiveNav('main');
+            updateActiveNav(currentView);
             document.getElementById('loader')?.classList.add('loader-hidden');
         }
         DOM.hamburgerMenu.addEventListener('click', () => DOM.mainNav.classList.toggle('nav-active'));
@@ -532,3 +531,4 @@
     </script>
 </body>
 </html>
+
