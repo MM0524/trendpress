@@ -7,7 +7,7 @@ const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-
 // CẬP NHẬT: Thêm tham số `language`
 const createStructuredSummaryPrompt = (trend, language) => {
     const langInstruction = language === 'vi' ? 'Respond in VIETNAMESE.' : 'Respond in ENGLISH.';
-    return `Analyze the trend: "${trend.title}". ${langInstruction} Respond ONLY with a valid JSON object with this structure: {"successScore": <a number between 0-100 for the trend's potential>,"summary": "<a one-paragraph summary of the trend's potential>","historicalData": [<array of 4 numbers for interest over the last 4 months>],"futureProjection": [<array of 1 number for a forecast for the next 7 days>]}`;
+    return `Analyze the trend: "${trend.title}". ${langInstruction} Respond ONLY with a valid JSON object with this structure: {"successScore": <a number between 0-100 for the trend's potential>,"summary": "<a one-paragraph summary of the trend's potential>","historicalData": [<array of 4 numbers for interest over the last day>],"futureProjection": [<array of 3 numbers for a forecast for the next 1, 4, and 7 days>]}`;
 };
 
 // CẬP NHẬT: Thêm tham số `language`
@@ -18,6 +18,7 @@ const createDetailedAnalysisPrompt = (trend, language) => {
 
 
 exports.handler = async (event) => {
+  const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
   if (event.httpMethod === 'GET') { return { statusCode: 200, body: JSON.stringify({ status: 'ok' }) }; }
   if (event.httpMethod !== 'POST') { return { statusCode: 405, body: 'Method Not Allowed' }; }
 
@@ -52,13 +53,14 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json', "Access-Control-Allow-Origin": "*" },
+      headers,
       body: JSON.stringify({ success: true, data: textContent }),
     };
   } catch (error) {
     console.error('Serverless function error:', error);
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({ success: false, message: 'Internal Server Error' }),
     };
   }
