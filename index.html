@@ -18,14 +18,13 @@
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; overflow-x: hidden; }
         .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease; }
         .loader-overlay.loader-hidden { opacity: 0; visibility: hidden; }
+        @keyframes pulse { 0% { top: 36px; left: 36px; width: 0; height: 0; opacity: 1; } 100% { top: 0px; left: 0px; width: 72px; height: 72px; opacity: 0; } }
         .loader-pulse { display: inline-block; position: relative; width: 80px; height: 80px; }
         .loader-pulse div { position: absolute; border: 4px solid var(--primary-light); opacity: 1; border-radius: 50%; animation: pulse 1.2s cubic-bezier(0, 0.2, 0.8, 1) infinite; }
         .loader-pulse div:nth-child(2) { animation-delay: -0.6s; }
-        @keyframes pulse { 0% { top: 36px; left: 36px; width: 0; height: 0; opacity: 1; } 100% { top: 0px; left: 0px; width: 72px; height: 72px; opacity: 0; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .main-content-wrapper { display: flex; flex-direction: column; min-height: calc(100vh - var(--header-height) - 1px); }
-        .main-container, .for-u-container { flex-grow: 1; }
+        
         .header { display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; height: var(--header-height); animation: fadeIn 0.5s ease-out; }
         .logo { font-size: 1.8rem; font-weight: 700; cursor: pointer; }
         .logo-trend { color: var(--primary-light); }
@@ -43,6 +42,7 @@
         .btn-outline { background: transparent; color: var(--primary-light); border: 1px solid var(--primary-light); font-size: 0.8rem; padding: 0.3rem 0.8rem; }
         .btn-outline:hover { background: var(--primary-light); color: white; }
         .analyze-trend-btn { margin-right: 0.5rem; }
+        
         .main-container { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; padding: 2rem; width: 100%; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
         .for-u-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; width: 100%; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
         .demo-banner { grid-column: 1 / -1; background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
@@ -171,40 +171,38 @@
         </div>
     </header>
     
-    <div class="main-content-wrapper">
-        <main class="main-container" id="main-view-container">
-            <aside id="search-filter-panel">
-                <h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span id="search-filter-title"></span></h3>
-                <input type="text" id="search-input" placeholder="Search by keyword...">
-                <div id="hashtag-filter">
-                    <h4></h4>
-                    <div id="hashtag-list"></div>
-                </div>
-            </aside>
-            <section class="trending-container">
-                <div class="demo-banner"><h2></h2><p></p></div>
-                <div class="trending-header">
-                    <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><span id="trending-header-text"></span></div>
-                     <button class="btn btn-secondary hidden" id="clear-filter-btn"></button>
-                </div>
-                <div class="filter-buttons" id="filter-buttons"></div>
-                <div id="trends-list"></div>
-                <div id="trends-footer"><button class="btn btn-primary" id="load-more-btn"></button></div>
-            </section>
-        </main>
-        <section class="for-u-container hidden" id="for-u-view-container">
-            <div class="for-u-content">
-                <div class="trending-header">
-                    <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg><span></span></div>
-                </div>
-                <div id="for-u-trends-list"></div>
-                <div id="for-u-trends-footer"><button class="btn btn-primary" id="for-u-load-more-btn"></button></div>
+    <main class="main-container" id="main-view-container">
+        <aside id="search-filter-panel">
+            <h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span id="search-filter-title"></span></h3>
+            <input type="text" id="search-input" placeholder="Search by keyword...">
+            <div id="hashtag-filter">
+                <h4></h4>
+                <div id="hashtag-list"></div>
             </div>
-            <aside class="leaderboard-panel" id="for-u-leaderboard-panel">
-                 <h3></h3><div id="for-u-leaderboards"></div>
-            </aside>
+        </aside>
+        <section class="trending-container">
+            <div class="demo-banner"><h2></h2><p></p></div>
+            <div class="trending-header">
+                <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg><span id="trending-header-text"></span></div>
+                 <button class="btn btn-secondary hidden" id="clear-filter-btn"></button>
+            </div>
+            <div class="filter-buttons" id="filter-buttons"></div>
+            <div id="trends-list"></div>
+            <div id="trends-footer"><button class="btn btn-primary" id="load-more-btn"></button></div>
         </section>
-    </div>
+    </main>
+    <section class="for-u-container hidden" id="for-u-view-container">
+        <div class="for-u-content">
+            <div class="trending-header">
+                <div class="trending-title-group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg><span></span></div>
+            </div>
+            <div id="for-u-trends-list"></div>
+            <div id="for-u-trends-footer"><button class="btn btn-primary" id="for-u-load-more-btn"></button></div>
+        </div>
+        <aside class="leaderboard-panel" id="for-u-leaderboard-panel">
+             <h3></h3><div id="for-u-leaderboards"></div>
+        </aside>
+    </section>
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
     <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Sign in with Google</span></button><button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span>Sign in with Work/School</span></button></div></div></div>
@@ -221,7 +219,7 @@
         <div class="footer-bottom"><p></p></div>
     </footer>
 
-    <script>
+<script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- STATE & DATA ---
         let user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [] };
@@ -260,7 +258,7 @@
                 const response = await fetch('/.netlify/functions/analyze-trend', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ trend, analysisType, language: currentLanguage })
+                    body: JSON.stringify({ trend, analysisType })
                 });
                 if (!response.ok) { const errorText = await response.text(); throw new Error(`Server function error: ${response.status} ${errorText}`); }
                 const result = await response.json();
@@ -300,7 +298,7 @@
             footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToFilter.length);
         };
         function loadMoreTrends() { const currentCount = displayedTrends[currentView]; displayedTrends[currentView] = currentCount + TRENDS_PER_PAGE; displayTrends(); }
-        function switchView(view) { currentView = view; displayedTrends.main = 0; displayedTrends.forU = 0; displayTrends(); updateActiveNav(view); };
+        function switchView(view) { currentView = view; displayedTrends.main = 0; displayedTrends.forU = 0; displayTrends(); DOM.mainViewContainer.classList.toggle('hidden', view !== 'main'); DOM.forUViewContainer.classList.toggle('hidden', view !== 'forU'); };
         function updateAuthUI() { DOM.body.className = ''; if (user.isLoggedIn) { DOM.body.classList.add('logged-in'); DOM.signInBtn.classList.add('hidden'); DOM.userMenu.classList.remove('hidden'); DOM.userEmailBtn.textContent = user.email; DOM.dropdownHeader.textContent = user.email; DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType === 'work'); if (user.accountType === 'work') DOM.body.classList.add('work-account-view'); } else { DOM.signInBtn.classList.remove('hidden'); DOM.userMenu.classList.add('hidden'); DOM.navForU.classList.add('hidden'); } displayTrends(); };
         function signIn(type) { user = { isLoggedIn: true, accountType: type, email: type === 'personal' ? 'user@gmail.com' : 'pro@company.com', preferences: [], hasSetPreferences: false, followedTrends: [] }; closeModal('login-choice-modal'); updateAuthUI(); if (type === 'work' && !user.hasSetPreferences) { populatePreferenceCheckboxes(); openModal('preferences-modal'); } };
         function populateCategoryFilters() { categories = [...new Set(allTrends.map(t => t.category))].sort(); DOM.filterButtonsContainer.innerHTML = ['All', ...categories].map(category => `<button class="filter-btn ${category === 'All' ? 'active' : ''}" data-filter="${category}">${category}</button>`).join(''); };
@@ -323,7 +321,7 @@
                 const topTrends = sortedTrends.slice(0, 3);
                 const leaderboardDiv = document.createElement('div');
                 leaderboardDiv.className = 'leaderboard-widget';
-                let listItems = topTrends.map(t => `<li>${truncateText(t.title, 35)}</li>`).join('');
+                let listItems = topTrends.map(t => `<li data-trend-id="${t.id}">${truncateText(t.title, 35)}</li>`).join('');
                 leaderboardDiv.innerHTML = `<h4>Top in ${category}</h4><ul>${listItems}</ul>`;
                 container.appendChild(leaderboardDiv);
             });
@@ -395,7 +393,22 @@
         function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
         function generateMonthRange(start, end) { const res = []; let d = new Date(start); d.setDate(1); while (d <= end) { res.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); d.setMonth(d.getMonth() + 1); } return res; }
         function monthKeyToLabel(key) { const [y, m] = key.split('-'); return `${m}/${y.slice(-2)}`; }
-        function generateSeriesForMonths(trend, monthKeys) { const peakMetric = getCombinedMetric(trend); const trendDate = new Date(trend.date || Date.now()); const anchorKey = `${trendDate.getFullYear()}-${String(trendDate.getMonth() + 1).padStart(2, '0')}`; const anchorIndex = monthKeys.indexOf(anchorKey); const series = new Array(monthKeys.length).fill(0); if (anchorIndex !== -1) { for (let i = anchorIndex; i < monthKeys.length; i++) { const dist = i - anchorIndex; const decay = Math.exp(-Math.pow(dist / 2, 2)); series[i] = Math.max(0, Math.round(peakMetric * decay * (1 + (Math.random() - 0.5) * 0.1))); } if (anchorIndex > 0) { series[anchorIndex - 1] = Math.round(peakMetric * 0.3 * (Math.random() * 0.5 + 0.5)); } } return series; }
+        function generateSeriesForMonths(trend, monthKeys) { 
+            const peakMetric = getCombinedMetric(trend); 
+            const trendDate = new Date(trend.date || Date.now()); 
+            const anchorKey = `${trendDate.getFullYear()}-${String(trendDate.getMonth() + 1).padStart(2, '0')}`; 
+            const anchorIndex = monthKeys.indexOf(anchorKey);
+            const series = new Array(monthKeys.length).fill(0);
+            if (anchorIndex !== -1) { 
+                for (let i = anchorIndex; i < monthKeys.length; i++) { 
+                    const dist = i - anchorIndex;
+                    const decay = Math.exp(-Math.pow(dist / 2, 2));
+                    series[i] = Math.max(0, Math.round(peakMetric * decay * (1 + (Math.random() - 0.5) * 0.1)));
+                } 
+                if (anchorIndex > 0) { series[anchorIndex - 1] = Math.round(peakMetric * 0.3 * (Math.random() * 0.5 + 0.5)); }
+            } 
+            return series; 
+        }
         function generateChartDataFromScore(score, baseMetric = 500) {
             const growthFactor = (score - 50) / 500;
             let historicalData = [baseMetric * 0.4, baseMetric * 0.6, baseMetric * 0.8, baseMetric].map(v => Math.round(v));
@@ -407,6 +420,7 @@
         }
         function getColorPalette(count) { const base = [{ stroke: '#A100FF' }, { stroke: '#00C8FF' }, { stroke: '#00E696' }, { stroke: '#FFB400' }, { stroke: '#FF6384' }]; while (base.length < count) base.push({ stroke: `hsl(${Math.random() * 360}, 90%, 60%)` }); return base; }
         function formatNumber(n){ if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'K'; return String(n); }
+
         async function checkAIStatus() {
             try {
                 const response = await fetch("/.netlify/functions/analyze-trend", { method: 'GET' });
@@ -424,18 +438,12 @@
                 console.error('AI Status Check Failed:', error);
             }
         }
-        function updateActiveNav(activeView) {
-            document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active-link'));
-            if (activeView === 'main') { DOM.navTopTrends.classList.add('active-link'); } 
-            else if (activeView === 'forU') { DOM.navForU.querySelector('a').classList.add('active-link'); } 
-            else if (activeView === 'trendingBoard') { DOM.navTrendingBoard.classList.add('active-link'); }
-        }
+
         function handleInteraction(e) {
             const trendCard = e.target.closest('.trend-card');
             if (!trendCard) return;
             const trendId = parseInt(trendCard.dataset.trendId);
             const trend = allTrends.find(t => t.id === trendId);
-            if (!trend) return;
             
             if (e.target.closest('.btn-follow')) {
                 if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
@@ -473,7 +481,6 @@
             populateHashtagFilters();
             updateAuthUI();
             checkAIStatus();
-            updateActiveNav('main');
             document.getElementById('loader')?.classList.add('loader-hidden');
         }
 
@@ -485,10 +492,10 @@
         DOM.userEmailBtn.addEventListener('click', () => DOM.userDropdown.classList.toggle('show'));
         DOM.dropdownSignOut.addEventListener('click', () => { user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [] }; updateAuthUI(); DOM.userDropdown.classList.remove('show'); switchView('main'); });
         DOM.dropdownWorkSchool.addEventListener('click', () => { signIn('work'); DOM.userDropdown.classList.remove('show'); });
-        DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
-        DOM.navTrendingBoard.addEventListener('click', () => { if (user.isLoggedIn && user.accountType === 'work') { openModal('trending-board-modal'); createHotTrendsChart(); updateActiveNav('trendingBoard'); } else { openModal('premium-modal'); } });
+        DOM.navAbout.addEventListener('click', () => openModal('about-modal'));
+        DOM.navTrendingBoard.addEventListener('click', () => { if (user.isLoggedIn && user.accountType === 'work') { openModal('trending-board-modal'); createHotTrendsChart(); } else { openModal('premium-modal'); } });
         document.getElementById('premium-login-btn')?.addEventListener('click', () => { closeModal('premium-modal'); openModal('login-choice-modal'); });
-        DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => { closeModal(btn.closest('.modal-overlay').id); updateActiveNav(currentView); }));
+        DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => closeModal(btn.closest('.modal-overlay').id)));
         document.getElementById('login-google-btn')?.addEventListener('click', () => signIn('personal'));
         document.getElementById('login-work-btn')?.addEventListener('click', () => signIn('work'));
         DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
