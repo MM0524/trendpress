@@ -24,8 +24,6 @@
         .loader-pulse div:nth-child(2) { animation-delay: -0.6s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .main-content-wrapper { display: flex; flex-direction: column; min-height: calc(100vh - var(--header-height) - 1px); }
-        .main-container, .for-u-container { flex-grow: 1; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; height: var(--header-height); animation: fadeIn 0.5s ease-out; }
         .logo { font-size: 1.8rem; font-weight: 700; cursor: pointer; }
         .logo-trend { color: var(--primary-light); }
@@ -45,6 +43,7 @@
         .analyze-trend-btn { margin-right: 0.5rem; }
         .main-container { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; padding: 2rem; width: 100%; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
         .for-u-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; width: 100%; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
+        .trending-board-container { padding: 2rem; width: 100%; max-width: 1200px; margin: auto; animation: slideInUp 0.6s ease-out; }
         .demo-banner { grid-column: 1 / -1; background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         .trending-container, .for-u-content, .leaderboard-panel, #search-filter-panel { background-color: var(--surface-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
         .trending-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
@@ -97,7 +96,7 @@
         .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-muted-color); font-size: 1.5rem; cursor: pointer; }
         .modal-title { font-size: 1.5rem; margin-bottom: 1rem; }
         .modal-body { margin-bottom: 1.5rem; color: var(--text-muted-color); }
-        #login-choice-modal .modal-content { max-width: 420px; background-color: var(--surface-color); }
+        #login-choice-modal .modal-content { max-width: 420px; }
         #login-choice-modal .modal-title { color: var(--primary-light); font-size: 1.75rem; margin-bottom: 0.5rem; }
         #login-choice-modal .modal-body { margin-bottom: 2rem; font-size: 0.9rem; }
         #login-choice-modal .modal-actions { display: flex; flex-direction: column; gap: 1rem; }
@@ -110,7 +109,6 @@
         #ai-insight-modal h4 { color: var(--primary-light); margin-top: 1rem; margin-bottom: 0.5rem; }
         #ai-insight-modal ul { list-style-position: inside; padding-left: 5px; }
         #ai-insight-modal li { margin-bottom: 0.5rem; }
-        #trending-board-modal .modal-content { max-width: 90vw; width: 1200px; text-align: left; }
         .tb-header { border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem; }
         .tb-search-container { display: flex; gap: 1rem; margin-bottom: 1rem; }
         .tb-search-box { flex: 1; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; display: flex; align-items: center; }
@@ -139,7 +137,11 @@
         .footer-links a { color: var(--text-muted-color); text-decoration: none; }
         .footer-links a:hover { color: var(--primary-light); }
         .footer-bottom { border-top: 1px solid var(--border-color); margin-top: 2rem; padding-top: 1.5rem; text-align: center; color: var(--text-muted-color); font-size: 0.9rem; }
-        @media (max-width: 1024px) { .main-container, .for-u-container { grid-template-columns: 1fr; } #search-filter-panel, .leaderboard-panel { grid-row: 1; } }
+        
+        @media (max-width: 1024px) { 
+            .main-container, .for-u-container { grid-template-columns: 1fr; } 
+            #search-filter-panel, .leaderboard-panel { grid-row: 1; } 
+        }
         @media (max-width: 768px) {
             .header { padding: 0 1rem; }
             .nav-links { position: fixed; top: var(--header-height); left: 0; width: 100%; height: calc(100vh - var(--header-height)); background-color: var(--bg-color); flex-direction: column; align-items: center; padding-top: 2rem; transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
@@ -147,11 +149,10 @@
             .hamburger-menu { display: flex; flex-direction: column; justify-content: space-around; width: 2rem; height: 2rem; background: transparent; border: none; cursor: pointer; z-index: 10; }
             .hamburger-menu span { width: 2rem; height: 0.25rem; background: var(--text-color); border-radius: 10px; transition: all 0.3s linear; }
             .hamburger-menu.active span:nth-child(1) { transform: rotate(45deg); } .hamburger-menu.active span:nth-child(2) { opacity: 0; } .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg); }
-            .main-container, .for-u-container { padding: 1rem; }
+            .main-container, .for-u-container, .trending-board-container { padding: 1rem; }
             .trending-title-group { font-size: 1.25rem; }
             .trend-card { padding: 1rem; }
             .trend-title { font-size: 1.1rem; }
-            #trending-board-modal .modal-content { max-width: 95vw; width: 100%; }
             .tb-leaderboards-grid { grid-template-columns: 1fr; }
             .footer-content { grid-template-columns: 1fr; text-align: center; }
         }
@@ -208,6 +209,7 @@
             <div id="trends-footer"><button class="btn btn-primary" id="load-more-btn"></button></div>
         </section>
     </main>
+    
     <section class="for-u-container hidden" id="for-u-view-container">
         <div class="for-u-content">
             <div class="trending-header">
@@ -220,59 +222,61 @@
              <h3></h3><div id="for-u-leaderboards"></div>
         </aside>
     </section>
+
+    <!-- CẤU TRÚC HTML MỚI CHO TRANG TRENDING BOARD -->
+    <section class="trending-board-container hidden" id="trending-board-view-container">
+        <h2 id="tb-main-title" style="font-size: 2rem; margin-bottom: 1.5rem;"></h2>
+        <div class="tb-header">
+            <div class="tb-search-container" id="tb-search-container">
+                <div class="tb-search-box">
+                    <input type="text" id="tb-search-input" placeholder="Thêm cụm từ tìm kiếm">
+                </div>
+                <div class="tb-search-box compare">
+                    <input type="text" id="tb-compare-input" placeholder="+ So sánh">
+                </div>
+            </div>
+            <div class="tb-search-chips hidden" id="tb-search-chips-container"></div>
+            <div class="tb-filters">
+                <select id="tb-region-filter" class="tb-filter-select">
+                    <option value="vn">Việt Nam</option>
+                    <option value="us">Hoa Kỳ</option>
+                    <option value="global">Toàn cầu</option>
+                </select>
+                <select id="tb-timeframe-filter" class="tb-filter-select">
+                    <option value="12m">12 tháng qua</option>
+                    <option value="1m">30 ngày qua</option>
+                    <option value="7d">7 ngày qua</option>
+                </select>
+                <select id="tb-category-filter" class="tb-filter-select">
+                    <option value="All">Tất cả danh mục</option>
+                </select>
+            </div>
+        </div>
+        <div id="tb-default-view">
+            <div class="tb-leaderboards-grid">
+                <div class="tb-leaderboard">
+                    <div class="tb-leaderboard-header" id="tb-topic-list-header"><span></span> <span></span></div>
+                    <div class="tb-leaderboard-list" id="tb-topic-list"></div>
+                </div>
+                <div class="tb-leaderboard">
+                    <div class="tb-leaderboard-header" id="tb-query-list-header"><span></span> <span></span></div>
+                    <div class="tb-leaderboard-list" id="tb-query-list"></div>
+                </div>
+            </div>
+        </div>
+        <div id="tb-chart-container">
+            <h4 id="tb-chart-title"></h4>
+            <canvas id="hot-trends-chart"></canvas>
+        </div>
+    </section>
+
+    <!-- Các Modals -->
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
     <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Sign in with Google</span></button><button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span>Sign in with Work/School</span></button></div></div></div>
-    <div class="modal-overlay" id="trending-board-modal">
-        <div class="modal-content" id="trending-board-content">
-            <button class="modal-close" data-close="trending-board-modal">&times;</button>
-            <h3 class="modal-title" id="tb-modal-title"></h3>
-            <div class="tb-header">
-                <div class="tb-search-container" id="tb-search-container">
-                    <div class="tb-search-box">
-                        <input type="text" id="tb-search-input" placeholder="Thêm cụm từ tìm kiếm">
-                    </div>
-                    <div class="tb-search-box compare">
-                        <input type="text" id="tb-compare-input" placeholder="+ So sánh">
-                    </div>
-                </div>
-                <div class="tb-search-chips hidden" id="tb-search-chips-container"></div>
-                <div class="tb-filters">
-                    <select id="tb-region-filter" class="tb-filter-select">
-                        <option value="vn">Việt Nam</option>
-                        <option value="us">Hoa Kỳ</option>
-                        <option value="global">Toàn cầu</option>
-                    </select>
-                    <select id="tb-timeframe-filter" class="tb-filter-select">
-                        <option value="12m">12 tháng qua</option>
-                        <option value="1m">30 ngày qua</option>
-                        <option value="7d">7 ngày qua</option>
-                    </select>
-                    <select id="tb-category-filter" class="tb-filter-select">
-                        <option value="All">Tất cả danh mục</option>
-                    </select>
-                </div>
-            </div>
-            <div id="tb-default-view">
-                <div class="tb-leaderboards-grid">
-                    <div class="tb-leaderboard">
-                        <div class="tb-leaderboard-header"><span>Chủ đề tìm kiếm</span> <span>Gia tăng</span></div>
-                        <div class="tb-leaderboard-list" id="tb-topic-list"></div>
-                    </div>
-                    <div class="tb-leaderboard">
-                        <div class="tb-leaderboard-header"><span>Cụm từ tìm kiếm</span> <span>Gia tăng</span></div>
-                        <div class="tb-leaderboard-list" id="tb-query-list"></div>
-                    </div>
-                </div>
-            </div>
-            <div id="tb-chart-container">
-                <h4 id="tb-chart-title"></h4>
-                <canvas id="hot-trends-chart"></canvas>
-            </div>
-        </div>
-    </div>
     <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
     <div class="modal-overlay" id="about-modal"><div class="modal-content"><button class="modal-close" data-close="about-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p></div></div>
+    
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section"><h4 class="footer-title">TrendPulse</h4><p class="footer-description"></p></div>
@@ -290,7 +294,7 @@
         const TRENDS_PER_PAGE = 5;
         let displayedTrends = { main: 0, forU: 0 };
         let currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '' };
-        let currentView = 'main';
+        let currentView = localStorage.getItem('currentView') || 'main';
         let hotTrendsChart = null;
         let analysisChart = null;
         let allTrends = [];
@@ -298,23 +302,21 @@
         let currentLanguage = localStorage.getItem('lang') || 'vi';
         const translations = {
             vi: {
-                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign In': 'Đăng nhập', 'Sign Out': 'Đăng xuất', 'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google', 'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại', 'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': '🔍 Phân tích', 'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium', 'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.', 'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Top 5 Hot Trends': 'Top 5 Xu Hướng Nóng Nhất', 'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi', 'Category Leaderboards': 'Bảng xếp hạng danh mục', 'About TrendPulse': 'Giới thiệu TrendPulse', "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": 'Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề xu hướng để có thông tin chi tiết từ AI.', 'Footer Description': 'Nền tảng phân tích và dự đoán xu hướng hàng đầu, giúp bạn nắm bắt những thay đổi mới nhất trong thế giới số.', 'Quick Links': 'Liên kết nhanh', 'Features': 'Tính năng', 'AI Analysis': 'Phân tích AI', 'Trend Prediction': 'Dự đoán xu hướng', 'Leaderboards': 'Bảng xếp hạng', 'Personal Recommendations': 'Gợi ý cá nhân', 'Contact': 'Liên hệ', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Hỗ trợ: support@trendpulse.com', 'All rights reserved.': 'Tất cả quyền được bảo lưu.', 'AI: Checking...': 'AI: Đang kiểm tra...', 'AI: Ready': 'AI: Sẵn sàng', 'AI: Unavailable': 'AI: Không khả dụng', 'AI: Connection error': 'AI: Lỗi kết nối', 'AI Insight for': 'AI Insight cho', 'AI Analysis Summary for': 'Tóm tắt Phân tích AI cho', 'AI Deep Dive for': 'Phân tích Chuyên sâu cho', 'Analyzing trend...': 'Đang phân tích xu hướng...', 'Unable to analyze trend.': 'Không thể phân tích xu hướng.', 'Trends for': 'Xu hướng cho', 'Success Score': 'Tỷ Lệ Thành Công', 'Summary': 'Tóm Tắt', 'Interest Over Time': 'Mức Độ Quan Tâm', 'Engagement': 'Tương tác', 'Find Trends': 'Tìm & Lọc Trends', 'Popular Tags': 'Thẻ Phổ Biến', 'All Categories': 'Tất cả danh mục'
+                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign In': 'Đăng nhập', 'Sign Out': 'Đăng xuất', 'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google', 'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại', 'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': '🔍 Phân tích', 'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium', 'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.', 'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Top 5 Hot Trends': 'Top 5 Xu Hướng Nóng Nhất', 'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi', 'Category Leaderboards': 'Bảng xếp hạng danh mục', 'About TrendPulse': 'Giới thiệu TrendPulse', "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": 'Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề xu hướng để có thông tin chi tiết từ AI.', 'Footer Description': 'Nền tảng phân tích và dự đoán xu hướng hàng đầu, giúp bạn nắm bắt những thay đổi mới nhất trong thế giới số.', 'Quick Links': 'Liên kết nhanh', 'Features': 'Tính năng', 'AI Analysis': 'Phân tích AI', 'Trend Prediction': 'Dự đoán xu hướng', 'Leaderboards': 'Bảng xếp hạng', 'Personal Recommendations': 'Gợi ý cá nhân', 'Contact': 'Liên hệ', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Hỗ trợ: support@trendpulse.com', 'All rights reserved.': 'Tất cả quyền được bảo lưu.', 'AI: Checking...': 'AI: Đang kiểm tra...', 'AI: Ready': 'AI: Sẵn sàng', 'AI: Unavailable': 'AI: Không khả dụng', 'AI: Connection error': 'AI: Lỗi kết nối', 'AI Insight for': 'AI Insight cho', 'AI Analysis Summary for': 'Tóm tắt Phân tích AI cho', 'AI Deep Dive for': 'Phân tích Chuyên sâu cho', 'Analyzing trend...': 'Đang phân tích xu hướng...', 'Unable to analyze trend.': 'Không thể phân tích xu hướng.', 'Trends for': 'Xu hướng cho', 'Success Score': 'Tỷ Lệ Thành Công', 'Summary': 'Tóm Tắt', 'Interest Over Time': 'Mức Độ Quan Tâm', 'Engagement': 'Tương tác', 'Find Trends': 'Tìm & Lọc Trends', 'Popular Tags': 'Thẻ Phổ Biến', 'Trending Topics': 'Chủ đề tìm kiếm', 'Trending Queries': 'Cụm từ tìm kiếm', 'Growth': 'Gia tăng', 'All Categories': 'Tất cả danh mục'
             },
             en: {
-                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out', 'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google', 'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now', 'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': '🔍 Analyze', 'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences', 'Premium Access Required': 'Premium Access Required', 'Please sign in with a company or school email to view the Trending Board.': 'Please sign in with a company or school email to view the Trending Board.', 'Log In': 'Log In', 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.', 'Trending Board Dashboard': 'Trending Board Dashboard', 'Top 5 Hot Trends': 'Top 5 Hot Trends', 'Your Followed Trends': 'Your Followed Trends', 'Category Leaderboards': 'Category Leaderboards', 'About TrendPulse': 'About TrendPulse', "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.", 'Footer Description': 'A leading platform for trend analysis and prediction, helping you stay ahead of the curve in the digital world.', 'Quick Links': 'Quick Links', 'Features': 'Features', 'AI Analysis': 'AI Analysis', 'Trend Prediction': 'Trend Prediction', 'Leaderboards': 'Leaderboards', 'Personal Recommendations': 'Personal Recommendations', 'Contact': 'Contact', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Support: support@trendpulse.com', 'All rights reserved.': 'All rights reserved.', 'AI: Checking...': 'AI: Checking...', 'AI: Ready': 'AI: Ready', 'AI: Unavailable': 'AI: Unavailable', 'AI: Connection error': 'AI: Connection error', 'AI Insight for': 'AI Insight for', 'AI Analysis Summary for': 'AI Analysis Summary for', 'AI Deep Dive for': 'AI Deep Dive for', 'Analyzing trend...': 'Analyzing trend...', 'Unable to analyze trend.': 'Unable to analyze trend.', 'Trends for': 'Trends for', 'Success Score': 'Success Score', 'Summary': 'Summary', 'Interest Over Time': 'Interest Over Time', 'Engagement': 'Engagement', 'Find Trends': 'Find & Filter Trends', 'Popular Tags': 'Popular Tags', 'All Categories': 'All Categories'
+                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out', 'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google', 'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now', 'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': '🔍 Analyze', 'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences', 'Premium Access Required': 'Premium Access Required', 'Please sign in with a company or school email to view the Trending Board.': 'Please sign in with a company or school email to view the Trending Board.', 'Log In': 'Log In', 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.', 'Trending Board Dashboard': 'Trending Board Dashboard', 'Top 5 Hot Trends': 'Top 5 Hot Trends', 'Your Followed Trends': 'Your Followed Trends', 'Category Leaderboards': 'Category Leaderboards', 'About TrendPulse': 'About TrendPulse', "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.", 'Footer Description': 'A leading platform for trend analysis and prediction, helping you stay ahead of the curve in the digital world.', 'Quick Links': 'Quick Links', 'Features': 'Features', 'AI Analysis': 'AI Analysis', 'Trend Prediction': 'Trend Prediction', 'Leaderboards': 'Leaderboards', 'Personal Recommendations': 'Personal Recommendations', 'Contact': 'Contact', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Support: support@trendpulse.com', 'All rights reserved.': 'All rights reserved.', 'AI: Checking...': 'AI: Checking...', 'AI: Ready': 'AI: Ready', 'AI: Unavailable': 'AI: Unavailable', 'AI: Connection error': 'AI: Connection error', 'AI Insight for': 'AI Insight for', 'AI Analysis Summary for': 'AI Analysis Summary for', 'AI Deep Dive for': 'AI Deep Dive for', 'Analyzing trend...': 'Analyzing trend...', 'Unable to analyze trend.': 'Unable to analyze trend.', 'Trends for': 'Trends for', 'Success Score': 'Success Score', 'Summary': 'Summary', 'Interest Over Time': 'Interest Over Time', 'Engagement': 'Engagement', 'Find Trends': 'Find & Filter Trends', 'Popular Tags': 'Popular Tags', 'Trending Topics': 'Trending Topics', 'Trending Queries': 'Trending Queries', 'Growth': 'Growth', 'All Categories': 'All Categories'
             }
         };
-        const i18nBindings = [ { selector: '#nav-top-trends', key: 'Top Trends' }, { selector: '#nav-trending-board', key: 'Trending Board' }, { selector: '#nav-for-u a', key: 'For U' }, { selector: '#nav-about', key: 'About' }, { selector: '#sign-in-btn', key: 'Sign In' }, { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' }, { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' }, { selector: '#login-google-btn span', key: 'Sign in with Google' }, { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' }, { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' }, { selector: '#trending-header-text', key: 'Trending Now' }, { selector: '#clear-filter-btn', key: 'Show All Trends' }, { selector: '#load-more-btn', key: 'Load More' }, { selector: '#for-u-load-more-btn', key: 'Load More' }, { selector: '.for-u-container .trending-title-group span', key: 'For You' }, { selector: '#preferences-modal .modal-title', key: 'Welcome! Set Your Preferences' }, { selector: '#preferences-modal .modal-body', key: "Select the categories you're interested in for a personalized experience." }, { selector: '#save-preferences-btn', key: 'Save Preferences' }, { selector: '#premium-modal .modal-title', key: 'Premium Access Required' }, { selector: '#premium-modal .modal-body', key: 'Please sign in with a company or school email to view the Trending Board.' }, { selector: '#premium-login-btn', key: 'Log In' }, { selector: '#login-choice-modal .modal-title', key: 'Sign In' }, { selector: '#login-choice-modal .modal-body', key: 'Choose an account to continue to TrendPulse.' }, { selector: '#trending-board-modal .modal-title', key: 'Trending Board Dashboard' }, { selector: '#for-u-leaderboard-panel h3', key: 'Category Leaderboards' }, { selector: '#about-modal .modal-title', key: 'About TrendPulse' }, { selector: '#about-modal .modal-body', key: "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights." }, { selector: '.footer-section:nth-child(1) .footer-description', key: 'Footer Description' }, { selector: '.footer-section:nth-child(2) .footer-title', key: 'Quick Links' }, { selector: '#footer-top-trends', key: 'Top Trends' }, { selector: '#footer-trending-board', key: 'Trending Board' }, { selector: '#footer-about', key: 'About' }, { selector: '.footer-section:nth-child(3) .footer-title', key: 'Features' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(1)', key: 'AI Analysis' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(2)', key: 'Trend Prediction' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(3)', key: 'Leaderboards' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(4)', key: 'Personal Recommendations' }, { selector: '.footer-section:nth-child(4) .footer-title', key: 'Contact' }, { selector: '.footer-section:nth-child(4) .footer-contact p:nth-child(1)', key: 'Email: info@trendpulse.com' }, { selector: '.footer-section:nth-child(4) .footer-contact p:nth-child(2)', key: 'Support: support@trendpulse.com' }, { selector: '#ai-insight-title', key: 'AI Insight for' }, { selector: '#search-filter-title', key: 'Find Trends' }, { selector: '#hashtag-filter h4', key: 'Popular Tags' }, ];
+        const i18nBindings = [ { selector: '#nav-top-trends', key: 'Top Trends' }, { selector: '#nav-trending-board', key: 'Trending Board' }, { selector: '#nav-for-u a', key: 'For U' }, { selector: '#nav-about', key: 'About' }, { selector: '#sign-in-btn', key: 'Sign In' }, { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' }, { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' }, { selector: '#login-google-btn span', key: 'Sign in with Google' }, { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' }, { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' }, { selector: '#trending-header-text', key: 'Trending Now' }, { selector: '#clear-filter-btn', key: 'Show All Trends' }, { selector: '#load-more-btn', key: 'Load More' }, { selector: '#for-u-load-more-btn', key: 'Load More' }, { selector: '.for-u-container .trending-title-group span', key: 'For You' }, { selector: '#preferences-modal .modal-title', key: 'Welcome! Set Your Preferences' }, { selector: '#preferences-modal .modal-body', key: "Select the categories you're interested in for a personalized experience." }, { selector: '#save-preferences-btn', key: 'Save Preferences' }, { selector: '#premium-modal .modal-title', key: 'Premium Access Required' }, { selector: '#premium-modal .modal-body', key: 'Please sign in with a company or school email to view the Trending Board.' }, { selector: '#premium-login-btn', key: 'Log In' }, { selector: '#login-choice-modal .modal-title', key: 'Sign In' }, { selector: '#login-choice-modal .modal-body', key: 'Choose an account to continue to TrendPulse.' }, { selector: '#tb-main-title', key: 'Trending Board Dashboard' }, { selector: '#for-u-leaderboard-panel h3', key: 'Category Leaderboards' }, { selector: '#about-modal .modal-title', key: 'About TrendPulse' }, { selector: '#about-modal .modal-body', key: "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights." }, { selector: '.footer-section:nth-child(1) .footer-description', key: 'Footer Description' }, { selector: '.footer-section:nth-child(2) .footer-title', key: 'Quick Links' }, { selector: '#footer-top-trends', key: 'Top Trends' }, { selector: '#footer-trending-board', key: 'Trending Board' }, { selector: '#footer-about', key: 'About' }, { selector: '.footer-section:nth-child(3) .footer-title', key: 'Features' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(1)', key: 'AI Analysis' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(2)', key: 'Trend Prediction' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(3)', key: 'Leaderboards' }, { selector: '.footer-section:nth-child(3) .footer-links li:nth-child(4)', key: 'Personal Recommendations' }, { selector: '.footer-section:nth-child(4) .footer-title', key: 'Contact' }, { selector: '.footer-section:nth-child(4) .footer-contact p:nth-child(1)', key: 'Email: info@trendpulse.com' }, { selector: '.footer-section:nth-child(4) .footer-contact p:nth-child(2)', key: 'Support: support@trendpulse.com' }, { selector: '#ai-insight-title', key: 'AI Insight for' }, { selector: '#search-filter-title', key: 'Find Trends' }, { selector: '#hashtag-filter h4', key: 'Popular Tags' }, ];
         
-        // SỬA LỖI: Thêm các phần tử bị thiếu vào DOM object
-        const DOM = { body: document.body, mainNav: document.getElementById('main-nav'), hamburgerMenu: document.getElementById('hamburger-menu'), logo: document.getElementById('logo'), signInBtn: document.getElementById('sign-in-btn'), userMenu: document.getElementById('user-menu'), userEmailBtn: document.getElementById('user-email-btn'), dropdownHeader: document.getElementById('dropdown-user-email'), userDropdown: document.getElementById('user-dropdown'), dropdownSignOut: document.getElementById('dropdown-sign-out'), dropdownWorkSchool: document.getElementById('dropdown-work-school'), navTopTrends: document.getElementById('nav-top-trends'), navTrendingBoard: document.getElementById('nav-trending-board'), navForU: document.getElementById('nav-for-u'), navAbout: document.getElementById('nav-about'), modalCloses: document.querySelectorAll('.modal-close'), mainViewContainer: document.getElementById('main-view-container'), forUViewContainer: document.getElementById('for-u-view-container'), trendsList: document.getElementById('trends-list'), forUTrendsList: document.getElementById('for-u-trends-list'), loadMoreBtn: document.getElementById('load-more-btn'), forULoadMoreBtn: document.getElementById('for-u-load-more-btn'), filterButtonsContainer: document.getElementById('filter-buttons'), clearFilterBtn: document.getElementById('clear-filter-btn'), preferencesGrid: document.getElementById('preferences-grid'), savePreferencesBtn: document.getElementById('save-preferences-btn'), searchInput: document.getElementById('search-input'), hashtagList: document.getElementById('hashtag-list'), tbSearchInput: document.getElementById('tb-search-input'), tbCompareInput: document.getElementById('tb-compare-input'), tbCategoryFilter: document.getElementById('tb-category-filter'), tbSearchChipsContainer: document.getElementById('tb-search-chips-container'), };
-        
+        const DOM = { body: document.body, mainNav: document.getElementById('main-nav'), hamburgerMenu: document.getElementById('hamburger-menu'), logo: document.getElementById('logo'), signInBtn: document.getElementById('sign-in-btn'), userMenu: document.getElementById('user-menu'), userEmailBtn: document.getElementById('user-email-btn'), dropdownHeader: document.getElementById('dropdown-user-email'), userDropdown: document.getElementById('user-dropdown'), dropdownSignOut: document.getElementById('dropdown-sign-out'), dropdownWorkSchool: document.getElementById('dropdown-work-school'), navTopTrends: document.getElementById('nav-top-trends'), navTrendingBoard: document.getElementById('nav-trending-board'), navForU: document.getElementById('nav-for-u'), navAbout: document.getElementById('nav-about'), modalCloses: document.querySelectorAll('.modal-close'), mainViewContainer: document.getElementById('main-view-container'), forUViewContainer: document.getElementById('for-u-view-container'), trendingBoardViewContainer: document.getElementById('trending-board-view-container'), trendsList: document.getElementById('trends-list'), forUTrendsList: document.getElementById('for-u-trends-list'), loadMoreBtn: document.getElementById('load-more-btn'), forULoadMoreBtn: document.getElementById('for-u-load-more-btn'), filterButtonsContainer: document.getElementById('filter-buttons'), clearFilterBtn: document.getElementById('clear-filter-btn'), preferencesGrid: document.getElementById('preferences-grid'), savePreferencesBtn: document.getElementById('save-preferences-btn'), searchInput: document.getElementById('search-input'), hashtagList: document.getElementById('hashtag-list'), tbSearchInput: document.getElementById('tb-search-input'), tbCompareInput: document.getElementById('tb-compare-input'), tbCategoryFilter: document.getElementById('tb-category-filter'), tbSearchChipsContainer: document.getElementById('tb-search-chips-container'), };
         function t(key) { return (translations[currentLanguage] && translations[currentLanguage][key]) || key; }
         function openModal(modalId) { document.getElementById(modalId).classList.add('show'); }
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
         async function fetchLiveTrends() {
             try {
-                const res = await fetch('/.netlify/functions/fetch-trends');
+                const res = await fetch('/.netlify/functions/fetch-trends'); 
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 return (data.success && Array.isArray(data.trends)) ? preprocessTrends(data.trends) : [];
@@ -352,6 +354,7 @@
             return filtered.filter(Boolean);
         }
         function displayTrends() {
+            if (currentView === 'trendingBoard') return; // Không làm gì nếu đang ở trang trending board
             const listElement = currentView === 'main' ? DOM.trendsList : DOM.forUTrendsList;
             const footerButton = currentView === 'main' ? DOM.loadMoreBtn : DOM.forULoadMoreBtn;
             const trendsToFilter = getVisibleTrends();
@@ -363,7 +366,7 @@
             if (currentView === 'forU') { generateCategoryLeaderboards('for-u-leaderboards', user.preferences.length > 0 ? user.preferences : categories.slice(0, 3)); }
         };
         function loadMoreTrends() { displayedTrends[currentView] += TRENDS_PER_PAGE; displayTrends(); }
-        function switchView(view) { currentView = view; localStorage.setItem('currentView', view); displayedTrends.main = 0; displayedTrends.forU = 0; DOM.mainViewContainer.classList.toggle('hidden', view !== 'main'); DOM.forUViewContainer.classList.toggle('hidden', view !== 'forU'); displayTrends(); updateActiveNav(view); };
+        function switchView(view) { currentView = view; localStorage.setItem('currentView', view); displayedTrends.main = 0; displayedTrends.forU = 0; [DOM.mainViewContainer, DOM.forUViewContainer, DOM.trendingBoardViewContainer].forEach(container => container.classList.add('hidden')); if (view === 'main') DOM.mainViewContainer.classList.remove('hidden'); else if (view === 'forU') DOM.forUViewContainer.classList.remove('hidden'); else if (view === 'trendingBoard') { DOM.trendingBoardViewContainer.classList.remove('hidden'); createHotTrendsChart(user.followedTrends.map(id => allTrends.find(t => t.id === id)?.title).filter(Boolean)); } displayTrends(); updateActiveNav(view); };
         function updateAuthUI() { DOM.body.className = ''; if (user.isLoggedIn) { DOM.body.classList.add('logged-in'); DOM.signInBtn.classList.add('hidden'); DOM.userMenu.classList.remove('hidden'); DOM.userEmailBtn.textContent = user.email; DOM.dropdownHeader.textContent = user.email; DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType === 'work'); if (user.accountType === 'work') DOM.body.classList.add('work-account-view'); } else { DOM.signInBtn.classList.remove('hidden'); DOM.userMenu.classList.add('hidden'); DOM.navForU.classList.add('hidden'); } displayTrends(); };
         function signIn(type) { user = { isLoggedIn: true, accountType: type, email: type === 'personal' ? 'user@gmail.com' : 'pro@company.com', preferences: [], hasSetPreferences: false, followedTrends: [] }; closeModal('login-choice-modal'); updateAuthUI(); if (type === 'work' && !user.hasSetPreferences) { populatePreferenceCheckboxes(); openModal('preferences-modal'); } };
         function populateCategoryFilters() { categories = [...new Set(allTrends.map(t => t.category))].sort(); DOM.filterButtonsContainer.innerHTML = ['All', ...categories].map(category => `<button class="filter-btn ${category === 'All' ? 'active' : ''}" data-filter="${category}">${category}</button>`).join(''); };
@@ -376,21 +379,20 @@
         function renderAnalysisChart(historicalData, futureProjection) { /* ... Giữ nguyên ... */ }
         function getCombinedMetric(trend) { /* ... Giữ nguyên ... */ }
         function getLocalizedTrendText(trend) { if (!trend) return { title: 'Invalid Trend', description: '' }; return currentLanguage === 'vi' ? { title: trend.title_vi || trend.title, description: trend.description_vi || trend.description } : { title: trend.title_en || trend.title, description: trend.description_en || trend.description }; }
-        function truncateText(text = '', maxLength = 180) { /* ... Giữ nguyên ... */ }
-        function makeTrendKey(trend) { /* ... Giữ nguyên ... */ }
-        function loadSeenTrends() { /* ... Giữ nguyên ... */ }
-        function saveSeenTrendKey(key) { /* ... Giữ nguyên ... */ }
-        function applyTrendOrdering() { /* ... Giữ nguyên ... */ }
-        function shuffleArray(arr) { /* ... Giữ nguyên ... */ }
-        function generateMonthRange(start, end) { /* ... Giữ nguyên ... */ }
-        function monthKeyToLabel(key) { /* ... Giữ nguyên ... */ }
-        function generateSeriesForMonths(trend, monthKeys) { /* ... Giữ nguyên ... */ }
-        function generateChartDataFromScore(score, baseMetric = 500) { /* ... Giữ nguyên ... */ }
-        function getColorPalette(count) { /* ... Giữ nguyên ... */ }
-        function formatNumber(n){ /* ... Giữ nguyên ... */ }
-        async function checkAIStatus() { /* ... Giữ nguyên ... */ }
-        function updateActiveNav(activeView) { /* ... Giữ nguyên ... */ }
-        
+        function truncateText(text = '', maxLength = 180) { if (!text || text.length <= maxLength) return text; const cut = text.slice(0, maxLength); return cut.slice(0, cut.lastIndexOf(' ', maxLength) || maxLength) + '…'; }
+        function makeTrendKey(trend) { return `${trend.title || ''}|${trend.source || ''}|${trend.date || ''}`.toLowerCase(); }
+        function loadSeenTrends() { try { return JSON.parse(localStorage.getItem('seenTrends') || '[]'); } catch { return []; } }
+        function saveSeenTrendKey(key) { try { const seen = new Set(loadSeenTrends()); if (!seen.has(key)) localStorage.setItem('seenTrends', JSON.stringify([...seen, key])); } catch {} }
+        function applyTrendOrdering() { const seenKeys = new Set(loadSeenTrends()); const unseen = []; const seen = []; allTrends.forEach(t => (seenKeys.has(makeTrendKey(t)) ? seen : unseen).push(t)); allTrends = [...shuffleArray(unseen), ...seen]; }
+        function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+        function generateMonthRange(start, end) { const res = []; let d = new Date(start); d.setDate(1); while (d <= end) { res.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); d.setMonth(d.getMonth() + 1); } return res; }
+        function monthKeyToLabel(key) { const [y, m] = key.split('-'); return `${m}/${y.slice(-2)}`; }
+        function generateSeriesForMonths(trend, monthKeys) { const peakMetric = getCombinedMetric(trend); const trendDate = new Date(trend.date || Date.now()); const anchorKey = `${trendDate.getFullYear()}-${String(trendDate.getMonth() + 1).padStart(2, '0')}`; const anchorIndex = monthKeys.indexOf(anchorKey); const series = new Array(monthKeys.length).fill(0); if (anchorIndex !== -1) { for (let i = anchorIndex - 1; i < monthKeys.length; i++) { if (i < 0) continue; const dist = i - anchorIndex; const decay = Math.exp(-Math.pow(dist / 2, 2)); series[i] = Math.max(0, Math.round(peakMetric * decay * (1 + (Math.random() - 0.5) * 0.1))); } } return series; }
+        function generateChartDataFromScore(score, baseMetric = 500) { const growthFactor = (score - 50) / 500; let historicalData = [baseMetric * 0.4, baseMetric * 0.7, baseMetric * 0.9, baseMetric].map(v => Math.round(v)); let futureProjection = []; let lastValue = baseMetric; let next1d = lastValue * (1 + growthFactor * 0.2 + (Math.random() - 0.5) * 0.05); futureProjection.push(Math.max(0, Math.round(next1d))); let next4d = next1d * (1 + growthFactor * 0.1 + (Math.random() - 0.5) * 0.05); futureProjection.push(Math.max(0, Math.round(next4d))); let next7d = next4d * (1 + growthFactor * 0.05 + (Math.random() - 0.5) * 0.05); futureProjection.push(Math.max(0, Math.round(next7d))); return { historicalData, futureProjection }; }
+        function getColorPalette(count) { const base = [{ stroke: '#A100FF' }, { stroke: '#00C8FF' }, { stroke: '#00E696' }, { stroke: '#FFB400' }, { stroke: '#FF6384' }]; while (base.length < count) base.push({ stroke: `hsl(${Math.random() * 360}, 90%, 60%)` }); return base; }
+        function formatNumber(n){ if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'K'; return String(n); }
+        async function checkAIStatus() { try { const response = await fetch("/.netlify/functions/analyze-trend", { method: 'GET' }); const statusIndicator = document.getElementById('ai-status-indicator'); const statusText = document.getElementById('ai-status-text'); const isOnline = response.ok; statusIndicator.classList.toggle('online', isOnline); statusIndicator.classList.toggle('offline', !isOnline); statusText.textContent = t(isOnline ? 'AI: Ready' : 'AI: Unavailable'); } catch (error) { const statusIndicator = document.getElementById('ai-status-indicator'); const statusText = document.getElementById('ai-status-text'); statusIndicator.className = 'ai-status-indicator offline'; statusText.textContent = t('AI: Connection error'); console.error('AI Status Check Failed:', error); } }
+        function updateActiveNav(activeView) { document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active-link')); if (activeView === 'main') { DOM.navTopTrends.classList.add('active-link'); } else if (activeView === 'forU') { DOM.navForU.querySelector('a').classList.add('active-link'); } else if (activeView === 'trendingBoard') { DOM.navTrendingBoard.classList.add('active-link'); } }
         function renderTBDashboard() {
             const selectedCategory = DOM.tbCategoryFilter.value;
             let trendsToDisplay = selectedCategory === 'All' ? allTrends : allTrends.filter(t => t.category === selectedCategory);
@@ -399,7 +401,6 @@
             document.getElementById('tb-topic-list').innerHTML = `<ol>${topics.map((t, i) => `<li><span class="rank">${i+1}</span><span class="term">${t.title}</span><span class="growth">Đột phá</span></li>`).join('')}</ol>`;
             document.getElementById('tb-query-list').innerHTML = `<ol>${queries.map((t, i) => `<li><span class="rank">${i+1}</span><span class="term">${t.title}</span><span class="growth">+${Math.floor(Math.random() * 4000)}%</span></li>`).join('')}</ol>`;
         }
-        
         function createHotTrendsChart(searchTerms = []) {
             const canvas = document.getElementById('hot-trends-chart');
             if (!canvas) return;
@@ -408,7 +409,6 @@
             const defaultViewEl = document.getElementById('tb-default-view');
             const chipsContainer = DOM.tbSearchChipsContainer;
             let trendsForChart;
-            
             if (searchTerms.length > 0) {
                 trendsForChart = allTrends.filter(t => searchTerms.some(term => t.title.toLowerCase().includes(term.toLowerCase())));
                 chartTitleEl.textContent = t('Interest Over Time');
@@ -424,16 +424,14 @@
                 chipsContainer.classList.add('hidden');
                 renderTBDashboard();
             }
-
             const now = new Date();
             const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
             const monthKeys = generateMonthRange(startDate, now);
             const labels = monthKeys.map(monthKeyToLabel);
             const palette = getColorPalette(trendsForChart.length);
             const datasets = trendsForChart.map((t, idx) => ({ label: truncateText(t.title, 30), data: generateSeriesForMonths(t, monthKeys), borderColor: palette[idx].stroke, tension: 0.4, fill: false }));
-            hotTrendsChart = new Chart(canvas.getContext('2d'), { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#8a8da0' } } }, scales: { x: { ticks: { color: '#8a8da0' } }, y: { ticks: { color: '#8a8da0' }, min: 0, max: 100 } } } });
-        }
-        
+            hotTrendsChart = new Chart(canvas.getContext('2d'), { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#8a8da0' } } }, scales: { x: { ticks: { color: '#8a8da0' } }, y: { ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, beginAtZero: true } } } });
+        };
         function handleInteraction(e) {
             const targetElement = e.target;
             const trendCard = targetElement.closest('.trend-card');
@@ -464,16 +462,15 @@
                  }).catch(err => { modalBody.innerHTML = `<p style="color: #ff6b6b;">${t('Unable to analyze trend.')}</p>`; });
             } else if (targetElement.matches('.tag.hashtag')) { switchView('main'); currentFilter.hashtag = targetElement.dataset.tag; updateUIForFilter(); }
         }
-        
         async function initializeApp() {
             applyTranslations(); updateLanguageToggleUI();
             DOM.mainViewContainer.classList.toggle('hidden', currentView !== 'main');
             DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
+            DOM.trendingBoardViewContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
             allTrends = await fetchLiveTrends();
             applyTrendOrdering(); populateCategoryFilters(); populateHashtagFilters(); updateAuthUI(); checkAIStatus(); updateActiveNav(currentView);
             document.getElementById('loader')?.classList.add('loader-hidden');
         }
-
         DOM.hamburgerMenu.addEventListener('click', () => DOM.mainNav.classList.toggle('nav-active'));
         DOM.logo.addEventListener('click', () => switchView('main'));
         DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
@@ -483,7 +480,7 @@
         DOM.dropdownSignOut.addEventListener('click', () => { user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [] }; updateAuthUI(); DOM.userDropdown.classList.remove('show'); switchView('main'); });
         DOM.dropdownWorkSchool.addEventListener('click', () => { signIn('work'); DOM.userDropdown.classList.remove('show'); });
         DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
-        DOM.navTrendingBoard.addEventListener('click', () => { if (user.isLoggedIn && user.accountType === 'work') { openModal('trending-board-modal'); const categoryFilter = DOM.tbCategoryFilter; categoryFilter.innerHTML = `<option value="All">${t('All Categories')}</option>`; [...new Set(allTrends.map(t => t.category))].sort().forEach(cat => { const option = document.createElement('option'); option.value = cat; option.textContent = cat; categoryFilter.appendChild(option); }); createHotTrendsChart(user.followedTrends.map(id => allTrends.find(t => t.id === id)?.title).filter(Boolean)); updateActiveNav('trendingBoard'); } else { openModal('premium-modal'); } });
+        DOM.navTrendingBoard.addEventListener('click', (e) => { e.preventDefault(); if (user.isLoggedIn && user.accountType === 'work') { switchView('trendingBoard'); } else { openModal('premium-modal'); } });
         document.getElementById('premium-login-btn')?.addEventListener('click', () => { closeModal('premium-modal'); openModal('login-choice-modal'); });
         DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => { closeModal(btn.closest('.modal-overlay').id); updateActiveNav(currentView); }));
         document.getElementById('login-google-btn')?.addEventListener('click', () => signIn('personal'));
@@ -498,9 +495,9 @@
         DOM.tbSearchInput.addEventListener('keypress', function(e) { if (e.key === 'Enter' && this.value.trim() !== '') { createHotTrendsChart([this.value.trim()]); } });
         DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
         document.addEventListener('click', (e) => { if (DOM.userMenu && !DOM.userMenu.contains(e.target)) { DOM.userDropdown.classList.remove('show'); }});
-        document.getElementById('language-toggle')?.addEventListener('click', () => { currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi'; localStorage.setItem('lang', currentLanguage); applyTranslations(); updateLanguageToggleUI(); displayTrends(); if (document.getElementById('trending-board-modal')?.classList.contains('show')) createHotTrendsChart(); });
+        document.getElementById('language-toggle')?.addEventListener('click', () => { currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi'; localStorage.setItem('lang', currentLanguage); applyTranslations(); updateLanguageToggleUI(); displayTrends(); if (currentView === 'trendingBoard') createHotTrendsChart(); });
         initializeApp();
     });
-    </script>
+</script>
 </body>
 </html>
