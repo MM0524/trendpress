@@ -18,10 +18,10 @@
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; overflow-x: hidden; }
         .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease; }
         .loader-overlay.loader-hidden { opacity: 0; visibility: hidden; }
+        @keyframes pulse { 0% { top: 36px; left: 36px; width: 0; height: 0; opacity: 1; } 100% { top: 0px; left: 0px; width: 72px; height: 72px; opacity: 0; } }
         .loader-pulse { display: inline-block; position: relative; width: 80px; height: 80px; }
         .loader-pulse div { position: absolute; border: 4px solid var(--primary-light); opacity: 1; border-radius: 50%; animation: pulse 1.2s cubic-bezier(0, 0.2, 0.8, 1) infinite; }
         .loader-pulse div:nth-child(2) { animation-delay: -0.6s; }
-        @keyframes pulse { 0% { top: 36px; left: 36px; width: 0; height: 0; opacity: 1; } 100% { top: 0px; left: 0px; width: 72px; height: 72px; opacity: 0; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .main-content-wrapper { display: flex; flex-direction: column; min-height: calc(100vh - var(--header-height) - 1px); }
@@ -105,14 +105,33 @@
         #login-choice-modal .btn-social:hover { border-color: var(--primary-color); background-color: #21233a; }
         #login-choice-modal .btn-social svg { position: absolute; left: 1.5rem; stroke: var(--text-muted-color); width: 20px; height: 20px; }
         .preferences-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: left; margin-bottom: 1.5rem; }
-        #trending-board-content { max-width: 800px; }
-        #hot-trends-container canvas { width: 100%; max-height: 300px; }
-        .leaderboards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
         #ai-insight-modal .modal-content { max-width: 550px; width: 90%; text-align: left; }
         #ai-insight-modal .modal-body { max-height: 70vh; overflow-y: auto; padding-right: 15px; }
         #ai-insight-modal h4 { color: var(--primary-light); margin-top: 1rem; margin-bottom: 0.5rem; }
         #ai-insight-modal ul { list-style-position: inside; padding-left: 5px; }
         #ai-insight-modal li { margin-bottom: 0.5rem; }
+        #trending-board-modal .modal-content { max-width: 90vw; width: 1200px; text-align: left; }
+        .tb-header { border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+        .tb-search-container { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .tb-search-box { flex: 1; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; display: flex; align-items: center; }
+        .tb-search-box.compare { background-color: var(--surface-color); }
+        .tb-search-box input { background: transparent; border: none; color: var(--text-color); font-size: 1rem; width: 100%; outline: none; }
+        .tb-search-box.compare input::placeholder { color: var(--text-muted-color); }
+        .tb-search-chips { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .tb-search-chip { background-color: var(--bg-color); border: 1px solid var(--primary-color); color: var(--primary-light); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem; }
+        .tb-filters { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .tb-filter-select { background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; }
+        .tb-leaderboards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.5rem; }
+        .tb-leaderboard { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; }
+        .tb-leaderboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; color: var(--text-muted-color); font-size: 0.9rem; }
+        .tb-leaderboard-list ol { list-style: none; padding: 0; }
+        .tb-leaderboard-list li { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); font-weight: 500; }
+        .tb-leaderboard-list li:last-child { border-bottom: none; }
+        .tb-leaderboard-list .rank { color: var(--text-muted-color); margin-right: 1rem; }
+        .tb-leaderboard-list .term { flex-grow: 1; }
+        .tb-leaderboard-list .growth { color: #4CAF50; }
+        #tb-chart-container { margin-top: 2rem; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; }
+        #tb-chart-container canvas { width: 100%; height: 300px; }
         .footer { background-color: var(--surface-color); border-top: 1px solid var(--border-color); padding: 3rem 0 1rem 0; }
         .footer-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
         .footer-title { color: var(--primary-light); font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
@@ -120,11 +139,7 @@
         .footer-links a { color: var(--text-muted-color); text-decoration: none; }
         .footer-links a:hover { color: var(--primary-light); }
         .footer-bottom { border-top: 1px solid var(--border-color); margin-top: 2rem; padding-top: 1.5rem; text-align: center; color: var(--text-muted-color); font-size: 0.9rem; }
-        
-        @media (max-width: 1024px) { 
-            .main-container, .for-u-container { grid-template-columns: 1fr; } 
-            #search-filter-panel, .leaderboard-panel { grid-row: 1; } 
-        }
+        @media (max-width: 1024px) { .main-container, .for-u-container { grid-template-columns: 1fr; } #search-filter-panel, .leaderboard-panel { grid-row: 1; } }
         @media (max-width: 768px) {
             .header { padding: 0 1rem; }
             .nav-links { position: fixed; top: var(--header-height); left: 0; width: 100%; height: calc(100vh - var(--header-height)); background-color: var(--bg-color); flex-direction: column; align-items: center; padding-top: 2rem; transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
@@ -136,6 +151,8 @@
             .trending-title-group { font-size: 1.25rem; }
             .trend-card { padding: 1rem; }
             .trend-title { font-size: 1.1rem; }
+            #trending-board-modal .modal-content { max-width: 95vw; width: 100%; }
+            .tb-leaderboards-grid { grid-template-columns: 1fr; }
             .footer-content { grid-template-columns: 1fr; text-align: center; }
         }
         .hidden { display: none !important; }
@@ -206,7 +223,54 @@
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
     <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Sign in with Google</span></button><button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span>Sign in with Work/School</span></button></div></div></div>
-    <div class="modal-overlay" id="trending-board-modal"><div class="modal-content" id="trending-board-content"><button class="modal-close" data-close="trending-board-modal">&times;</button><h3 class="modal-title"></h3><div id="hot-trends-container"><h4></h4><canvas id="hot-trends-chart"></canvas></div><div class="leaderboards-container" id="category-leaderboards"></div></div></div>
+    <div class="modal-overlay" id="trending-board-modal">
+        <div class="modal-content" id="trending-board-content">
+            <button class="modal-close" data-close="trending-board-modal">&times;</button>
+            <h3 class="modal-title" id="tb-modal-title"></h3>
+            <div class="tb-header">
+                <div class="tb-search-container" id="tb-search-container">
+                    <div class="tb-search-box">
+                        <input type="text" id="tb-search-input" placeholder="Thêm cụm từ tìm kiếm">
+                    </div>
+                    <div class="tb-search-box compare">
+                        <input type="text" id="tb-compare-input" placeholder="+ So sánh">
+                    </div>
+                </div>
+                <div class="tb-search-chips hidden" id="tb-search-chips-container"></div>
+                <div class="tb-filters">
+                    <select id="tb-region-filter" class="tb-filter-select">
+                        <option value="vn">Việt Nam</option>
+                        <option value="us">Hoa Kỳ</option>
+                        <option value="global">Toàn cầu</option>
+                    </select>
+                    <select id="tb-timeframe-filter" class="tb-filter-select">
+                        <option value="12m">12 tháng qua</option>
+                        <option value="1m">30 ngày qua</option>
+                        <option value="7d">7 ngày qua</option>
+                    </select>
+                    <select id="tb-category-filter" class="tb-filter-select">
+                        <option value="All">Tất cả danh mục</option>
+                    </select>
+                </div>
+            </div>
+            <div id="tb-default-view">
+                <div class="tb-leaderboards-grid">
+                    <div class="tb-leaderboard">
+                        <div class="tb-leaderboard-header"><span>Chủ đề tìm kiếm</span> <span>Gia tăng</span></div>
+                        <div class="tb-leaderboard-list" id="tb-topic-list"></div>
+                    </div>
+                    <div class="tb-leaderboard">
+                        <div class="tb-leaderboard-header"><span>Cụm từ tìm kiếm</span> <span>Gia tăng</span></div>
+                        <div class="tb-leaderboard-list" id="tb-query-list"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="tb-chart-container">
+                <h4 id="tb-chart-title"></h4>
+                <canvas id="hot-trends-chart"></canvas>
+            </div>
+        </div>
+    </div>
     <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
     <div class="modal-overlay" id="about-modal"><div class="modal-content"><button class="modal-close" data-close="about-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p></div></div>
     <footer class="footer">
@@ -531,4 +595,5 @@
     </script>
 </body>
 </html>
+
 
