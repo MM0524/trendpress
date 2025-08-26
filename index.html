@@ -452,7 +452,7 @@
         document.getElementById('login-work-btn')?.addEventListener('click', () => signIn('work'));
         DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
         DOM.forULoadMoreBtn.addEventListener('click', loadMoreTrends);
-        DOM.savePreferencesBtn.addEventListener('click', () => { user.preferences = [...document.querySelectorAll('#preferences-grid input:checked')].map(cb => cb.value); user.hasSetPreferences = true; closeModal('preferences-modal'); switchView('forU'); });
+        DOM.savePreferencesBtn.addEventListener('click', () => { user.preferences = [...document.querySelectorAll('#preferences-grid input:checked')].map(cb => cb.value); user.hasSetPreferences = true; closeModal('preferences-modal'); switchView('forU'); generateCategoryLeaderboards('for-u-leaderboards', user.preferences); });
         [DOM.trendsList, DOM.forUTrendsList, document.getElementById('for-u-leaderboards')].forEach(list => list.addEventListener('click', handleInteraction));
         DOM.filterButtonsContainer.addEventListener('click', (e) => { if (e.target.matches('.filter-btn')) { currentFilter.type = 'category'; currentFilter.value = e.target.dataset.filter; updateUIForFilter(); } });
         DOM.searchInput.addEventListener('input', (e) => { currentFilter.searchTerm = e.target.value; displayedTrends.main = 0; displayTrends(); });
@@ -466,3 +466,4 @@
     </script>
 </body>
 </html>
+
