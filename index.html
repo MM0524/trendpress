@@ -311,7 +311,7 @@
         let currentView = localStorage.getItem('currentView') || 'main';
         let hotTrendsChart = null;
         let analysisChart = null;
-        let allTrends = [];
+        let allTrends = []; // This will now hold trends fetched from the Netlify Function
         let categories = [];
         let currentLanguage = localStorage.getItem('lang') || 'vi';
 
@@ -411,16 +411,32 @@
         function openModal(modalId) { document.getElementById(modalId).classList.add('show'); }
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
 
-        async function fetchLiveTrends() {
+        // UPDATED: fetchLiveTrends now sends filters to Netlify Function
+        async function fetchLiveTrends(filters = {}) {
             try {
-                const res = await fetch('/.netlify/functions/fetch-trends');
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const params = new URLSearchParams();
+                if (filters.region && filters.region !== 'global') params.append('region', filters.region);
+                if (filters.category && filters.category !== 'All') params.append('category', filters.category);
+                if (filters.timeframe && filters.timeframe !== 'all') params.append('timeframe', filters.timeframe);
+                if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
+                
+                const url = `/.netlify/functions/fetch-trends?${params.toString()}`;
+                console.log("Fetching trends from:", url); // Log the URL for debugging
+
+                const res = await fetch(url);
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`HTTP error! Status: ${res.status} - ${errorText}`);
+                }
                 const data = await res.json();
-                return (data.success && Array.isArray(data.trends)) ? preprocessTrends(data.trends) : [];
+                if (!data.success) {
+                    throw new Error(data.message || "Failed to fetch trends from backend.");
+                }
+                return (Array.isArray(data.trends)) ? preprocessTrends(data.trends) : [];
             } catch (e) {
-                console.warn('Live trends not available.', e.message);
+                console.warn('Failed to fetch live trends:', e.message);
                 if (DOM.trendsList) {
-                    DOM.trendsList.innerHTML = `<p class="modal-body error-message" style="text-align: center;">${t('Could not load trends. Please try again later.')}</p>`;
+                    DOM.trendsList.innerHTML = `<p class="modal-body error-message" style="text-align: center;">${t('Could not load trends. Please try again later.')}: ${e.message}</p>`;
                 }
                 return [];
             }
@@ -455,29 +471,25 @@
             } catch (error) { console.error("Secure analysis request failed:", error); throw error; }
         }
 
+        // UPDATED: preprocessTrends on frontend is simpler now, as backend handles initial data prep
         function preprocessTrends(trends) {
             if (!trends || trends.length === 0) return [];
             trends.forEach((trendItem, i) => {
-                trendItem.id = trendItem.id || i;
+                trendItem.id = trendItem.id || i; // Ensure ID
+                // Generate metrics for frontend hotness scoring, assuming backend doesn't provide them yet
                 trendItem.views = (trendItem.votes || 0) * (Math.random() * 50 + 10);
                 trendItem.interactions = (trendItem.votes || 0) * (Math.random() * 5 + 1);
                 trendItem.searches = (trendItem.votes || 0) * (Math.random() * 2 + 0.5);
-                trendItem.type = i % 3 === 0 ? 'topic' : 'query';
-                // Assign a region for demo purposes, if not already present
-                trendItem.region = trendItem.region || (i % 2 === 0 ? 'vn' : (i % 3 === 0 ? 'us' : 'global'));
-                // Assign a plausible date for demo purposes
-                if (!trendItem.date) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - Math.floor(Math.random() * 365)); // Random date within last year
-                    trendItem.date = d.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-                }
+                trendItem.type = trendItem.type || (i % 3 === 0 ? 'topic' : 'query'); // Assign type if not from backend
             });
+
             const maxValues = {
                 views: Math.max(1, ...trends.map(trendItem => trendItem.views)),
                 interactions: Math.max(1, ...trends.map(trendItem => trendItem.interactions)),
                 searches: Math.max(1, ...trends.map(trendItem => trendItem.searches)),
                 votes: Math.max(1, ...trends.map(trendItem => trendItem.votes)),
             };
+            
             trends.forEach(trendItem => { trendItem.hotnessScore = calculateHotnessScore(trendItem, maxValues); });
             return trends;
         }
@@ -508,19 +520,23 @@
             if (DOM.tbQueryListHeader && DOM.tbQueryListHeader.children[0]) DOM.tbQueryListHeader.children[0].textContent = t('Trending Queries');
 
             if (DOM.tbRegionFilter) {
+                const currentRegion = DOM.tbRegionFilter.value;
                 DOM.tbRegionFilter.innerHTML = `
                     <option value="global">${t('Global')}</option>
                     <option value="vn">${t('Vietnam')}</option>
                     <option value="us">${t('United States')}</option>
                 `;
+                DOM.tbRegionFilter.value = currentRegion;
             }
 
             if (DOM.tbTimeframeFilter) {
+                const currentTimeframe = DOM.tbTimeframeFilter.value;
                 DOM.tbTimeframeFilter.innerHTML = `
                     <option value="12m">${t('Last 12 months')}</option>
                     <option value="1m">${t('Last 30 days')}</option>
                     <option value="7d">${t('Last 7 days')}</option>
                 `;
+                DOM.tbTimeframeFilter.value = currentTimeframe;
             }
 
             populateCategoryFilters();
@@ -531,7 +547,7 @@
         }
 
         function createTrendCard(trend, delay = 0) {
-            if (!trend || typeof trend.title === 'undefined') { console.error("Invalid trend data passed to createTrendCard:", trend); return document.createElement('div'); }
+            if (!trend || typeof trend.title_en === 'undefined') { console.error("Invalid trend data passed to createTrendCard:", trend); return document.createElement('div'); }
             const trendCard = document.createElement('div');
             trendCard.className = 'trend-card';
             trendCard.dataset.trendId = trend.id;
@@ -564,8 +580,9 @@
             return trendCard;
         }
 
+        // UPDATED: getVisibleTrends will now use `allTrends` directly, which comes from backend after initial filtering
         function getVisibleTrends() {
-            let filtered = [...allTrends];
+            let filtered = [...allTrends]; // allTrends is already filtered by backend based on TB filters
 
             if (currentView === 'forU') {
                 if (!user.isLoggedIn || user.accountType !== 'work') return [];
@@ -584,6 +601,7 @@
                     });
             }
 
+            // For 'main' view, further filter the already backend-filtered allTrends
             if (currentFilter.type === 'category' && currentFilter.value !== 'All') {
                 filtered = filtered.filter(trendItem => trendItem && trendItem.category === currentFilter.value);
             }
@@ -607,7 +625,7 @@
 
             const listElement = currentView === 'main' ? DOM.trendsList : DOM.forUTrendsList;
             const footerButton = currentView === 'main' ? DOM.loadMoreBtn : DOM.forULoadMoreBtn;
-            const trendsToDisplay = getVisibleTrends();
+            const trendsToDisplay = getVisibleTrends(); // Gets filtered trends
 
             if (!listElement) {
                 console.error("Trends list element not found for current view:", currentView);
@@ -658,7 +676,8 @@
             displayTrends();
         }
 
-        function switchView(view) {
+        // UPDATED: switchView now handles fetching data when switching to Trending Board
+        async function switchView(view) {
             currentView = view;
             localStorage.setItem('currentView', view);
             displayedTrends.main = 0;
@@ -670,6 +689,8 @@
 
             if (view === 'main') {
                 if (DOM.mainViewContainer) DOM.mainViewContainer.classList.remove('hidden');
+                // On main view, fetch all trends (or default unfiltered view)
+                allTrends = await fetchLiveTrends({}); // No specific filters for main view initially
             } else if (view === 'forU') {
                 if (!user.isLoggedIn || user.accountType !== 'work') {
                     switchView('main');
@@ -677,6 +698,8 @@
                     return;
                 }
                 if (DOM.forUViewContainer) DOM.forUViewContainer.classList.remove('hidden');
+                // For "For U", fetch all and then filter by user preferences on frontend
+                allTrends = await fetchLiveTrends({});
             } else if (view === 'trendingBoard') {
                 if (!user.isLoggedIn || user.accountType !== 'work') {
                     switchView('main');
@@ -684,16 +707,26 @@
                     return;
                 }
                 if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.remove('hidden');
+                // Reset TB filters and search terms when entering TB view
                 if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.value = 'All';
                 if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.value = '12m';
                 if (DOM.tbRegionFilter) DOM.tbRegionFilter.value = 'global';
                 user.tbSearchTerms = [];
                 if (DOM.tbSearchInput) DOM.tbSearchInput.value = '';
                 if (DOM.tbCompareInput) DOM.tbCompareInput.value = '';
-                createHotTrendsChart();
+                
+                // Fetch trends for Trending Board with current filters
+                const tbFilters = {
+                    region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
+                    category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
+                    timeframe: DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m',
+                    // searchTerm will be handled by specific search in TB, not initial fetch
+                };
+                allTrends = await fetchLiveTrends(tbFilters);
+                createHotTrendsChart(); // Now uses the already filtered `allTrends`
             }
 
-            displayTrends();
+            displayTrends(); // Re-display trends for the current view
             updateActiveNav(view);
             if (DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active')) {
                 DOM.hamburgerMenu.click();
@@ -748,6 +781,7 @@
             }
 
             if (DOM.tbCategoryFilter) {
+                const currentCategory = DOM.tbCategoryFilter.value;
                 DOM.tbCategoryFilter.innerHTML = `<option value="All">${allOptionText}</option>`;
                 categories.forEach(cat => {
                     const option = document.createElement('option');
@@ -755,7 +789,7 @@
                     option.textContent = cat;
                     DOM.tbCategoryFilter.appendChild(option);
                 });
-                DOM.tbCategoryFilter.value = currentFilter.value;
+                DOM.tbCategoryFilter.value = currentCategory;
             }
         }
 
@@ -898,10 +932,11 @@
             return cut.slice(0, cut.lastIndexOf(' ', maxLength) || maxLength) + '…';
         }
 
-        function makeTrendKey(trend) { return `${trend.title || ''}|${trend.source || ''}|${trend.date || ''}`.toLowerCase(); }
+        function makeTrendKey(trend) { return `${getLocalizedTrendText(trend).title || ''}|${trend.source || ''}|${trend.date || ''}`.toLowerCase(); }
         function loadSeenTrends() { try { return JSON.parse(localStorage.getItem('seenTrends') || '[]'); } catch { return []; } }
         function saveSeenTrendKey(key) { try { const seen = new Set(loadSeenTrends()); if (!seen.has(key)) localStorage.setItem('seenTrends', JSON.stringify([...seen, key])); } catch {} }
 
+        // UPDATED: applyTrendOrdering now uses localized title for key
         function applyTrendOrdering() {
             const seenKeys = new Set(loadSeenTrends());
             const unseen = [];
@@ -984,12 +1019,9 @@
                 default:
                     return true; // No specific time filter, all trends are relevant
             }
-            // Compare only dates (ignore time part for simplicity)
-            // Set time to 00:00:00 for accurate day comparison
             trendDate.setHours(0,0,0,0);
             cutoffDate.setHours(0,0,0,0);
 
-            // Ensure trendDate is greater than or equal to cutoffDate (inclusive)
             return trendDate >= cutoffDate;
         }
 
@@ -1002,14 +1034,16 @@
                     d.setDate(now.getDate() - i);
                     labels.push(d.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
-            } else if (timeframe === '1m') { // 30 days
-                for (let i = 29; i >= 0; i -= 5) { // Show roughly 6 points
+            } else if (timeframe === '1m') {
+                for (let i = 29; i >= 0; i -= 5) {
                     const d = new Date(now);
                     d.setDate(now.getDate() - i);
                     labels.push(d.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
-                labels.push(now.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
-            } else { // '12m' - months
+                if (labels.length > 0 && new Date(labels[labels.length -1]).toDateString() !== now.toDateString()) {
+                    labels.push(now.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
+                }
+            } else { // '12m'
                 for (let i = 11; i >= 0; i--) {
                     const d = new Date(now);
                     d.setMonth(now.getMonth() - i);
@@ -1022,19 +1056,21 @@
         function generateSeriesForTimeframe(trend, labels, timeframe) {
             const series = new Array(labels.length).fill(0);
             const trendDate = new Date(trend.date || Date.now());
+            trendDate.setHours(0,0,0,0);
             const peakMetric = getCombinedMetric(trend);
 
             labels.forEach((label, index) => {
                 let currentLabelDate;
                 if (timeframe === '7d' || timeframe === '1m') {
-                    const d = new Date();
+                    const now = new Date();
+                    let datePart = new Date(now);
                     if (timeframe === '7d') {
-                         d.setDate(d.getDate() - (labels.length - 1 - index));
+                        datePart.setDate(now.getDate() - (labels.length - 1 - index));
                     } else if (timeframe === '1m') {
-                         const daysAgo = (labels.length - 1 - index) * (30 / labels.length);
-                         d.setDate(d.getDate() - daysAgo);
+                        const daysAgo = (labels.length - 1 - index) * (30 / labels.length);
+                        datePart.setDate(now.getDate() - daysAgo);
                     }
-                    currentLabelDate = d;
+                    currentLabelDate = new Date(datePart.getFullYear(), datePart.getMonth(), datePart.getDate());
 
                 } else { // 12m
                     const parts = label.split('/');
@@ -1045,17 +1081,35 @@
                     const monthIndex = dateForMonthParse.getMonth();
                     currentLabelDate = new Date(year, monthIndex, 1);
                 }
+                currentLabelDate.setHours(0,0,0,0);
 
-                const diffTime = Math.abs(currentLabelDate.getTime() - trendDate.getTime());
                 let diffUnit;
-                if (timeframe === '7d') diffUnit = diffTime / (1000 * 60 * 60 * 24);
-                else if (timeframe === '1m') diffUnit = diffTime / (1000 * 60 * 60 * 24);
-                else diffUnit = diffTime / (1000 * 60 * 60 * 24 * 30.44);
+                if (timeframe === '7d') diffUnit = Math.abs(currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24);
+                else if (timeframe === '1m') diffUnit = Math.abs(currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24);
+                else diffUnit = Math.abs(currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
 
-                const decayFactor = 0.5;
-                const maxRange = (timeframe === '7d' ? 7 : (timeframe === '1m' ? 30 : 12));
-                let value = peakMetric * Math.exp(-decayFactor * Math.abs(diffUnit - maxRange / 2) / (maxRange / 2));
-                value = Math.max(0, value * (1 + (Math.random() - 0.5) * 0.2));
+                if (currentLabelDate < trendDate) {
+                    series[index] = 0;
+                    return;
+                }
+
+                const timeSinceTrendStart = (currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24);
+                let decayFactor = 0.05;
+                let peakMultiplier = 1;
+
+                if (timeframe === '7d') {
+                    decayFactor = 0.2;
+                    if (timeSinceTrendStart <= 1) peakMultiplier = 1.2;
+                } else if (timeframe === '1m') {
+                    decayFactor = 0.1;
+                    if (timeSinceTrendStart <= 7) peakMultiplier = 1.1;
+                } else { // 12m
+                    decayFactor = 0.05;
+                    if (timeSinceTrendStart <= 30) peakMultiplier = 1.05;
+                }
+                
+                let value = peakMetric * peakMultiplier * Math.exp(-decayFactor * timeSinceTrendStart);
+                value = Math.max(0, value * (1 + (Math.random() - 0.5) * 0.3));
 
                 series[index] = Math.round(value);
             });
@@ -1063,16 +1117,16 @@
             return series;
         }
 
-        function renderTBDashboard(timeframe) {
+        async function renderTBDashboard(timeframe) {
             const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All';
             const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
-            let trendsToDisplay = selectedCategory === 'All' ? allTrends : allTrends.filter(trendItem => trendItem.category === selectedCategory);
-            trendsToDisplay = trendsToDisplay.filter(trendItem => trendItem.region === selectedRegion || selectedRegion === 'global');
-            trendsToDisplay = trendsToDisplay.filter(trendItem => isTrendRelevantForTimeframe(trendItem, timeframe)); // Filter by timeframe
+            
+            // Note: allTrends is already filtered by fetchLiveTrends based on region, category, timeframe
+            // We just need to filter by type (topic/query) for leaderboards
+            let trendsForLeaderboard = [...allTrends];
 
-
-            const topics = trendsToDisplay.filter(trendItem => trendItem.type === 'topic').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
-            const queries = trendsToDisplay.filter(trendItem => trendItem.type === 'query').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+            const topics = trendsForLeaderboard.filter(trendItem => trendItem.type === 'topic').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+            const queries = trendsForLeaderboard.filter(trendItem => trendItem.type === 'query').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
 
             const tbTopicList = document.getElementById('tb-topic-list');
             const tbQueryList = document.getElementById('tb-query-list');
@@ -1098,7 +1152,8 @@
             }
         }
 
-        function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
+        // UPDATED: createHotTrendsChart now triggers data fetch from backend
+        async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             if (!canvas) {
                 console.error("Missing DOM element: #hot-trends-chart");
@@ -1109,7 +1164,6 @@
             const timeframe = DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m';
             const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All';
             const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
-
 
             if (newSearchTerm) {
                 const term = newSearchTerm.trim();
@@ -1135,24 +1189,32 @@
                 console.error("Missing DOM element: #tb-search-chips-container");
             }
 
-
             let trendsForChart = [];
+            const tbFilters = {
+                region: selectedRegion,
+                category: selectedCategory,
+                timeframe: timeframe,
+                // searchTerm will be applied if there are user.tbSearchTerms
+            };
+
+            // If there are search terms, fetch specific trends
             if (user.tbSearchTerms.length > 0) {
-                trendsForChart = allTrends.filter(trendItem =>
-                    user.tbSearchTerms.some(term => getLocalizedTrendText(trendItem).title.toLowerCase().includes(term.toLowerCase())) &&
-                    (selectedCategory === 'All' || trendItem.category === selectedCategory) &&
-                    (selectedRegion === 'global' || trendItem.region === selectedRegion) &&
-                    isTrendRelevantForTimeframe(trendItem, timeframe)
+                // Fetch trends specifically for these search terms (and other filters)
+                // This would ideally be another Netlify function or an extension of fetch-trends
+                // For now, we'll refilter allTrends (which was fetched with category/region/timeframe)
+                // This means search terms are applied client-side *after* initial backend filtering
+                let currentAllTrends = await fetchLiveTrends(tbFilters); // Re-fetch with current filters
+                trendsForChart = currentAllTrends.filter(trendItem =>
+                    user.tbSearchTerms.some(term => getLocalizedTrendText(trendItem).title.toLowerCase().includes(term.toLowerCase()))
                 );
+
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('Interest Over Time');
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
             } else {
-                let trendsToFilter = allTrends.filter(trendItem =>
-                    (selectedCategory === 'All' || trendItem.category === selectedCategory) &&
-                    (selectedRegion === 'global' || trendItem.region === selectedRegion) &&
-                    isTrendRelevantForTimeframe(trendItem, timeframe)
-                );
-                trendsForChart = [...trendsToFilter].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+                // Default view: Top 5 hot trends based on current filters
+                allTrends = await fetchLiveTrends(tbFilters); // Fetch with current filters
+                trendsForChart = [...allTrends].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+                
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t('Top 5 Hot Trends')} - ${t('Interest Over Time')}`;
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
                 renderTBDashboard(timeframe); // Pass timeframe here
@@ -1270,8 +1332,9 @@
             if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
             if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
 
-            allTrends = await fetchLiveTrends();
-            applyTrendOrdering();
+            // Initial fetch of trends (unfiltered or default filtered)
+            allTrends = await fetchLiveTrends({}); 
+            applyTrendOrdering(); // This re-orders based on seen trends, but on the fetched set
             populateCategoryFilters();
             populateHashtagFilters();
             updateAuthUI();
@@ -1279,8 +1342,11 @@
             updateActiveNav(currentView);
             updateClearFilterButtonVisibility();
 
+            // If starting on Trending Board, ensure chart is initialized with appropriate data
             if (currentView === 'trendingBoard') {
-                createHotTrendsChart();
+                createHotTrendsChart(); // This will trigger fetchLiveTrends again with TB filters
+            } else {
+                displayTrends(); // Display trends for main/forU view
             }
 
             document.getElementById('loader')?.classList.add('loader-hidden');
@@ -1339,14 +1405,16 @@
         });
         if (DOM.clearFilterBtn) DOM.clearFilterBtn.addEventListener('click', clearMainViewFilters);
 
-        const debouncedSearch = debounce(() => {
+        const debouncedSearch = debounce(async () => { // Made async
             currentFilter.searchTerm = DOM.searchInput ? DOM.searchInput.value : '';
+            // Fetch trends with current search term and other filters
+            allTrends = await fetchLiveTrends({ searchTerm: currentFilter.searchTerm });
             displayedTrends.main = 0;
             displayTrends();
         }, 300);
         if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedSearch);
 
-        if (DOM.hashtagList) DOM.hashtagList.addEventListener('click', (e) => {
+        if (DOM.hashtagList) DOM.hashtagList.addEventListener('click', async (e) => { // Made async
             if (e.target.matches('.hashtag-btn')) {
                 const hashtag = e.target.dataset.hashtag;
                 if (currentFilter.hashtag === hashtag) {
@@ -1358,32 +1426,15 @@
                 currentFilter.value = 'All';
                 if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
 
-                updateUIForFilter();
+                // Fetch trends with current hashtag and other filters
+                allTrends = await fetchLiveTrends({ hashtag: currentFilter.hashtag });
+                displayedTrends.main = 0;
+                displayTrends();
+                updateUIForFilter(); // This is mostly for UI updates now, as data is fetched
             }
         });
 
-        if (DOM.tbSearchInput) DOM.tbSearchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && this.value.trim() !== '') {
-                createHotTrendsChart(this.value.trim());
-                this.value = '';
-            }
-        });
-
-        if (DOM.tbCompareInput) DOM.tbCompareInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && this.value.trim() !== '') {
-                createHotTrendsChart(null, this.value.trim());
-                this.value = '';
-            }
-        });
-
-        if (DOM.tbSearchChipsContainer) DOM.tbSearchChipsContainer.addEventListener('click', function(e) {
-            if (e.target.classList.contains('tb-search-chip-remove')) {
-                const termToRemove = e.target.dataset.term;
-                user.tbSearchTerms = user.tbSearchTerms.filter(term => term !== termToRemove);
-                createHotTrendsChart();
-            }
-        });
-
+        // UPDATED: TB filters now trigger fetchLiveTrends for new data
         if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
         if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.addEventListener('change', () => createHotTrendsChart());
         if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart());
@@ -1397,14 +1448,24 @@
             }
         });
 
-        document.getElementById('language-toggle')?.addEventListener('click', () => {
+        document.getElementById('language-toggle')?.addEventListener('click', async () => { // Made async
             currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi';
             localStorage.setItem('lang', currentLanguage);
             applyTranslations();
             updateLanguageToggleUI();
-            displayTrends();
+            
+            // Re-fetch data based on current view/filters for correct language localization from backend
             if (currentView === 'trendingBoard') {
-                createHotTrendsChart();
+                await createHotTrendsChart(); // Re-fetches with TB filters
+            } else {
+                // For main/forU, re-fetch with current main filters
+                const mainFilters = { 
+                    category: currentFilter.value, 
+                    searchTerm: currentFilter.searchTerm, 
+                    hashtag: currentFilter.hashtag // You might need to handle hashtag filtering in backend if complex
+                };
+                allTrends = await fetchLiveTrends(mainFilters);
+                displayTrends();
             }
         });
 
