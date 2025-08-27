@@ -348,6 +348,25 @@ async function fetchAppleMusicNewReleasesVN() {
 
 // ================== Entertainment Sources ==================
 
+// YouTube Trending Việt Nam
+async function fetchYouTubeTrendingVN() {
+  const res = await fetchWithTimeout(
+    "https://rsshub.app/youtube/trending/region/VN"
+  );
+  if (!res.ok) return [];
+  const xml = await res.text();
+  return rssItems(xml).map((block) => ({
+    title: getTag(block, "title"),
+    description: getTag(block, "description"),
+    category: "Media",
+    tags: ["YouTube", "Trending", "VN"],
+    votes: 0,
+    source: getTag(block, "link"),
+    date: toDateStr(getTag(block, "pubDate")),
+    submitter: "YouTube Trending VN",
+  }));
+}
+
 // Variety (Entertainment Global)
 async function fetchVariety() {
   const res = await fetchWithTimeout("https://variety.com/feed/");
@@ -632,6 +651,7 @@ exports.handler = async (event) => {
       fetchNewScientist(),
       fetchAppleMusicMostPlayedVN(),
       fetchAppleMusicNewReleasesVN(),
+      fetchYouTubeTrendingVN(),
       fetchVariety(),
       fetchDeadline(),
       fetchKenh14(),
