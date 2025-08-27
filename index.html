@@ -411,97 +411,14 @@
         function openModal(modalId) { document.getElementById(modalId).classList.add('show'); }
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
 
-        // NEW: Function to generate more realistic demo trends
-        function generateDemoTrends() {
-            const categories = ['Technology', 'Finance', 'Healthcare', 'Entertainment', 'Education', 'Environment'];
-            const regions = ['vn', 'us', 'global'];
-            const trendTypes = ['topic', 'query'];
-            const trends = [];
-            let idCounter = 1;
-
-            const now = new Date();
-
-            for (let r = 0; r < regions.length; r++) {
-                for (let c = 0; c < categories.length; c++) {
-                    for (let t = 0; t < trendTypes.length; t++) {
-                        // Generate some recent trends (last 7 days, last 30 days)
-                        for (let i = 0; i < 3; i++) {
-                            const daysAgo = Math.floor(Math.random() * (t === 0 ? 7 : 30)); // Topics more recent, queries broader
-                            const trendDate = new Date(now);
-                            trendDate.setDate(now.getDate() - daysAgo);
-
-                            const baseHotness = Math.random() * 1000 + 500; // Base popularity
-                            const suffix = trendTypes[t] === 'topic' ? ' Innovations' : ' Search Term';
-                            const title_en = `${categories[c]} ${regions[r].toUpperCase()} ${suffix} ${i + 1}`;
-                            const title_vi = `Xu hướng ${categories[c]} ${regions[r].toUpperCase()} ${suffix === ' Innovations' ? 'Mới' : 'Tìm kiếm'} ${i + 1}`;
-
-                            trends.push({
-                                id: idCounter++,
-                                title: title_en, // Default to English title
-                                title_en: title_en,
-                                title_vi: title_vi,
-                                description: `Exploring the latest ${categories[c].toLowerCase()} trends in ${regions[r].toUpperCase()} from the last ${daysAgo + 1} days.`,
-                                description_en: `Exploring the latest ${categories[c].toLowerCase()} trends in ${regions[r].toUpperCase()} from the last ${daysAgo + 1} days.`,
-                                description_vi: `Khám phá các xu hướng ${categories[c].toLowerCase()} mới nhất tại ${regions[r].toUpperCase()} trong ${daysAgo + 1} ngày qua.`,
-                                category: categories[c],
-                                tags: [`${categories[c].toLowerCase()}`, regions[r]],
-                                source: 'https://example.com/source' + idCounter,
-                                submitter: `User${idCounter}`,
-                                date: trendDate.toISOString().split('T')[0],
-                                votes: Math.floor(baseHotness / 100),
-                                type: trendTypes[t],
-                                region: regions[r],
-                                baseHotness: baseHotness, // Store base hotness for chart generation
-                            });
-                        }
-
-                        // Generate some older trends (last 12 months)
-                        for (let i = 0; i < 2; i++) {
-                            const daysAgo = Math.floor(Math.random() * 365) + 31; // Older than 30 days, within 12 months
-                            const trendDate = new Date(now);
-                            trendDate.setDate(now.getDate() - daysAgo);
-
-                            const baseHotness = Math.random() * 800 + 300; // Slightly less hot
-                            const suffix = trendTypes[t] === 'topic' ? ' Developments' : ' Analysis';
-                            const title_en = `${categories[c]} ${regions[r].toUpperCase()} ${suffix} ${i + 1} (Older)`;
-                            const title_vi = `Phát triển ${categories[c]} ${regions[r].toUpperCase()} ${suffix === ' Developments' ? 'Cũ' : 'Phân tích'} ${i + 1} (Cũ hơn)`;
-
-                            trends.push({
-                                id: idCounter++,
-                                title: title_en,
-                                title_en: title_en,
-                                title_vi: title_vi,
-                                description: `Analysis of previous ${categories[c].toLowerCase()} developments in ${regions[r].toUpperCase()} from a few months ago.`,
-                                description_en: `Analysis of previous ${categories[c].toLowerCase()} developments in ${regions[r].toUpperCase()} from a few months ago.`,
-                                description_vi: `Phân tích các phát triển ${categories[c].toLowerCase()} trước đây tại ${regions[r].toUpperCase()} từ vài tháng trước.`,
-                                category: categories[c],
-                                tags: [`${categories[c].toLowerCase()}`, regions[r], 'historical'],
-                                source: 'https://example.com/source' + idCounter,
-                                submitter: `OldUser${idCounter}`,
-                                date: trendDate.toISOString().split('T')[0],
-                                votes: Math.floor(baseHotness / 100),
-                                type: trendTypes[t],
-                                region: regions[r],
-                                baseHotness: baseHotness,
-                            });
-                        }
-                    }
-                }
-            }
-            return trends;
-        }
-
-
         async function fetchLiveTrends() {
-            // In a real app, this would fetch from a real API.
-            // For demo, we generate realistic-looking data.
             try {
-                // Simulate network delay
-                await new Promise(resolve => setTimeout(resolve, 500));
-                const demoTrends = generateDemoTrends();
-                return preprocessTrends(demoTrends);
+                const res = await fetch('/.netlify/functions/fetch-trends');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                return (data.success && Array.isArray(data.trends)) ? preprocessTrends(data.trends) : [];
             } catch (e) {
-                console.warn('Live trends not available (using demo data).', e.message);
+                console.warn('Live trends not available.', e.message);
                 if (DOM.trendsList) {
                     DOM.trendsList.innerHTML = `<p class="modal-body error-message" style="text-align: center;">${t('Could not load trends. Please try again later.')}</p>`;
                 }
@@ -542,23 +459,18 @@
             if (!trends || trends.length === 0) return [];
             trends.forEach((trendItem, i) => {
                 trendItem.id = trendItem.id || i;
-                // Ensure default values if not provided by generateDemoTrends or real API
-                trendItem.submitter = trendItem.submitter || `User${trendItem.id}`;
-                trendItem.source = trendItem.source || `https://example.com/trend/${trendItem.id}`;
-                trendItem.category = trendItem.category || 'General';
-                trendItem.tags = trendItem.tags || [];
-                trendItem.region = trendItem.region || 'global';
-                if (!trendItem.date) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - Math.floor(Math.random() * 365));
-                    trendItem.date = d.toISOString().split('T')[0];
-                }
-                // Recalculate dynamic metrics based on demo/api values
-                trendItem.votes = trendItem.votes || Math.floor((trendItem.baseHotness || 1000) / 100);
                 trendItem.views = (trendItem.votes || 0) * (Math.random() * 50 + 10);
                 trendItem.interactions = (trendItem.votes || 0) * (Math.random() * 5 + 1);
                 trendItem.searches = (trendItem.votes || 0) * (Math.random() * 2 + 0.5);
-                trendItem.type = trendItem.type || (i % 3 === 0 ? 'topic' : 'query');
+                trendItem.type = i % 3 === 0 ? 'topic' : 'query';
+                // Assign a region for demo purposes, if not already present
+                trendItem.region = trendItem.region || (i % 2 === 0 ? 'vn' : (i % 3 === 0 ? 'us' : 'global'));
+                // Assign a plausible date for demo purposes
+                if (!trendItem.date) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - Math.floor(Math.random() * 365)); // Random date within last year
+                    trendItem.date = d.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+                }
             });
             const maxValues = {
                 views: Math.max(1, ...trends.map(trendItem => trendItem.views)),
@@ -596,25 +508,19 @@
             if (DOM.tbQueryListHeader && DOM.tbQueryListHeader.children[0]) DOM.tbQueryListHeader.children[0].textContent = t('Trending Queries');
 
             if (DOM.tbRegionFilter) {
-                // Keep the selected value
-                const currentRegion = DOM.tbRegionFilter.value;
                 DOM.tbRegionFilter.innerHTML = `
                     <option value="global">${t('Global')}</option>
                     <option value="vn">${t('Vietnam')}</option>
                     <option value="us">${t('United States')}</option>
                 `;
-                DOM.tbRegionFilter.value = currentRegion;
             }
 
             if (DOM.tbTimeframeFilter) {
-                // Keep the selected value
-                const currentTimeframe = DOM.tbTimeframeFilter.value;
                 DOM.tbTimeframeFilter.innerHTML = `
                     <option value="12m">${t('Last 12 months')}</option>
                     <option value="1m">${t('Last 30 days')}</option>
                     <option value="7d">${t('Last 7 days')}</option>
                 `;
-                DOM.tbTimeframeFilter.value = currentTimeframe;
             }
 
             populateCategoryFilters();
@@ -842,7 +748,6 @@
             }
 
             if (DOM.tbCategoryFilter) {
-                const currentCategory = DOM.tbCategoryFilter.value; // Preserve current selection
                 DOM.tbCategoryFilter.innerHTML = `<option value="All">${allOptionText}</option>`;
                 categories.forEach(cat => {
                     const option = document.createElement('option');
@@ -850,7 +755,7 @@
                     option.textContent = cat;
                     DOM.tbCategoryFilter.appendChild(option);
                 });
-                DOM.tbCategoryFilter.value = currentCategory; // Restore selection
+                DOM.tbCategoryFilter.value = currentFilter.value;
             }
         }
 
@@ -1098,18 +1003,12 @@
                     labels.push(d.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
             } else if (timeframe === '1m') { // 30 days
-                // Generate labels for roughly every 5 days within the last month
-                for (let i = 29; i >= 0; i -= Math.floor(30/6)) { // ~6 labels
+                for (let i = 29; i >= 0; i -= 5) { // Show roughly 6 points
                     const d = new Date(now);
                     d.setDate(now.getDate() - i);
                     labels.push(d.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
-                // Ensure current day is included if not already
-                const lastLabelDate = new Date(now);
-                lastLabelDate.setDate(now.getDate() - (labels.length - 1) * Math.floor(30/6)); // Rough calculation
-                if (labels.length === 0 || !labels[labels.length-1].includes(now.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }))) {
-                     labels.push(now.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
-                }
+                labels.push(now.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
             } else { // '12m' - months
                 for (let i = 11; i >= 0; i--) {
                     const d = new Date(now);
@@ -1128,62 +1027,14 @@
             labels.forEach((label, index) => {
                 let currentLabelDate;
                 if (timeframe === '7d' || timeframe === '1m') {
-                    // Reconstruct date from label parts for more accurate comparison
-                    const now = new Date(); // Reference for current year
-                    let day, monthShort;
-
+                    const d = new Date();
                     if (timeframe === '7d') {
-                        // Assuming label is like "Jan 1" or "1 Thg 1"
-                        const match = label.match(/(\d+)\s*(?:Thg\s*)?(\w+)/); // Match "1 Thg 1" or "Jan 1"
-                        if (match) {
-                            day = parseInt(match[1]);
-                            monthShort = match[2];
-                            // Try to parse month directly from label, fallback if needed
-                            let parsedMonthIndex;
-                            try {
-                                parsedMonthIndex = new Date(Date.parse(monthShort + " 1, 2000")).getMonth();
-                            } catch (e) {
-                                // Fallback for specific language month parsing issues
-                                console.warn("Could not parse month from label:", label, e);
-                                parsedMonthIndex = trendDate.getMonth(); // Fallback to trend month
-                            }
-                             currentLabelDate = new Date(now.getFullYear(), parsedMonthIndex, day);
-                             // Adjust year if the label month/day is in the future relative to trendDate
-                             if (currentLabelDate > now && trendDate <= now) {
-                                 currentLabelDate.setFullYear(now.getFullYear() - 1);
-                             }
-                        } else {
-                            // Fallback if label format is unexpected, approximate
-                            const d = new Date(now);
-                            d.setDate(now.getDate() - (labels.length - 1 - index));
-                            currentLabelDate = d;
-                        }
-
+                         d.setDate(d.getDate() - (labels.length - 1 - index));
                     } else if (timeframe === '1m') {
-                        // Labels will be similar to 7d, but spread out
-                        const match = label.match(/(\d+)\s*(?:Thg\s*)?(\w+)/);
-                         if (match) {
-                            day = parseInt(match[1]);
-                            monthShort = match[2];
-                            let parsedMonthIndex;
-                            try {
-                                parsedMonthIndex = new Date(Date.parse(monthShort + " 1, 2000")).getMonth();
-                            } catch (e) {
-                                console.warn("Could not parse month from label:", label, e);
-                                parsedMonthIndex = trendDate.getMonth();
-                            }
-                             currentLabelDate = new Date(now.getFullYear(), parsedMonthIndex, day);
-                             if (currentLabelDate > now && trendDate <= now) {
-                                 currentLabelDate.setFullYear(now.getFullYear() - 1);
-                             }
-                        } else {
-                            const d = new Date(now);
-                            const daysAgo = (labels.length - 1 - index) * Math.floor(30/6); // Approximate
-                            d.setDate(now.getDate() - daysAgo);
-                            currentLabelDate = d;
-                        }
+                         const daysAgo = (labels.length - 1 - index) * (30 / labels.length);
+                         d.setDate(d.getDate() - daysAgo);
                     }
-                    currentLabelDate.setHours(0,0,0,0); // For accurate date comparison
+                    currentLabelDate = d;
 
                 } else { // 12m
                     const parts = label.split('/');
@@ -1194,38 +1045,17 @@
                     const monthIndex = dateForMonthParse.getMonth();
                     currentLabelDate = new Date(year, monthIndex, 1);
                 }
-                trendDate.setHours(0,0,0,0); // Also normalize trendDate for consistent comparison
 
                 const diffTime = Math.abs(currentLabelDate.getTime() - trendDate.getTime());
                 let diffUnit;
                 if (timeframe === '7d') diffUnit = diffTime / (1000 * 60 * 60 * 24);
                 else if (timeframe === '1m') diffUnit = diffTime / (1000 * 60 * 60 * 24);
-                else diffUnit = diffTime / (1000 * 60 * 60 * 24 * 30.44); // Average days in month
+                else diffUnit = diffTime / (1000 * 60 * 60 * 24 * 30.44);
 
-                // Calculate decay from peak. Peak is closer to trendDate, not necessarily 'now'.
-                // If currentLabelDate is far from trendDate, value is lower.
-                const distanceToTrendOrigin = Math.abs(currentLabelDate.getTime() - trendDate.getTime());
-                const daysInTimeframe = (timeframe === '7d' ? 7 : (timeframe === '1m' ? 30 : 365));
-                
-                // Scale distance so trends appearing early in the timeframe don't immediately decay to 0
-                // We want peak to be around trendDate, then decay
-                const timeSinceTrendStart = (currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24); // Days since trend start
-                const growthDuration = daysInTimeframe / 4; // E.g., 1/4 of timeframe for growth phase
-                const decayDuration = daysInTimeframe / 2; // E.g., 1/2 of timeframe for decay phase
-
-                let value;
-                if (timeSinceTrendStart < 0) { // Before trend started
-                    value = 0;
-                } else if (timeSinceTrendStart < growthDuration) { // Growth phase
-                    value = peakMetric * (timeSinceTrendStart / growthDuration);
-                } else if (timeSinceTrendStart < (growthDuration + decayDuration)) { // Decay phase
-                    const decayProgress = (timeSinceTrendStart - growthDuration) / decayDuration;
-                    value = peakMetric * (1 - decayProgress);
-                } else { // Past decay phase
-                    value = peakMetric * 0.1; // Minimum residual interest
-                }
-
-                value = Math.max(0, value * (1 + (Math.random() - 0.5) * 0.2)); // Add randomness
+                const decayFactor = 0.5;
+                const maxRange = (timeframe === '7d' ? 7 : (timeframe === '1m' ? 30 : 12));
+                let value = peakMetric * Math.exp(-decayFactor * Math.abs(diffUnit - maxRange / 2) / (maxRange / 2));
+                value = Math.max(0, value * (1 + (Math.random() - 0.5) * 0.2));
 
                 series[index] = Math.round(value);
             });
@@ -1236,18 +1066,13 @@
         function renderTBDashboard(timeframe) {
             const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All';
             const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
-            let trendsToDisplay = allTrends.filter(trendItem =>
-                (selectedCategory === 'All' || trendItem.category === selectedCategory) &&
-                (selectedRegion === 'global' || trendItem.region === selectedRegion) &&
-                isTrendRelevantForTimeframe(trendItem, timeframe)
-            );
+            let trendsToDisplay = selectedCategory === 'All' ? allTrends : allTrends.filter(trendItem => trendItem.category === selectedCategory);
+            trendsToDisplay = trendsToDisplay.filter(trendItem => trendItem.region === selectedRegion || selectedRegion === 'global');
+            trendsToDisplay = trendsToDisplay.filter(trendItem => isTrendRelevantForTimeframe(trendItem, timeframe)); // Filter by timeframe
 
-            const topics = trendsToDisplay.filter(trendItem => trendItem.type === 'topic')
-                                       .sort((a,b) => b.hotnessScore - a.hotnessScore)
-                                       .slice(0, 5);
-            const queries = trendsToDisplay.filter(trendItem => trendItem.type === 'query')
-                                        .sort((a,b) => b.hotnessScore - a.hotnessScore)
-                                        .slice(0, 5);
+
+            const topics = trendsToDisplay.filter(trendItem => trendItem.type === 'topic').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+            const queries = trendsToDisplay.filter(trendItem => trendItem.type === 'query').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
 
             const tbTopicList = document.getElementById('tb-topic-list');
             const tbQueryList = document.getElementById('tb-query-list');
@@ -1330,7 +1155,7 @@
                 trendsForChart = [...trendsToFilter].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t('Top 5 Hot Trends')} - ${t('Interest Over Time')}`;
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
-                renderTBDashboard(timeframe);
+                renderTBDashboard(timeframe); // Pass timeframe here
             }
 
             const labels = generateChartLabels(timeframe);
