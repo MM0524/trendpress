@@ -400,6 +400,7 @@
             tbCategoryFilter: document.getElementById('tb-category-filter'), tbTimeframeFilter: document.getElementById('tb-timeframe-filter'),
             tbRegionFilter: document.getElementById('tb-region-filter'), // Added region filter
             tbSearchChipsContainer: document.getElementById('tb-search-chips-container'),
+            tbDefaultView: document.getElementById('tb-default-view'), // Added for consistency in checks
             tbTopicListHeader: document.getElementById('tb-topic-list-header'), // Added for i18n
             tbQueryListHeader: document.getElementById('tb-query-list-header'), // Added for i18n
             tbChartTitle: document.getElementById('tb-chart-title'), // Added for i18n
@@ -418,7 +419,9 @@
                 return (data.success && Array.isArray(data.trends)) ? preprocessTrends(data.trends) : [];
             } catch (e) {
                 console.warn('Live trends not available.', e.message);
-                DOM.trendsList.innerHTML = `<p class="modal-body error-message" style="text-align: center;">${t('Could not load trends. Please try again later.')}</p>`;
+                if (DOM.trendsList) { // Add check here too
+                    DOM.trendsList.innerHTML = `<p class="modal-body error-message" style="text-align: center;">${t('Could not load trends. Please try again later.')}</p>`;
+                }
                 return [];
             }
         }
@@ -494,20 +497,26 @@
             });
             document.querySelector('.footer-bottom p').textContent = `© 2024 TrendPulse. ${t('All rights reserved.')}`;
             document.getElementById('ai-status-text').textContent = t('AI: Checking...');
-            if (DOM.tbTopicListHeader) DOM.tbTopicListHeader.children[0].textContent = t('Trending Topics');
-            if (DOM.tbQueryListHeader) DOM.tbQueryListHeader.children[0].textContent = t('Trending Queries');
+            if (DOM.tbTopicListHeader && DOM.tbTopicListHeader.children[0]) DOM.tbTopicListHeader.children[0].textContent = t('Trending Topics');
+            if (DOM.tbQueryListHeader && DOM.tbQueryListHeader.children[0]) DOM.tbQueryListHeader.children[0].textContent = t('Trending Queries');
 
             // Translate dynamic options in filters
-            DOM.tbRegionFilter.innerHTML = `
-                <option value="vn">${t('Vietnam')}</option>
-                <option value="us">${t('United States')}</option>
-                <option value="global">${t('Global')}</option>
-            `;
-            DOM.tbTimeframeFilter.innerHTML = `
-                <option value="12m">${t('Last 12 months')}</option>
-                <option value="1m">${t('Last 30 days')}</option>
-                <option value="7d">${t('Last 7 days')}</option>
-            `;
+            if (DOM.tbRegionFilter) {
+                DOM.tbRegionFilter.innerHTML = `
+                    <option value="vn">${t('Vietnam')}</option>
+                    <option value="us">${t('United States')}</option>
+                    <option value="global">${t('Global')}</option>
+                `;
+            }
+
+            if (DOM.tbTimeframeFilter) {
+                DOM.tbTimeframeFilter.innerHTML = `
+                    <option value="12m">${t('Last 12 months')}</option>
+                    <option value="1m">${t('Last 30 days')}</option>
+                    <option value="7d">${t('Last 7 days')}</option>
+                `;
+            }
+
             // Re-populate category filter with translated 'All Categories'
             populateCategoryFilters();
         }
@@ -598,6 +607,11 @@
             const footerButton = currentView === 'main' ? DOM.loadMoreBtn : DOM.forULoadMoreBtn;
             const trendsToDisplay = getVisibleTrends();
 
+            if (!listElement) {
+                console.error("Trends list element not found for current view:", currentView);
+                return;
+            }
+
             listElement.innerHTML = ''; // Clear existing trends
             let trendsRendered = 0;
             const numToDisplay = Math.min(displayedTrends[currentView] || TRENDS_PER_PAGE, trendsToDisplay.length);
@@ -614,7 +628,9 @@
             // Update displayedTrends count
             displayedTrends[currentView] = trendsRendered;
 
-            footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToDisplay.length);
+            if (footerButton) { // Check if footerButton exists
+                footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToDisplay.length);
+            }
 
             // Update leaderboard for "For U" view
             if (currentView === 'forU') {
@@ -625,13 +641,15 @@
 
         function updateClearFilterButtonVisibility() {
             const hasActiveFilter = (currentFilter.value !== 'All' || currentFilter.searchTerm !== '' || currentFilter.hashtag !== '');
-            DOM.clearFilterBtn.classList.toggle('hidden', !hasActiveFilter);
+            if (DOM.clearFilterBtn) { // Add check here
+                DOM.clearFilterBtn.classList.toggle('hidden', !hasActiveFilter);
+            }
         }
 
         function clearMainViewFilters() {
             currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '' };
-            DOM.searchInput.value = '';
-            DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
+            if (DOM.searchInput) DOM.searchInput.value = ''; // Add check here
+            if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active')); // Add check here
             updateUIForFilter();
         }
 
@@ -646,18 +664,20 @@
             displayedTrends.main = 0;
             displayedTrends.forU = 0;
 
-            [DOM.mainViewContainer, DOM.forUViewContainer, DOM.trendingBoardViewContainer].forEach(container => container.classList.add('hidden'));
+            [DOM.mainViewContainer, DOM.forUViewContainer, DOM.trendingBoardViewContainer].forEach(container => {
+                if (container) container.classList.add('hidden'); // Add check here
+            });
 
             if (view === 'main') {
-                DOM.mainViewContainer.classList.remove('hidden');
+                if (DOM.mainViewContainer) DOM.mainViewContainer.classList.remove('hidden'); // Add check here
             } else if (view === 'forU') {
-                DOM.forUViewContainer.classList.remove('hidden');
                 if (!user.isLoggedIn || user.accountType !== 'work') {
                     // Redirect to main if not logged in or not work account
                     switchView('main');
                     openModal('premium-modal');
                     return;
                 }
+                if (DOM.forUViewContainer) DOM.forUViewContainer.classList.remove('hidden'); // Add check here
             } else if (view === 'trendingBoard') {
                 if (!user.isLoggedIn || user.accountType !== 'work') {
                     // Redirect to main if not logged in or not work account
@@ -665,41 +685,41 @@
                     openModal('premium-modal');
                     return;
                 }
-                DOM.trendingBoardViewContainer.classList.remove('hidden');
+                if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.remove('hidden'); // Add check here
                 // Ensure default TB filters are set and chart is initialized
-                DOM.tbCategoryFilter.value = 'All';
-                DOM.tbTimeframeFilter.value = '12m';
-                DOM.tbRegionFilter.value = 'global'; // Default to global
+                if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.value = 'All'; // Add check here
+                if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.value = '12m'; // Add check here
+                if (DOM.tbRegionFilter) DOM.tbRegionFilter.value = 'global'; // Default to global // Add check here
                 user.tbSearchTerms = []; // Clear search terms
-                DOM.tbSearchInput.value = '';
-                DOM.tbCompareInput.value = '';
+                if (DOM.tbSearchInput) DOM.tbSearchInput.value = ''; // Add check here
+                if (DOM.tbCompareInput) DOM.tbCompareInput.value = ''; // Add check here
                 createHotTrendsChart();
             }
 
             displayTrends();
             updateActiveNav(view);
             // Close hamburger menu on navigation
-            if (DOM.hamburgerMenu.classList.contains('active')) {
+            if (DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active')) { // Add check here
                 DOM.hamburgerMenu.click();
             }
         }
 
         function updateAuthUI() {
-            DOM.body.className = '';
+            if (DOM.body) DOM.body.className = ''; // Add check here
             if (user.isLoggedIn) {
-                DOM.body.classList.add('logged-in');
-                DOM.signInBtn.classList.add('hidden');
-                DOM.userMenu.classList.remove('hidden');
-                DOM.userEmailBtn.textContent = user.email;
-                DOM.dropdownHeader.textContent = user.email;
-                DOM.navForU.classList.toggle('hidden', user.accountType !== 'work');
-                DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType !== 'personal'); // Show work option if signed in with personal
-                if (user.accountType === 'work') DOM.body.classList.add('work-account-view');
+                if (DOM.body) DOM.body.classList.add('logged-in'); // Add check here
+                if (DOM.signInBtn) DOM.signInBtn.classList.add('hidden'); // Add check here
+                if (DOM.userMenu) DOM.userMenu.classList.remove('hidden'); // Add check here
+                if (DOM.userEmailBtn) DOM.userEmailBtn.textContent = user.email; // Add check here
+                if (DOM.dropdownHeader) DOM.dropdownHeader.textContent = user.email; // Add check here
+                if (DOM.navForU) DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); // Add check here
+                if (DOM.dropdownWorkSchool) DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType !== 'personal'); // Show work option if signed in with personal // Add check here
+                if (user.accountType === 'work' && DOM.body) DOM.body.classList.add('work-account-view'); // Add check here
             } else {
-                DOM.signInBtn.classList.remove('hidden');
-                DOM.userMenu.classList.add('hidden');
-                DOM.navForU.classList.add('hidden');
-                DOM.body.classList.remove('work-account-view');
+                if (DOM.signInBtn) DOM.signInBtn.classList.remove('hidden'); // Add check here
+                if (DOM.userMenu) DOM.userMenu.classList.add('hidden'); // Add check here
+                if (DOM.navForU) DOM.navForU.classList.add('hidden'); // Add check here
+                if (DOM.body) DOM.body.classList.remove('work-account-view'); // Add check here
             }
             displayTrends(); // Re-display trends to update follow buttons based on login state
         }
@@ -727,27 +747,37 @@
         function populateCategoryFilters() {
             categories = [...new Set(allTrends.map(t => t.category))].sort();
             const allOptionText = t('All Categories');
-            DOM.filterButtonsContainer.innerHTML = [`<button class="filter-btn ${currentFilter.value === 'All' ? 'active' : ''}" data-filter="All">${allOptionText}</button>`, ...categories.map(category => `<button class="filter-btn ${category === currentFilter.value ? 'active' : ''}" data-filter="${category}">${category}</button>`)].join('');
+            if (DOM.filterButtonsContainer) { // Add check here
+                DOM.filterButtonsContainer.innerHTML = [`<button class="filter-btn ${currentFilter.value === 'All' ? 'active' : ''}" data-filter="All">${allOptionText}</button>`, ...categories.map(category => `<button class="filter-btn ${category === currentFilter.value ? 'active' : ''}" data-filter="${category}">${category}</button>`)].join('');
+            }
 
             // Also update tbCategoryFilter
-            DOM.tbCategoryFilter.innerHTML = `<option value="All">${allOptionText}</option>`;
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                DOM.tbCategoryFilter.appendChild(option);
-            });
-            DOM.tbCategoryFilter.value = currentFilter.value; // Set the current value
+            if (DOM.tbCategoryFilter) { // Add check here
+                DOM.tbCategoryFilter.innerHTML = `<option value="All">${allOptionText}</option>`;
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    DOM.tbCategoryFilter.appendChild(option);
+                });
+                DOM.tbCategoryFilter.value = currentFilter.value; // Set the current value
+            }
         }
 
         function populatePreferenceCheckboxes() {
-            DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}" ${user.preferences.includes(category) ? 'checked' : ''}> ${category}</label></div>`).join('');
+            if (DOM.preferencesGrid) { // Add check here
+                DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}" ${user.preferences.includes(category) ? 'checked' : ''}> ${category}</label></div>`).join('');
+            }
         }
 
         function updateUIForFilter() {
-            DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value));
-            DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.hashtag === currentFilter.hashtag));
-            DOM.searchInput.value = currentFilter.searchTerm;
+            if (DOM.filterButtonsContainer) { // Add check here
+                DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value));
+            }
+            if (DOM.hashtagList) { // Add check here
+                DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.hashtag === currentFilter.hashtag));
+            }
+            if (DOM.searchInput) DOM.searchInput.value = currentFilter.searchTerm; // Add check here
 
             displayedTrends.main = 0; // Reset display count for main view
             displayTrends();
@@ -760,7 +790,9 @@
                 return acc;
             }, {});
             const popularHashtags = Object.entries(hashtagCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(entry => entry[0]);
-            DOM.hashtagList.innerHTML = popularHashtags.map(tag => `<button class="hashtag-btn ${currentFilter.hashtag === tag ? 'active' : ''}" data-hashtag="${tag}">#${tag}</button>`).join('');
+            if (DOM.hashtagList) { // Add check here
+                DOM.hashtagList.innerHTML = popularHashtags.map(tag => `<button class="hashtag-btn ${currentFilter.hashtag === tag ? 'active' : ''}" data-hashtag="${tag}">#${tag}</button>`).join('');
+            }
         }
 
         function generateCategoryLeaderboards(containerId, categoriesToShow) {
@@ -797,6 +829,7 @@
 
         function renderSummaryAnalysis(analysisData) {
             const modalBody = document.getElementById('ai-insight-body');
+            if (!modalBody) return; // Add check here
             modalBody.classList.remove('error-message');
             const chartData = generateChartDataFromScore(analysisData.successScore);
             modalBody.innerHTML = `
@@ -808,14 +841,22 @@
 
         function renderDetailedAnalysis(htmlContent) {
             const modalBody = document.getElementById('ai-insight-body');
+            if (!modalBody) return; // Add check here
             modalBody.classList.remove('error-message');
             modalBody.innerHTML = htmlContent; // Content is already sanitized in analyzeTrendSecurely
         }
 
         function renderAnalysisChart(historicalData, futureProjection) {
-            if (analysisChart) analysisChart.destroy();
             const canvas = document.createElement('canvas');
-            document.getElementById('ai-insight-body').appendChild(canvas);
+            const insightBody = document.getElementById('ai-insight-body');
+            if (!insightBody) {
+                console.error("AI Insight body not found for chart rendering.");
+                return;
+            }
+
+            if (analysisChart) analysisChart.destroy();
+            
+            insightBody.appendChild(canvas);
             const labels = ['-1d', '-6h', '-3h', 'Now', '+1d', '+4d', '+7d'];
             const lastHistoricalPoint = historicalData[historicalData.length - 1];
             const projectionData = [null, null, null, lastHistoricalPoint, futureProjection[0] || null, futureProjection[1] || null, futureProjection[2] || null];
@@ -908,24 +949,24 @@
                 const statusIndicator = document.getElementById('ai-status-indicator');
                 const statusText = document.getElementById('ai-status-text');
                 const isOnline = response.ok;
-                statusIndicator.classList.toggle('online', isOnline);
-                statusIndicator.classList.toggle('offline', !isOnline);
-                statusText.textContent = t(isOnline ? 'AI: Ready' : 'AI: Unavailable');
+                if (statusIndicator) statusIndicator.classList.toggle('online', isOnline); // Add check here
+                if (statusIndicator) statusIndicator.classList.toggle('offline', !isOnline); // Add check here
+                if (statusText) statusText.textContent = t(isOnline ? 'AI: Ready' : 'AI: Unavailable'); // Add check here
             } catch (error) {
                 const statusIndicator = document.getElementById('ai-status-indicator');
                 const statusText = document.getElementById('ai-status-text');
-                statusIndicator.className = 'ai-status-indicator offline';
-                statusText.textContent = t('AI: Connection error');
+                if (statusIndicator) statusIndicator.className = 'ai-status-indicator offline'; // Add check here
+                if (statusText) statusText.textContent = t('AI: Connection error'); // Add check here
                 console.error('AI Status Check Failed:', error);
             }
         }
 
         function updateActiveNav(activeView) {
             document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active-link'));
-            if (activeView === 'main') { DOM.navTopTrends.classList.add('active-link'); }
-            else if (activeView === 'forU') { DOM.navForU.querySelector('a').classList.add('active-link'); }
-            else if (activeView === 'trendingBoard') { DOM.navTrendingBoard.classList.add('active-link'); }
-            else if (activeView === 'about') { DOM.navAbout.classList.add('active-link'); } // Added for about page
+            if (activeView === 'main') { if (DOM.navTopTrends) DOM.navTopTrends.classList.add('active-link'); } // Add check here
+            else if (activeView === 'forU') { if (DOM.navForU && DOM.navForU.querySelector('a')) DOM.navForU.querySelector('a').classList.add('active-link'); } // Add check here
+            else if (activeView === 'trendingBoard') { if (DOM.navTrendingBoard) DOM.navTrendingBoard.classList.add('active-link'); } // Add check here
+            else if (activeView === 'about') { if (DOM.navAbout) DOM.navAbout.classList.add('active-link'); } // Added for about page // Add check here
         }
 
         // --- Trending Board specific functions ---
@@ -1002,25 +1043,42 @@
         }
 
         function renderTBDashboard() {
-            const selectedCategory = DOM.tbCategoryFilter.value;
+            const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All'; // Add check here
+            const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global'; // Add check here
             let trendsToDisplay = selectedCategory === 'All' ? allTrends : allTrends.filter(t => t.category === selectedCategory);
-            trendsToDisplay = trendsToDisplay.filter(t => t.region === DOM.tbRegionFilter.value || DOM.tbRegionFilter.value === 'global');
+            trendsToDisplay = trendsToDisplay.filter(t => t.region === selectedRegion || selectedRegion === 'global');
 
             const topics = trendsToDisplay.filter(t => t.type === 'topic').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
             const queries = trendsToDisplay.filter(t => t.type === 'query').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
 
-            document.getElementById('tb-topic-list').innerHTML = `<ol>${topics.map((t, i) => `<li><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(t).title}</span><span class="growth">${t('Rising')}</span></li>`).join('')}</ol>`;
-            document.getElementById('tb-query-list').innerHTML = `<ol>${queries.map((t, i) => `<li><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(t).title}</span><span class="growth">+${Math.floor(Math.random() * 4000)}%</span></li>`).join('')}</ol>`;
+            const tbTopicList = document.getElementById('tb-topic-list');
+            const tbQueryList = document.getElementById('tb-query-list');
+
+            if (tbTopicList) { // Add check here
+                tbTopicList.innerHTML = `<ol>${topics.map((t, i) => `<li><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(t).title}</span><span class="growth">${t('Rising')}</span></li>`).join('')}</ol>`;
+            } else {
+                console.error("Missing DOM element: #tb-topic-list");
+            }
+            
+            if (tbQueryList) { // Add check here
+                tbQueryList.innerHTML = `<ol>${queries.map((t, i) => `<li><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(t).title}</span><span class="growth">+${Math.floor(Math.random() * 4000)}%</span></li>`).join('')}</ol>`;
+            } else {
+                console.error("Missing DOM element: #tb-query-list");
+            }
         }
 
         function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
-            if (!canvas) return;
+            if (!canvas) {
+                console.error("Missing DOM element: #hot-trends-chart");
+                return;
+            }
             if (hotTrendsChart) hotTrendsChart.destroy();
 
-            const timeframe = DOM.tbTimeframeFilter.value;
-            const selectedCategory = DOM.tbCategoryFilter.value;
-            const selectedRegion = DOM.tbRegionFilter.value;
+            const timeframe = DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m'; // Add check here
+            const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All'; // Add check here
+            const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global'; // Add check here
+
 
             // Manage search terms for chips and chart
             if (newSearchTerm) {
@@ -1036,24 +1094,28 @@
                 }
             }
 
-            const chartTerms = [...user.tbSearchTerms];
-            DOM.tbSearchChipsContainer.innerHTML = chartTerms.map(term => `
-                <span class="tb-search-chip">${truncateText(term, 20)}
-                    <button class="tb-search-chip-remove" data-term="${term}">&times;</button>
-                </span>
-            `).join('');
-            DOM.tbSearchChipsContainer.classList.toggle('hidden', chartTerms.length === 0);
+            if (DOM.tbSearchChipsContainer) { // Add check here
+                DOM.tbSearchChipsContainer.innerHTML = user.tbSearchTerms.map(term => `
+                    <span class="tb-search-chip">${truncateText(term, 20)}
+                        <button class="tb-search-chip-remove" data-term="${term}">&times;</button>
+                    </span>
+                `).join('');
+                DOM.tbSearchChipsContainer.classList.toggle('hidden', user.tbSearchTerms.length === 0);
+            } else {
+                console.error("Missing DOM element: #tb-search-chips-container");
+            }
+
 
             let trendsForChart = [];
-            if (chartTerms.length > 0) {
+            if (user.tbSearchTerms.length > 0) {
                 // Filter by search terms, then by category and region
                 trendsForChart = allTrends.filter(t =>
-                    chartTerms.some(term => getLocalizedTrendText(t).title.toLowerCase().includes(term.toLowerCase())) &&
+                    user.tbSearchTerms.some(term => getLocalizedTrendText(t).title.toLowerCase().includes(term.toLowerCase())) &&
                     (selectedCategory === 'All' || t.category === selectedCategory) &&
                     (selectedRegion === 'global' || t.region === selectedRegion)
                 );
-                DOM.tbChartTitle.textContent = t('Interest Over Time');
-                DOM.tbDefaultView.classList.add('hidden');
+                if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('Interest Over Time'); // Add check here
+                if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden'); // Add check here
             } else {
                 // Default view: Top 5 hot trends based on category and region
                 let trendsToFilter = allTrends.filter(t =>
@@ -1061,8 +1123,8 @@
                     (selectedRegion === 'global' || t.region === selectedRegion)
                 );
                 trendsForChart = [...trendsToFilter].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
-                DOM.tbChartTitle.textContent = `${t('Top 5 Hot Trends')} - ${t('Interest Over Time')}`;
-                DOM.tbDefaultView.classList.remove('hidden');
+                if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t('Top 5 Hot Trends')} - ${t('Interest Over Time')}`; // Add check here
+                if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden'); // Add check here
                 renderTBDashboard(); // Rerender leaderboards if no search terms
             }
 
@@ -1124,6 +1186,7 @@
                     const titleKey = isSummary ? 'AI Analysis Summary for' : 'AI Deep Dive for';
                     document.getElementById('ai-insight-title').textContent = `${t(titleKey)} "${truncateText(getLocalizedTrendText(trend).title, 20)}"`;
                     const modalBody = document.getElementById('ai-insight-body');
+                    if (!modalBody) return; // Add check here
                     modalBody.classList.remove('error-message');
                     modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align:center; margin-top:1rem;">${t('Analyzing trend...')}</p>`;
                     openModal('ai-insight-modal');
@@ -1131,8 +1194,10 @@
                         if (isSummary) { renderSummaryAnalysis(data); }
                         else { renderDetailedAnalysis(data); }
                     }).catch(err => {
-                        modalBody.classList.add('error-message');
-                        modalBody.innerHTML = `<p style="text-align: center;">${t('Unable to analyze trend.')}<br><small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small></p>`;
+                        if (modalBody) { // Add check here
+                            modalBody.classList.add('error-message');
+                            modalBody.innerHTML = `<p style="text-align: center;">${t('Unable to analyze trend.')}<br><small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small></p>`;
+                        }
                     });
                 } else if (targetElement.matches('.tag.hashtag')) {
                     currentFilter.type = 'hashtag';
@@ -1151,16 +1216,20 @@
                 if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
 
                 const analysisType = 'detailed'; // Leaderboard clicks usually imply deeper dive
-                document.getElementById('ai-insight-title').textContent = `${t('AI Deep Dive for')} "${truncateText(getLocalizedTrendText(trend).title, 20)}"`;
+                const insightTitle = document.getElementById('ai-insight-title');
+                if (insightTitle) insightTitle.textContent = `${t('AI Deep Dive for')} "${truncateText(getLocalizedTrendText(trend).title, 20)}"`; // Add check here
                 const modalBody = document.getElementById('ai-insight-body');
+                if (!modalBody) return; // Add check here
                 modalBody.classList.remove('error-message');
                 modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align:center; margin-top:1rem;">${t('Analyzing trend...')}</p>`;
                 openModal('ai-insight-modal');
                 analyzeTrendSecurely(trend, analysisType).then(data => {
                     renderDetailedAnalysis(data);
                 }).catch(err => {
-                    modalBody.classList.add('error-message');
-                    modalBody.innerHTML = `<p style="text-align: center;">${t('Unable to analyze trend.')}<br><small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small></p>`;
+                    if (modalBody) { // Add check here
+                        modalBody.classList.add('error-message');
+                        modalBody.innerHTML = `<p style="text-align: center;">${t('Unable to analyze trend.')}<br><small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small></p>`;
+                    }
                 });
             }
         }
@@ -1169,9 +1238,10 @@
             applyTranslations();
             updateLanguageToggleUI();
 
-            DOM.mainViewContainer.classList.toggle('hidden', currentView !== 'main');
-            DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
-            DOM.trendingBoardViewContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
+            // Add checks for view containers
+            if (DOM.mainViewContainer) DOM.mainViewContainer.classList.toggle('hidden', currentView !== 'main');
+            if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
+            if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
 
             allTrends = await fetchLiveTrends();
             applyTrendOrdering();
@@ -1190,25 +1260,25 @@
         }
 
         // --- Event Listeners ---
-        DOM.hamburgerMenu.addEventListener('click', () => DOM.mainNav.classList.toggle('nav-active'));
-        DOM.logo.addEventListener('click', () => switchView('main'));
-        DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
-        DOM.navForU.addEventListener('click', (e) => { e.preventDefault(); switchView('forU'); });
-        DOM.signInBtn.addEventListener('click', () => openModal('login-choice-modal'));
-        DOM.userEmailBtn.addEventListener('click', () => DOM.userDropdown.classList.toggle('show'));
-        DOM.dropdownSignOut.addEventListener('click', () => {
+        if (DOM.hamburgerMenu) DOM.hamburgerMenu.addEventListener('click', () => { if (DOM.mainNav) DOM.mainNav.classList.toggle('nav-active'); });
+        if (DOM.logo) DOM.logo.addEventListener('click', () => switchView('main'));
+        if (DOM.navTopTrends) DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
+        if (DOM.navForU) DOM.navForU.addEventListener('click', (e) => { e.preventDefault(); switchView('forU'); });
+        if (DOM.signInBtn) DOM.signInBtn.addEventListener('click', () => openModal('login-choice-modal'));
+        if (DOM.userEmailBtn) DOM.userEmailBtn.addEventListener('click', () => { if (DOM.userDropdown) DOM.userDropdown.classList.toggle('show'); });
+        if (DOM.dropdownSignOut) DOM.dropdownSignOut.addEventListener('click', () => {
             user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [], tbSearchTerms: [] };
             updateAuthUI();
-            DOM.userDropdown.classList.remove('show');
+            if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
             switchView('main');
         });
         // If personal account, offer to sign in with work/school
-        DOM.dropdownWorkSchool.addEventListener('click', () => {
+        if (DOM.dropdownWorkSchool) DOM.dropdownWorkSchool.addEventListener('click', () => {
              signIn('work');
-             DOM.userDropdown.classList.remove('show');
+             if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
         });
-        DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
-        DOM.navTrendingBoard.addEventListener('click', (e) => { e.preventDefault(); if (user.isLoggedIn && user.accountType === 'work') { switchView('trendingBoard'); } else { openModal('premium-modal'); } });
+        if (DOM.navAbout) DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
+        if (DOM.navTrendingBoard) DOM.navTrendingBoard.addEventListener('click', (e) => { e.preventDefault(); if (user.isLoggedIn && user.accountType === 'work') { switchView('trendingBoard'); } else { openModal('premium-modal'); } });
         document.getElementById('premium-login-btn')?.addEventListener('click', () => { closeModal('premium-modal'); openModal('login-choice-modal'); });
         DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => {
             closeModal(btn.closest('.modal-overlay').id);
@@ -1220,9 +1290,9 @@
         }));
         document.getElementById('login-google-btn')?.addEventListener('click', () => signIn('personal'));
         document.getElementById('login-work-btn')?.addEventListener('click', () => signIn('work'));
-        DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
-        DOM.forULoadMoreBtn.addEventListener('click', loadMoreTrends);
-        DOM.savePreferencesBtn.addEventListener('click', () => {
+        if (DOM.loadMoreBtn) DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
+        if (DOM.forULoadMoreBtn) DOM.forULoadMoreBtn.addEventListener('click', loadMoreTrends);
+        if (DOM.savePreferencesBtn) DOM.savePreferencesBtn.addEventListener('click', () => {
             user.preferences = [...document.querySelectorAll('#preferences-grid input:checked')].map(cb => cb.value);
             user.hasSetPreferences = true;
             closeModal('preferences-modal');
@@ -1230,28 +1300,30 @@
         });
 
         // Event delegation for trend cards and leaderboard items
-        [DOM.trendsList, DOM.forUTrendsList, document.getElementById('for-u-leaderboards')].forEach(list => list.addEventListener('click', handleInteraction));
+        [DOM.trendsList, DOM.forUTrendsList, document.getElementById('for-u-leaderboards')].forEach(list => {
+            if (list) list.addEventListener('click', handleInteraction);
+        });
 
-        DOM.filterButtonsContainer.addEventListener('click', (e) => {
+        if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.addEventListener('click', (e) => {
             if (e.target.matches('.filter-btn')) {
                 currentFilter.type = 'category';
                 currentFilter.value = e.target.dataset.filter;
                 currentFilter.hashtag = ''; // Clear hashtag filter when category is selected
-                DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active')); // Deactivate hashtag buttons
+                if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active')); // Deactivate hashtag buttons
                 updateUIForFilter();
             }
         });
-        DOM.clearFilterBtn.addEventListener('click', clearMainViewFilters);
+        if (DOM.clearFilterBtn) DOM.clearFilterBtn.addEventListener('click', clearMainViewFilters);
 
         // Debounced search input
         const debouncedSearch = debounce(() => {
-            currentFilter.searchTerm = DOM.searchInput.value;
+            currentFilter.searchTerm = DOM.searchInput ? DOM.searchInput.value : ''; // Add check here
             displayedTrends.main = 0; // Reset pagination for search results
             displayTrends();
         }, 300); // 300ms debounce
-        DOM.searchInput.addEventListener('input', debouncedSearch);
+        if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedSearch); // Add check here
 
-        DOM.hashtagList.addEventListener('click', (e) => {
+        if (DOM.hashtagList) DOM.hashtagList.addEventListener('click', (e) => {
             if (e.target.matches('.hashtag-btn')) {
                 const hashtag = e.target.dataset.hashtag;
                 if (currentFilter.hashtag === hashtag) {
@@ -1261,7 +1333,7 @@
                 }
                 currentFilter.type = 'hashtag';
                 currentFilter.value = 'All'; // Clear category filter when hashtag is selected
-                DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active')); // Deactivate category buttons
+                if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active')); // Deactivate category buttons
 
                 displayedTrends.main = 0;
                 updateUIForFilter(); // Updates both filter buttons and re-displays trends
@@ -1269,21 +1341,21 @@
         });
 
         // Trending Board Event Listeners
-        DOM.tbSearchInput.addEventListener('keypress', function(e) {
+        if (DOM.tbSearchInput) DOM.tbSearchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && this.value.trim() !== '') {
                 createHotTrendsChart(this.value.trim());
                 this.value = ''; // Clear input after adding
             }
         });
 
-        DOM.tbCompareInput.addEventListener('keypress', function(e) {
+        if (DOM.tbCompareInput) DOM.tbCompareInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && this.value.trim() !== '') {
                 createHotTrendsChart(null, this.value.trim());
                 this.value = ''; // Clear input after adding
             }
         });
 
-        DOM.tbSearchChipsContainer.addEventListener('click', function(e) {
+        if (DOM.tbSearchChipsContainer) DOM.tbSearchChipsContainer.addEventListener('click', function(e) {
             if (e.target.classList.contains('tb-search-chip-remove')) {
                 const termToRemove = e.target.dataset.term;
                 user.tbSearchTerms = user.tbSearchTerms.filter(term => term !== termToRemove);
@@ -1291,17 +1363,17 @@
             }
         });
 
-        DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
-        DOM.tbTimeframeFilter.addEventListener('change', () => createHotTrendsChart());
-        DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart()); // Added event listener for region filter
+        if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
+        if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.addEventListener('change', () => createHotTrendsChart());
+        if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart()); // Added event listener for region filter
 
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            if (DOM.userMenu && !DOM.userMenu.contains(e.target)) {
+            if (DOM.userMenu && DOM.userDropdown && !DOM.userMenu.contains(e.target)) {
                 DOM.userDropdown.classList.remove('show');
             }
             // Close hamburger menu if click outside when open
-            if (DOM.mainNav.classList.contains('nav-active') && !DOM.mainNav.contains(e.target) && !DOM.hamburgerMenu.contains(e.target)) {
+            if (DOM.mainNav && DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active') && !DOM.mainNav.contains(e.target) && !DOM.hamburgerMenu.contains(e.target)) {
                  DOM.hamburgerMenu.click();
             }
         });
