@@ -385,7 +385,7 @@
         const DOM = {
             body: document.body, mainNav: document.getElementById('main-nav'), hamburgerMenu: document.getElementById('hamburger-menu'),
             logo: document.getElementById('logo'), signInBtn: document.getElementById('sign-in-btn'), userMenu: document.getElementById('user-menu'),
-            userEmailBtn: document.getElementById('user-email-btn'), dropdownHeader: document.getElementById('dropdown-user-email'), userDropdown: document.getElementById('user-dropdown'),
+            userEmailBtn: document.getElementById('user-email-btn'), dropdownHeader: document.getElementById('dropdown-user-email'), userDropdown: document.getElementById('dropdown-user-dropdown'), // Sửa ID này
             dropdownSignOut: document.getElementById('dropdown-sign-out'), dropdownWorkSchool: document.getElementById('dropdown-work-school'),
             navTopTrends: document.getElementById('nav-top-trends'), navTrendingBoard: document.getElementById('nav-trending-board'),
             navForU: document.getElementById('nav-for-u'), navAbout: document.getElementById('nav-about'),
@@ -398,12 +398,12 @@
             searchInput: document.getElementById('search-input'), hashtagList: document.getElementById('hashtag-list'),
             tbSearchInput: document.getElementById('tb-search-input'), tbCompareInput: document.getElementById('tb-compare-input'),
             tbCategoryFilter: document.getElementById('tb-category-filter'), tbTimeframeFilter: document.getElementById('tb-timeframe-filter'),
-            tbRegionFilter: document.getElementById('tb-region-filter'), // Added region filter
+            tbRegionFilter: document.getElementById('tb-region-filter'),
             tbSearchChipsContainer: document.getElementById('tb-search-chips-container'),
-            tbDefaultView: document.getElementById('tb-default-view'), // Added for consistency in checks
-            tbTopicListHeader: document.getElementById('tb-topic-list-header'), // Added for i18n
-            tbQueryListHeader: document.getElementById('tb-query-list-header'), // Added for i18n
-            tbChartTitle: document.getElementById('tb-chart-title'), // Added for i18n
+            tbDefaultView: document.getElementById('tb-default-view'),
+            tbTopicListHeader: document.getElementById('tb-topic-list-header'),
+            tbQueryListHeader: document.getElementById('tb-query-list-header'),
+            tbChartTitle: document.getElementById('tb-chart-title'),
         };
 
         function t(key) { return (translations[currentLanguage] && translations[currentLanguage][key]) || key; }
@@ -419,7 +419,7 @@
                 return (data.success && Array.isArray(data.trends)) ? preprocessTrends(data.trends) : [];
             } catch (e) {
                 console.warn('Live trends not available.', e.message);
-                if (DOM.trendsList) { // Add check here too
+                if (DOM.trendsList) {
                     DOM.trendsList.innerHTML = `<p class="modal-body error-message" style="text-align: center;">${t('Could not load trends. Please try again later.')}</p>`;
                 }
                 return [];
@@ -439,17 +439,16 @@
                 if (analysisType === 'summary') {
                     try { return JSON.parse(result.data); } catch (e) { console.error("Failed to parse AI summary JSON:", result.data); throw new Error("AI returned an invalid summary format."); }
                 }
-                // Sanitize the HTML content from AI before rendering
                 const cleanHtml = DOMPurify.sanitize(result.data, { USE_PROFILES: { html: true } });
                 const formatDetailedInsight = (markdownText) => markdownText
                     .replace(/### (.*?)\n/g, '<h4>$1</h4>')
                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                     .replace(/^\* (.*$)/gm, '<li>$1</li>')
-                    .replace(/<\/li>\n/g, '</li>') // Clean up extra newlines after list items
-                    .replace(/(\r\n|\n|\r)/gm, '<br>') // Replace newlines with <br> for general text
-                    .replace(/<br><br><li>/g, '<ul><li>') // Start ul properly
-                    .replace(/<\/li><br><h4>/g, '</li></ul><h4>') // Close ul before h4
-                    .concat('</ul>'); // Ensure last ul is closed if it exists
+                    .replace(/<\/li>\n/g, '</li>')
+                    .replace(/(\r\n|\n|\r)/gm, '<br>')
+                    .replace(/<br><br><li>/g, '<ul><li>')
+                    .replace(/<\/li><br><h4>/g, '</li></ul><h4>')
+                    .concat('</ul>');
 
                 return formatDetailedInsight(cleanHtml);
 
@@ -459,7 +458,7 @@
         function preprocessTrends(trends) {
             if (!trends || trends.length === 0) return [];
             trends.forEach((trend, i) => {
-                trend.id = trend.id || i; // Ensure each trend has an ID
+                trend.id = trend.id || i;
                 trend.views = (trend.votes || 0) * (Math.random() * 50 + 10);
                 trend.interactions = (trend.votes || 0) * (Math.random() * 5 + 1);
                 trend.searches = (trend.votes || 0) * (Math.random() * 2 + 0.5);
@@ -500,7 +499,6 @@
             if (DOM.tbTopicListHeader && DOM.tbTopicListHeader.children[0]) DOM.tbTopicListHeader.children[0].textContent = t('Trending Topics');
             if (DOM.tbQueryListHeader && DOM.tbQueryListHeader.children[0]) DOM.tbQueryListHeader.children[0].textContent = t('Trending Queries');
 
-            // Translate dynamic options in filters
             if (DOM.tbRegionFilter) {
                 DOM.tbRegionFilter.innerHTML = `
                     <option value="vn">${t('Vietnam')}</option>
@@ -517,7 +515,6 @@
                 `;
             }
 
-            // Re-populate category filter with translated 'All Categories'
             populateCategoryFilters();
         }
 
@@ -555,25 +552,23 @@
                     </div>
                 </div>`;
             
-            setTimeout(() => trendCard.classList.add('animated'), delay); // Add animation class with a delay
+            setTimeout(() => trendCard.classList.add('animated'), delay);
             return trendCard;
         }
 
         function getVisibleTrends() {
             let filtered = [...allTrends];
 
-            // Filter for 'For U' view
             if (currentView === 'forU') {
-                if (!user.isLoggedIn || user.accountType !== 'work') return []; // Should not happen if nav is hidden correctly
-                const preferenceTrends = allTrends.filter(t => t && user.preferences.includes(t.category));
-                const followedTrendsData = allTrends.filter(t => t && user.followedTrends.includes(t.id));
-                // Combine and ensure unique trends, prioritizing followed trends slightly
+                if (!user.isLoggedIn || user.accountType !== 'work') return [];
+                const preferenceTrends = allTrends.filter(trendItem => trendItem && user.preferences.includes(trendItem.category));
+                const followedTrendsData = allTrends.filter(trendItem => trendItem && user.followedTrends.includes(trendItem.id));
                 const combined = [...followedTrendsData, ...preferenceTrends];
-                const uniqueTrendIds = new Set(combined.map(t => t.id));
+                const uniqueTrendIds = new Set(combined.map(trendItem => trendItem.id));
                 return Array.from(uniqueTrendIds)
-                    .map(id => allTrends.find(t => t.id === id))
+                    .map(id => allTrends.find(trendItem => trendItem.id === id))
                     .filter(Boolean)
-                    .sort((a,b) => { // Sort followed trends first, then by hotness
+                    .sort((a,b) => {
                         const isAFollowed = user.followedTrends.includes(a.id);
                         const isBFollowed = user.followedTrends.includes(b.id);
                         if (isAFollowed !== isBFollowed) return isAFollowed ? -1 : 1;
@@ -581,20 +576,19 @@
                     });
             }
 
-            // Filters for 'main' view
             if (currentFilter.type === 'category' && currentFilter.value !== 'All') {
-                filtered = filtered.filter(t => t && t.category === currentFilter.value);
+                filtered = filtered.filter(trendItem => trendItem && trendItem.category === currentFilter.value);
             }
             if (currentFilter.hashtag) {
-                filtered = filtered.filter(t => t && (t.tags || []).includes(currentFilter.hashtag));
+                filtered = filtered.filter(trendItem => trendItem && (trendItem.tags || []).includes(currentFilter.hashtag));
             }
             if (currentFilter.searchTerm) {
                 const term = currentFilter.searchTerm.toLowerCase();
-                filtered = filtered.filter(t => t && (
-                    (t.title_vi && t.title_vi.toLowerCase().includes(term)) ||
-                    (t.description_vi && t.description_vi.toLowerCase().includes(term)) ||
-                    (t.title_en && t.title_en.toLowerCase().includes(term)) ||
-                    (t.description_en && t.description_en.toLowerCase().includes(term))
+                filtered = filtered.filter(trendItem => trendItem && (
+                    (trendItem.title_vi && trendItem.title_vi.toLowerCase().includes(term)) ||
+                    (trendItem.description_vi && trendItem.description_vi.toLowerCase().includes(term)) ||
+                    (trendItem.title_en && trendItem.title_en.toLowerCase().includes(term)) ||
+                    (trendItem.description_en && trendItem.description_en.toLowerCase().includes(term))
                 ));
             }
             return filtered.filter(Boolean);
@@ -612,7 +606,7 @@
                 return;
             }
 
-            listElement.innerHTML = ''; // Clear existing trends
+            listElement.innerHTML = '';
             let trendsRendered = 0;
             const numToDisplay = Math.min(displayedTrends[currentView] || TRENDS_PER_PAGE, trendsToDisplay.length);
 
@@ -621,18 +615,16 @@
             }
 
             for (let i = 0; i < numToDisplay; i++) {
-                listElement.appendChild(createTrendCard(trendsToDisplay[i], i * 50)); // Add a slight delay for animation effect
+                listElement.appendChild(createTrendCard(trendsToDisplay[i], i * 50));
                 trendsRendered++;
             }
 
-            // Update displayedTrends count
             displayedTrends[currentView] = trendsRendered;
 
-            if (footerButton) { // Check if footerButton exists
+            if (footerButton) {
                 footerButton.classList.toggle('hidden', displayedTrends[currentView] >= trendsToDisplay.length);
             }
 
-            // Update leaderboard for "For U" view
             if (currentView === 'forU') {
                 generateCategoryLeaderboards('for-u-leaderboards', user.preferences.length > 0 ? user.preferences : categories.slice(0, 3));
             }
@@ -641,15 +633,15 @@
 
         function updateClearFilterButtonVisibility() {
             const hasActiveFilter = (currentFilter.value !== 'All' || currentFilter.searchTerm !== '' || currentFilter.hashtag !== '');
-            if (DOM.clearFilterBtn) { // Add check here
+            if (DOM.clearFilterBtn) {
                 DOM.clearFilterBtn.classList.toggle('hidden', !hasActiveFilter);
             }
         }
 
         function clearMainViewFilters() {
             currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '' };
-            if (DOM.searchInput) DOM.searchInput.value = ''; // Add check here
-            if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active')); // Add check here
+            if (DOM.searchInput) DOM.searchInput.value = '';
+            if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
             updateUIForFilter();
         }
 
@@ -665,63 +657,59 @@
             displayedTrends.forU = 0;
 
             [DOM.mainViewContainer, DOM.forUViewContainer, DOM.trendingBoardViewContainer].forEach(container => {
-                if (container) container.classList.add('hidden'); // Add check here
+                if (container) container.classList.add('hidden');
             });
 
             if (view === 'main') {
-                if (DOM.mainViewContainer) DOM.mainViewContainer.classList.remove('hidden'); // Add check here
+                if (DOM.mainViewContainer) DOM.mainViewContainer.classList.remove('hidden');
             } else if (view === 'forU') {
                 if (!user.isLoggedIn || user.accountType !== 'work') {
-                    // Redirect to main if not logged in or not work account
                     switchView('main');
                     openModal('premium-modal');
                     return;
                 }
-                if (DOM.forUViewContainer) DOM.forUViewContainer.classList.remove('hidden'); // Add check here
+                if (DOM.forUViewContainer) DOM.forUViewContainer.classList.remove('hidden');
             } else if (view === 'trendingBoard') {
                 if (!user.isLoggedIn || user.accountType !== 'work') {
-                    // Redirect to main if not logged in or not work account
                     switchView('main');
                     openModal('premium-modal');
                     return;
                 }
-                if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.remove('hidden'); // Add check here
-                // Ensure default TB filters are set and chart is initialized
-                if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.value = 'All'; // Add check here
-                if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.value = '12m'; // Add check here
-                if (DOM.tbRegionFilter) DOM.tbRegionFilter.value = 'global'; // Default to global // Add check here
-                user.tbSearchTerms = []; // Clear search terms
-                if (DOM.tbSearchInput) DOM.tbSearchInput.value = ''; // Add check here
-                if (DOM.tbCompareInput) DOM.tbCompareInput.value = ''; // Add check here
+                if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.remove('hidden');
+                if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.value = 'All';
+                if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.value = '12m';
+                if (DOM.tbRegionFilter) DOM.tbRegionFilter.value = 'global';
+                user.tbSearchTerms = [];
+                if (DOM.tbSearchInput) DOM.tbSearchInput.value = '';
+                if (DOM.tbCompareInput) DOM.tbCompareInput.value = '';
                 createHotTrendsChart();
             }
 
             displayTrends();
             updateActiveNav(view);
-            // Close hamburger menu on navigation
-            if (DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active')) { // Add check here
+            if (DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active')) {
                 DOM.hamburgerMenu.click();
             }
         }
 
         function updateAuthUI() {
-            if (DOM.body) DOM.body.className = ''; // Add check here
+            if (DOM.body) DOM.body.className = '';
             if (user.isLoggedIn) {
-                if (DOM.body) DOM.body.classList.add('logged-in'); // Add check here
-                if (DOM.signInBtn) DOM.signInBtn.classList.add('hidden'); // Add check here
-                if (DOM.userMenu) DOM.userMenu.classList.remove('hidden'); // Add check here
-                if (DOM.userEmailBtn) DOM.userEmailBtn.textContent = user.email; // Add check here
-                if (DOM.dropdownHeader) DOM.dropdownHeader.textContent = user.email; // Add check here
-                if (DOM.navForU) DOM.navForU.classList.toggle('hidden', user.accountType !== 'work'); // Add check here
-                if (DOM.dropdownWorkSchool) DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType !== 'personal'); // Show work option if signed in with personal // Add check here
-                if (user.accountType === 'work' && DOM.body) DOM.body.classList.add('work-account-view'); // Add check here
+                if (DOM.body) DOM.body.classList.add('logged-in');
+                if (DOM.signInBtn) DOM.signInBtn.classList.add('hidden');
+                if (DOM.userMenu) DOM.userMenu.classList.remove('hidden');
+                if (DOM.userEmailBtn) DOM.userEmailBtn.textContent = user.email;
+                if (DOM.dropdownHeader) DOM.dropdownHeader.textContent = user.email;
+                if (DOM.navForU) DOM.navForU.classList.toggle('hidden', user.accountType !== 'work');
+                if (DOM.dropdownWorkSchool) DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType !== 'personal');
+                if (user.accountType === 'work' && DOM.body) DOM.body.classList.add('work-account-view');
             } else {
-                if (DOM.signInBtn) DOM.signInBtn.classList.remove('hidden'); // Add check here
-                if (DOM.userMenu) DOM.userMenu.classList.add('hidden'); // Add check here
-                if (DOM.navForU) DOM.navForU.classList.add('hidden'); // Add check here
-                if (DOM.body) DOM.body.classList.remove('work-account-view'); // Add check here
+                if (DOM.signInBtn) DOM.signInBtn.classList.remove('hidden');
+                if (DOM.userMenu) DOM.userMenu.classList.add('hidden');
+                if (DOM.navForU) DOM.navForU.classList.add('hidden');
+                if (DOM.body) DOM.body.classList.remove('work-account-view');
             }
-            displayTrends(); // Re-display trends to update follow buttons based on login state
+            displayTrends();
         }
 
         function signIn(type) {
@@ -740,19 +728,18 @@
                 populatePreferenceCheckboxes();
                 openModal('preferences-modal');
             } else if (type === 'personal') {
-                switchView('main'); // Stay on main for personal accounts
+                switchView('main');
             }
         }
 
         function populateCategoryFilters() {
-            categories = [...new Set(allTrends.map(t => t.category))].sort();
+            categories = [...new Set(allTrends.map(trendItem => trendItem.category))].sort(); // Renamed 't' to 'trendItem'
             const allOptionText = t('All Categories');
-            if (DOM.filterButtonsContainer) { // Add check here
+            if (DOM.filterButtonsContainer) {
                 DOM.filterButtonsContainer.innerHTML = [`<button class="filter-btn ${currentFilter.value === 'All' ? 'active' : ''}" data-filter="All">${allOptionText}</button>`, ...categories.map(category => `<button class="filter-btn ${category === currentFilter.value ? 'active' : ''}" data-filter="${category}">${category}</button>`)].join('');
             }
 
-            // Also update tbCategoryFilter
-            if (DOM.tbCategoryFilter) { // Add check here
+            if (DOM.tbCategoryFilter) {
                 DOM.tbCategoryFilter.innerHTML = `<option value="All">${allOptionText}</option>`;
                 categories.forEach(cat => {
                     const option = document.createElement('option');
@@ -760,37 +747,37 @@
                     option.textContent = cat;
                     DOM.tbCategoryFilter.appendChild(option);
                 });
-                DOM.tbCategoryFilter.value = currentFilter.value; // Set the current value
+                DOM.tbCategoryFilter.value = currentFilter.value;
             }
         }
 
         function populatePreferenceCheckboxes() {
-            if (DOM.preferencesGrid) { // Add check here
+            if (DOM.preferencesGrid) {
                 DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}" ${user.preferences.includes(category) ? 'checked' : ''}> ${category}</label></div>`).join('');
             }
         }
 
         function updateUIForFilter() {
-            if (DOM.filterButtonsContainer) { // Add check here
+            if (DOM.filterButtonsContainer) {
                 DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value));
             }
-            if (DOM.hashtagList) { // Add check here
+            if (DOM.hashtagList) {
                 DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.hashtag === currentFilter.hashtag));
             }
-            if (DOM.searchInput) DOM.searchInput.value = currentFilter.searchTerm; // Add check here
+            if (DOM.searchInput) DOM.searchInput.value = currentFilter.searchTerm;
 
-            displayedTrends.main = 0; // Reset display count for main view
+            displayedTrends.main = 0;
             displayTrends();
             updateClearFilterButtonVisibility();
         }
 
         function populateHashtagFilters() {
-            const hashtagCounts = allTrends.reduce((acc, trend) => {
-                (trend.tags || []).forEach(tag => { if (tag) acc[tag] = (acc[tag] || 0) + 1; });
+            const hashtagCounts = allTrends.reduce((acc, trendItem) => { // Renamed 't' to 'trendItem'
+                (trendItem.tags || []).forEach(tag => { if (tag) acc[tag] = (acc[tag] || 0) + 1; });
                 return acc;
             }, {});
             const popularHashtags = Object.entries(hashtagCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(entry => entry[0]);
-            if (DOM.hashtagList) { // Add check here
+            if (DOM.hashtagList) {
                 DOM.hashtagList.innerHTML = popularHashtags.map(tag => `<button class="hashtag-btn ${currentFilter.hashtag === tag ? 'active' : ''}" data-hashtag="${tag}">#${tag}</button>`).join('');
             }
         }
@@ -800,28 +787,27 @@
             if (!container) return;
             container.innerHTML = '';
 
-            // Prioritize 'Your Trends' if user is logged in and has followed trends/preferences
             if (user.isLoggedIn && user.followedTrends.length > 0) {
-                const followedTrendsData = allTrends.filter(t => user.followedTrends.includes(t.id));
+                const followedTrendsData = allTrends.filter(trendItem => user.followedTrends.includes(trendItem.id)); // Renamed 't' to 'trendItem'
                 if (followedTrendsData.length > 0) {
                     const leaderboardDiv = document.createElement('div');
                     leaderboardDiv.className = 'leaderboard-widget';
-                    const listItems = followedTrendsData.map(t => `<li data-trend-id="${t.id}">${truncateText(getLocalizedTrendText(t).title, 35)}</li>`).join('');
+                    const listItems = followedTrendsData.map(trendItem => `<li data-trend-id="${trendItem.id}">${truncateText(getLocalizedTrendText(trendItem).title, 35)}</li>`).join(''); // Renamed 't' to 'trendItem'
                     leaderboardDiv.innerHTML = `<h4>${t('Your Followed Trends')}</h4><ul>${listItems}</ul>`;
                     container.appendChild(leaderboardDiv);
                 }
             }
 
-            const uniqueCategoriesToShow = Array.from(new Set(categoriesToShow)).sort(); // Ensure unique and sorted
+            const uniqueCategoriesToShow = Array.from(new Set(categoriesToShow)).sort();
             uniqueCategoriesToShow.forEach(category => {
-                const trendsInCategory = allTrends.filter(t => t.category === category);
+                const trendsInCategory = allTrends.filter(trendItem => trendItem.category === category); // Renamed 't' to 'trendItem'
                 if (trendsInCategory.length === 0) return;
                 const sortedTrends = [...trendsInCategory].sort((a, b) => b.hotnessScore - a.hotnessScore);
                 const topTrends = sortedTrends.slice(0, 3);
 
                 const leaderboardDiv = document.createElement('div');
                 leaderboardDiv.className = 'leaderboard-widget';
-                let listItems = topTrends.map(t => `<li data-trend-id="${t.id}">${truncateText(getLocalizedTrendText(t).title, 35)}</li>`).join('');
+                let listItems = topTrends.map(trendItem => `<li data-trend-id="${trendItem.id}">${truncateText(getLocalizedTrendText(trendItem).title, 35)}</li>`).join(''); // Renamed 't' to 'trendItem'
                 leaderboardDiv.innerHTML = `<h4>${t('Top in')} ${category}</h4><ul>${listItems}</ul>`;
                 container.appendChild(leaderboardDiv);
             });
@@ -829,7 +815,7 @@
 
         function renderSummaryAnalysis(analysisData) {
             const modalBody = document.getElementById('ai-insight-body');
-            if (!modalBody) return; // Add check here
+            if (!modalBody) return;
             modalBody.classList.remove('error-message');
             const chartData = generateChartDataFromScore(analysisData.successScore);
             modalBody.innerHTML = `
@@ -841,9 +827,9 @@
 
         function renderDetailedAnalysis(htmlContent) {
             const modalBody = document.getElementById('ai-insight-body');
-            if (!modalBody) return; // Add check here
+            if (!modalBody) return;
             modalBody.classList.remove('error-message');
-            modalBody.innerHTML = htmlContent; // Content is already sanitized in analyzeTrendSecurely
+            modalBody.innerHTML = htmlContent;
         }
 
         function renderAnalysisChart(historicalData, futureProjection) {
@@ -912,7 +898,7 @@
             const seenKeys = new Set(loadSeenTrends());
             const unseen = [];
             const seen = [];
-            allTrends.forEach(t => (seenKeys.has(makeTrendKey(t)) ? seen : unseen).push(t));
+            allTrends.forEach(trendItem => (seenKeys.has(makeTrendKey(trendItem)) ? seen : unseen).push(trendItem)); // Renamed 't' to 'trendItem'
             allTrends = [...shuffleArray(unseen), ...seen];
         }
 
@@ -949,24 +935,24 @@
                 const statusIndicator = document.getElementById('ai-status-indicator');
                 const statusText = document.getElementById('ai-status-text');
                 const isOnline = response.ok;
-                if (statusIndicator) statusIndicator.classList.toggle('online', isOnline); // Add check here
-                if (statusIndicator) statusIndicator.classList.toggle('offline', !isOnline); // Add check here
-                if (statusText) statusText.textContent = t(isOnline ? 'AI: Ready' : 'AI: Unavailable'); // Add check here
+                if (statusIndicator) statusIndicator.classList.toggle('online', isOnline);
+                if (statusIndicator) statusIndicator.classList.toggle('offline', !isOnline);
+                if (statusText) statusText.textContent = t(isOnline ? 'AI: Ready' : 'AI: Unavailable');
             } catch (error) {
                 const statusIndicator = document.getElementById('ai-status-indicator');
                 const statusText = document.getElementById('ai-status-text');
-                if (statusIndicator) statusIndicator.className = 'ai-status-indicator offline'; // Add check here
-                if (statusText) statusText.textContent = t('AI: Connection error'); // Add check here
+                if (statusIndicator) statusIndicator.className = 'ai-status-indicator offline';
+                if (statusText) statusText.textContent = t('AI: Connection error');
                 console.error('AI Status Check Failed:', error);
             }
         }
 
         function updateActiveNav(activeView) {
             document.querySelectorAll('#main-nav a').forEach(a => a.classList.remove('active-link'));
-            if (activeView === 'main') { if (DOM.navTopTrends) DOM.navTopTrends.classList.add('active-link'); } // Add check here
-            else if (activeView === 'forU') { if (DOM.navForU && DOM.navForU.querySelector('a')) DOM.navForU.querySelector('a').classList.add('active-link'); } // Add check here
-            else if (activeView === 'trendingBoard') { if (DOM.navTrendingBoard) DOM.navTrendingBoard.classList.add('active-link'); } // Add check here
-            else if (activeView === 'about') { if (DOM.navAbout) DOM.navAbout.classList.add('active-link'); } // Added for about page // Add check here
+            if (activeView === 'main') { if (DOM.navTopTrends) DOM.navTopTrends.classList.add('active-link'); }
+            else if (activeView === 'forU') { if (DOM.navForU && DOM.navForU.querySelector('a')) DOM.navForU.querySelector('a').classList.add('active-link'); }
+            else if (activeView === 'trendingBoard') { if (DOM.navTrendingBoard) DOM.navTrendingBoard.classList.add('active-link'); }
+            else if (activeView === 'about') { if (DOM.navAbout) DOM.navAbout.classList.add('active-link'); }
         }
 
         // --- Trending Board specific functions ---
@@ -980,12 +966,12 @@
                     labels.push(d.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
             } else if (timeframe === '1m') { // 30 days
-                for (let i = 29; i >= 0; i -= 5) { // Show roughly 6 points
+                for (let i = 29; i >= 0; i -= 5) {
                     const d = new Date(now);
                     d.setDate(now.getDate() - i);
                     labels.push(d.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
-                labels.push(now.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' })); // Ensure current day is included
+                labels.push(now.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
             } else { // '12m' - months
                 for (let i = 11; i >= 0; i--) {
                     const d = new Date(now);
@@ -999,19 +985,15 @@
         function generateSeriesForTimeframe(trend, labels, timeframe) {
             const series = new Array(labels.length).fill(0);
             const trendDate = new Date(trend.date || Date.now());
-            const peakMetric = getCombinedMetric(trend); // Use combined metric for "interest"
+            const peakMetric = getCombinedMetric(trend);
 
             labels.forEach((label, index) => {
                 let currentLabelDate;
                 if (timeframe === '7d' || timeframe === '1m') {
-                    // This is a simplification; a real app would have more precise date parsing
-                    // For now, let's assume labels are roughly ordered past-to-present
-                    const d = new Date(); // Start from current date
+                    const d = new Date();
                     if (timeframe === '7d') {
                          d.setDate(d.getDate() - (labels.length - 1 - index));
                     } else if (timeframe === '1m') {
-                         // This is a rough approximation; for 30 days, need to map back to actual days
-                         // For simplicity, we'll just distribute across the labels
                          const daysAgo = (labels.length - 1 - index) * (30 / labels.length);
                          d.setDate(d.getDate() - daysAgo);
                     }
@@ -1024,17 +1006,16 @@
                     currentLabelDate = new Date(year, monthIndex, 1);
                 }
 
-                // Simplified decay logic based on trend date and current label date
                 const diffTime = Math.abs(currentLabelDate.getTime() - trendDate.getTime());
                 let diffUnit;
-                if (timeframe === '7d') diffUnit = diffTime / (1000 * 60 * 60 * 24); // days
-                else if (timeframe === '1m') diffUnit = diffTime / (1000 * 60 * 60 * 24); // days
-                else diffUnit = diffTime / (1000 * 60 * 60 * 24 * 30.44); // months
+                if (timeframe === '7d') diffUnit = diffTime / (1000 * 60 * 60 * 24);
+                else if (timeframe === '1m') diffUnit = diffTime / (1000 * 60 * 60 * 24);
+                else diffUnit = diffTime / (1000 * 60 * 60 * 24 * 30.44);
 
-                const decayFactor = 0.5; // Controls how fast interest decays
+                const decayFactor = 0.5;
                 const maxRange = (timeframe === '7d' ? 7 : (timeframe === '1m' ? 30 : 12));
                 let value = peakMetric * Math.exp(-decayFactor * Math.abs(diffUnit - maxRange / 2) / (maxRange / 2));
-                value = Math.max(0, value * (1 + (Math.random() - 0.5) * 0.2)); // Add some randomness
+                value = Math.max(0, value * (1 + (Math.random() - 0.5) * 0.2));
 
                 series[index] = Math.round(value);
             });
@@ -1043,25 +1024,25 @@
         }
 
         function renderTBDashboard() {
-            const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All'; // Add check here
-            const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global'; // Add check here
-            let trendsToDisplay = selectedCategory === 'All' ? allTrends : allTrends.filter(t => t.category === selectedCategory);
-            trendsToDisplay = trendsToDisplay.filter(t => t.region === selectedRegion || selectedRegion === 'global');
+            const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All';
+            const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
+            let trendsToDisplay = selectedCategory === 'All' ? allTrends : allTrends.filter(trendItem => trendItem.category === selectedCategory); // Renamed 't'
+            trendsToDisplay = trendsToDisplay.filter(trendItem => trendItem.region === selectedRegion || selectedRegion === 'global'); // Renamed 't'
 
-            const topics = trendsToDisplay.filter(t => t.type === 'topic').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
-            const queries = trendsToDisplay.filter(t => t.type === 'query').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+            const topics = trendsToDisplay.filter(trendItem => trendItem.type === 'topic').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5); // Renamed 't'
+            const queries = trendsToDisplay.filter(trendItem => trendItem.type === 'query').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5); // Renamed 't'
 
             const tbTopicList = document.getElementById('tb-topic-list');
             const tbQueryList = document.getElementById('tb-query-list');
 
-            if (tbTopicList) { // Add check here
-                tbTopicList.innerHTML = `<ol>${topics.map((t, i) => `<li><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(t).title}</span><span class="growth">${t('Rising')}</span></li>`).join('')}</ol>`;
+            if (tbTopicList) {
+                tbTopicList.innerHTML = `<ol>${topics.map((trendItem, i) => `<li><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(trendItem).title}</span><span class="growth">${t('Rising')}</span></li>`).join('')}</ol>`; // Renamed 't'
             } else {
                 console.error("Missing DOM element: #tb-topic-list");
             }
             
-            if (tbQueryList) { // Add check here
-                tbQueryList.innerHTML = `<ol>${queries.map((t, i) => `<li><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(t).title}</span><span class="growth">+${Math.floor(Math.random() * 4000)}%</span></li>`).join('')}</ol>`;
+            if (tbQueryList) {
+                tbQueryList.innerHTML = `<ol>${queries.map((trendItem, i) => `<li><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(trendItem).title}</span><span class="growth">+${Math.floor(Math.random() * 4000)}%</span></li>`).join('')}</ol>`; // Renamed 't'
             } else {
                 console.error("Missing DOM element: #tb-query-list");
             }
@@ -1075,12 +1056,11 @@
             }
             if (hotTrendsChart) hotTrendsChart.destroy();
 
-            const timeframe = DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m'; // Add check here
-            const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All'; // Add check here
-            const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global'; // Add check here
+            const timeframe = DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m';
+            const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All';
+            const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
 
 
-            // Manage search terms for chips and chart
             if (newSearchTerm) {
                 const term = newSearchTerm.trim();
                 if (term && !user.tbSearchTerms.includes(term)) {
@@ -1094,7 +1074,7 @@
                 }
             }
 
-            if (DOM.tbSearchChipsContainer) { // Add check here
+            if (DOM.tbSearchChipsContainer) {
                 DOM.tbSearchChipsContainer.innerHTML = user.tbSearchTerms.map(term => `
                     <span class="tb-search-chip">${truncateText(term, 20)}
                         <button class="tb-search-chip-remove" data-term="${term}">&times;</button>
@@ -1108,31 +1088,29 @@
 
             let trendsForChart = [];
             if (user.tbSearchTerms.length > 0) {
-                // Filter by search terms, then by category and region
-                trendsForChart = allTrends.filter(t =>
-                    user.tbSearchTerms.some(term => getLocalizedTrendText(t).title.toLowerCase().includes(term.toLowerCase())) &&
-                    (selectedCategory === 'All' || t.category === selectedCategory) &&
-                    (selectedRegion === 'global' || t.region === selectedRegion)
+                trendsForChart = allTrends.filter(trendItem => // Renamed 't'
+                    user.tbSearchTerms.some(term => getLocalizedTrendText(trendItem).title.toLowerCase().includes(term.toLowerCase())) && // Renamed 't'
+                    (selectedCategory === 'All' || trendItem.category === selectedCategory) && // Renamed 't'
+                    (selectedRegion === 'global' || trendItem.region === selectedRegion) // Renamed 't'
                 );
-                if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('Interest Over Time'); // Add check here
-                if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden'); // Add check here
+                if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('Interest Over Time');
+                if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
             } else {
-                // Default view: Top 5 hot trends based on category and region
-                let trendsToFilter = allTrends.filter(t =>
-                    (selectedCategory === 'All' || t.category === selectedCategory) &&
-                    (selectedRegion === 'global' || t.region === selectedRegion)
+                let trendsToFilter = allTrends.filter(trendItem => // Renamed 't'
+                    (selectedCategory === 'All' || trendItem.category === selectedCategory) && // Renamed 't'
+                    (selectedRegion === 'global' || trendItem.region === selectedRegion) // Renamed 't'
                 );
                 trendsForChart = [...trendsToFilter].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
-                if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t('Top 5 Hot Trends')} - ${t('Interest Over Time')}`; // Add check here
-                if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden'); // Add check here
-                renderTBDashboard(); // Rerender leaderboards if no search terms
+                if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t('Top 5 Hot Trends')} - ${t('Interest Over Time')}`;
+                if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
+                renderTBDashboard();
             }
 
             const labels = generateChartLabels(timeframe);
             const palette = getColorPalette(trendsForChart.length);
-            const datasets = trendsForChart.map((t, idx) => ({
-                label: truncateText(getLocalizedTrendText(t).title, 30),
-                data: generateSeriesForTimeframe(t, labels, timeframe),
+            const datasets = trendsForChart.map((trendItem, idx) => ({ // Renamed 't'
+                label: truncateText(getLocalizedTrendText(trendItem).title, 30), // Renamed 't'
+                data: generateSeriesForTimeframe(trendItem, labels, timeframe), // Renamed 't'
                 borderColor: palette[idx].stroke,
                 tension: 0.4,
                 fill: false,
@@ -1164,19 +1142,18 @@
             const trendCard = targetElement.closest('.trend-card');
             const leaderboardItem = targetElement.closest('.leaderboard-widget li');
 
-            // Handle trend card interactions
             if (trendCard) {
                 const trendId = parseInt(trendCard.dataset.trendId);
-                const trend = allTrends.find(t => t.id === trendId);
+                const trend = allTrends.find(trendItem => trendItem.id === trendId); // Renamed 't'
                 if (!trend) return;
 
                 if (targetElement.closest('.btn-follow')) {
                     if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
                     const isFollowed = user.followedTrends.includes(trendId);
                     user.followedTrends = isFollowed ? user.followedTrends.filter(id => id !== trendId) : [...user.followedTrends, trendId];
-                    displayTrends(); // Re-render to update button state
+                    displayTrends();
                     if (currentView === 'forU') { generateCategoryLeaderboards('for-u-leaderboards', user.preferences); }
-                    if (currentView === 'trendingBoard' && user.tbSearchTerms.length === 0) { // Only update chart if not searching
+                    if (currentView === 'trendingBoard' && user.tbSearchTerms.length === 0) {
                         createHotTrendsChart();
                     }
                 } else if (targetElement.closest('.analyze-trend-btn') || targetElement.closest('.trend-title')) {
@@ -1186,7 +1163,7 @@
                     const titleKey = isSummary ? 'AI Analysis Summary for' : 'AI Deep Dive for';
                     document.getElementById('ai-insight-title').textContent = `${t(titleKey)} "${truncateText(getLocalizedTrendText(trend).title, 20)}"`;
                     const modalBody = document.getElementById('ai-insight-body');
-                    if (!modalBody) return; // Add check here
+                    if (!modalBody) return;
                     modalBody.classList.remove('error-message');
                     modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align:center; margin-top:1rem;">${t('Analyzing trend...')}</p>`;
                     openModal('ai-insight-modal');
@@ -1194,39 +1171,38 @@
                         if (isSummary) { renderSummaryAnalysis(data); }
                         else { renderDetailedAnalysis(data); }
                     }).catch(err => {
-                        if (modalBody) { // Add check here
+                        if (modalBody) {
                             modalBody.classList.add('error-message');
                             modalBody.innerHTML = `<p style="text-align: center;">${t('Unable to analyze trend.')}<br><small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small></p>`;
                         }
                     });
                 } else if (targetElement.matches('.tag.hashtag')) {
                     currentFilter.type = 'hashtag';
-                    currentFilter.value = 'All'; // Reset category filter if using hashtag
-                    currentFilter.hashtag = targetElement.dataset.tag;
-                    currentFilter.searchTerm = ''; // Clear search term
+                    currentFilter.value = 'All';
+                    currentFilter.hashtag = targetElement.dataset.hashtag;
+                    currentFilter.searchTerm = '';
                     switchView('main');
                     updateUIForFilter();
                 }
             }
-            // Handle leaderboard item clicks (behaves like clicking a trend title)
             else if (leaderboardItem) {
                 const trendId = parseInt(leaderboardItem.dataset.trendId);
-                const trend = allTrends.find(t => t.id === trendId);
+                const trend = allTrends.find(trendItem => trendItem.id === trendId); // Renamed 't'
                 if (!trend) return;
                 if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
 
-                const analysisType = 'detailed'; // Leaderboard clicks usually imply deeper dive
+                const analysisType = 'detailed';
                 const insightTitle = document.getElementById('ai-insight-title');
-                if (insightTitle) insightTitle.textContent = `${t('AI Deep Dive for')} "${truncateText(getLocalizedTrendText(trend).title, 20)}"`; // Add check here
+                if (insightTitle) insightTitle.textContent = `${t('AI Deep Dive for')} "${truncateText(getLocalizedTrendText(trend).title, 20)}"`;
                 const modalBody = document.getElementById('ai-insight-body');
-                if (!modalBody) return; // Add check here
+                if (!modalBody) return;
                 modalBody.classList.remove('error-message');
                 modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align:center; margin-top:1rem;">${t('Analyzing trend...')}</p>`;
                 openModal('ai-insight-modal');
                 analyzeTrendSecurely(trend, analysisType).then(data => {
                     renderDetailedAnalysis(data);
                 }).catch(err => {
-                    if (modalBody) { // Add check here
+                    if (modalBody) {
                         modalBody.classList.add('error-message');
                         modalBody.innerHTML = `<p style="text-align: center;">${t('Unable to analyze trend.')}<br><small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small></p>`;
                     }
@@ -1238,19 +1214,18 @@
             applyTranslations();
             updateLanguageToggleUI();
 
-            // Add checks for view containers
             if (DOM.mainViewContainer) DOM.mainViewContainer.classList.toggle('hidden', currentView !== 'main');
             if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
             if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
 
             allTrends = await fetchLiveTrends();
             applyTrendOrdering();
-            populateCategoryFilters(); // Populates both main and TB category filters
+            populateCategoryFilters();
             populateHashtagFilters();
             updateAuthUI();
             checkAIStatus();
             updateActiveNav(currentView);
-            updateClearFilterButtonVisibility(); // Initial visibility check
+            updateClearFilterButtonVisibility();
 
             if (currentView === 'trendingBoard') {
                 createHotTrendsChart();
@@ -1259,7 +1234,6 @@
             document.getElementById('loader')?.classList.add('loader-hidden');
         }
 
-        // --- Event Listeners ---
         if (DOM.hamburgerMenu) DOM.hamburgerMenu.addEventListener('click', () => { if (DOM.mainNav) DOM.mainNav.classList.toggle('nav-active'); });
         if (DOM.logo) DOM.logo.addEventListener('click', () => switchView('main'));
         if (DOM.navTopTrends) DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
@@ -1272,7 +1246,6 @@
             if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
             switchView('main');
         });
-        // If personal account, offer to sign in with work/school
         if (DOM.dropdownWorkSchool) DOM.dropdownWorkSchool.addEventListener('click', () => {
              signIn('work');
              if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
@@ -1282,9 +1255,8 @@
         document.getElementById('premium-login-btn')?.addEventListener('click', () => { closeModal('premium-modal'); openModal('login-choice-modal'); });
         DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => {
             closeModal(btn.closest('.modal-overlay').id);
-            // Don't change nav active state if it's not a direct navigation
             const modalId = btn.closest('.modal-overlay').id;
-            if (modalId !== 'about-modal') { // Only reset if not about modal
+            if (modalId !== 'about-modal') {
                 updateActiveNav(currentView);
             }
         }));
@@ -1299,7 +1271,6 @@
             switchView('forU');
         });
 
-        // Event delegation for trend cards and leaderboard items
         [DOM.trendsList, DOM.forUTrendsList, document.getElementById('for-u-leaderboards')].forEach(list => {
             if (list) list.addEventListener('click', handleInteraction);
         });
@@ -1308,50 +1279,48 @@
             if (e.target.matches('.filter-btn')) {
                 currentFilter.type = 'category';
                 currentFilter.value = e.target.dataset.filter;
-                currentFilter.hashtag = ''; // Clear hashtag filter when category is selected
-                if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active')); // Deactivate hashtag buttons
+                currentFilter.hashtag = '';
+                if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
                 updateUIForFilter();
             }
         });
         if (DOM.clearFilterBtn) DOM.clearFilterBtn.addEventListener('click', clearMainViewFilters);
 
-        // Debounced search input
         const debouncedSearch = debounce(() => {
-            currentFilter.searchTerm = DOM.searchInput ? DOM.searchInput.value : ''; // Add check here
-            displayedTrends.main = 0; // Reset pagination for search results
+            currentFilter.searchTerm = DOM.searchInput ? DOM.searchInput.value : '';
+            displayedTrends.main = 0;
             displayTrends();
-        }, 300); // 300ms debounce
-        if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedSearch); // Add check here
+        }, 300);
+        if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedSearch);
 
         if (DOM.hashtagList) DOM.hashtagList.addEventListener('click', (e) => {
             if (e.target.matches('.hashtag-btn')) {
                 const hashtag = e.target.dataset.hashtag;
                 if (currentFilter.hashtag === hashtag) {
-                    currentFilter.hashtag = ''; // Deactivate if already active
+                    currentFilter.hashtag = '';
                 } else {
                     currentFilter.hashtag = hashtag;
                 }
                 currentFilter.type = 'hashtag';
-                currentFilter.value = 'All'; // Clear category filter when hashtag is selected
-                if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active')); // Deactivate category buttons
+                currentFilter.value = 'All';
+                if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
 
                 displayedTrends.main = 0;
-                updateUIForFilter(); // Updates both filter buttons and re-displays trends
+                updateUIForFilter();
             }
         });
 
-        // Trending Board Event Listeners
         if (DOM.tbSearchInput) DOM.tbSearchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && this.value.trim() !== '') {
                 createHotTrendsChart(this.value.trim());
-                this.value = ''; // Clear input after adding
+                this.value = '';
             }
         });
 
         if (DOM.tbCompareInput) DOM.tbCompareInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && this.value.trim() !== '') {
                 createHotTrendsChart(null, this.value.trim());
-                this.value = ''; // Clear input after adding
+                this.value = '';
             }
         });
 
@@ -1359,20 +1328,18 @@
             if (e.target.classList.contains('tb-search-chip-remove')) {
                 const termToRemove = e.target.dataset.term;
                 user.tbSearchTerms = user.tbSearchTerms.filter(term => term !== termToRemove);
-                createHotTrendsChart(); // Re-render chart without the removed term
+                createHotTrendsChart();
             }
         });
 
         if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
         if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.addEventListener('change', () => createHotTrendsChart());
-        if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart()); // Added event listener for region filter
+        if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart());
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if (DOM.userMenu && DOM.userDropdown && !DOM.userMenu.contains(e.target)) {
                 DOM.userDropdown.classList.remove('show');
             }
-            // Close hamburger menu if click outside when open
             if (DOM.mainNav && DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active') && !DOM.mainNav.contains(e.target) && !DOM.hamburgerMenu.contains(e.target)) {
                  DOM.hamburgerMenu.click();
             }
@@ -1385,12 +1352,10 @@
             updateLanguageToggleUI();
             displayTrends();
             if (currentView === 'trendingBoard') {
-                // Re-render TB chart and leaderboards after language change
                 createHotTrendsChart();
             }
         });
 
-        // Initialize the app
         initializeApp();
     });
 </script>
