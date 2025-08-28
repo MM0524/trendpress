@@ -1,467 +1,239 @@
 // File: netlify/functions/fetch-trends.js
 const fetch = require("node-fetch");
+const { XMLParser } = require("fast-xml-parser");
+
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+});
 
 // ===== Helpers =====
 async function fetchWithTimeout(url, options = {}, ms = 10000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ms);
-
   try {
-    const res = await fetch(url, {
-      ...options,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; TrendFetcher/1.0; +http://yourapp.com)",
-        ...(options.headers || {}),
-      },
-      signal: controller.signal,
-    });
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  } finally {
     clearTimeout(timeout);
-    return res;
-  } catch (err) {
-    clearTimeout(timeout);
-    throw err;
   }
 }
 
-function createTrendFromRssItem(item, category, region, source) {
+function parseRSS(xml) {
+  try {
+    const data = parser.parse(xml);
+    const items = data?.rss?.channel?.item || data?.feed?.entry || [];
+    return Array.isArray(items) ? items : [items];
+  } catch (e) {
+    console.warn("XML parse error:", e.message);
+    return [];
+  }
+}
+
+function formatItem(item, source) {
   return {
-    id: item.link || item.guid || Date.now(),
-    title: item.title || "No title",
-    url: item.link,
-    excerpt: item.contentSnippet || item.summary || "",
-    date: item.isoDate || item.pubDate || new Date().toISOString(),
-    category,
-    region,
+    title: item.title?.["#text"] || item.title || "No title",
+    link: item.link?.["@_href"] || item.link || item.guid || "",
+    pubDate: item.pubDate || item.published || item.updated || new Date().toISOString(),
     source,
   };
 }
 
-function preprocessTrends(trends) {
-  return trends.filter(Boolean).slice(0, 50);
-}
-
 // ===== Sources =====
-
-// Hacker News
 async function fetchHackerNewsFrontpage() {
-  try {
-    const res = await fetchWithTimeout("https://hnrss.org/frontpage");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Tech", "global", "Hacker News")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://hnrss.org/frontpage");
+  return parseRSS(xml).map((i) => formatItem(i, "Hacker News"));
 }
 
-// The Verge
 async function fetchTheVerge() {
-  try {
-    const res = await fetchWithTimeout("https://www.theverge.com/rss/index.xml");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Tech", "global", "The Verge")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.theverge.com/rss/index.xml");
+  return parseRSS(xml).map((i) => formatItem(i, "The Verge"));
 }
 
-// IGN Gaming
 async function fetchIGNGaming() {
-  try {
-    const res = await fetchWithTimeout("https://feeds.ign.com/ign/games-all");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Gaming", "global", "IGN Gaming")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.ign.com/rss");
+  return parseRSS(xml).map((i) => formatItem(i, "IGN Gaming"));
 }
 
-// VentureBeat (AI)
 async function fetchVentureBeatAI() {
-  try {
-    const res = await fetchWithTimeout("https://venturebeat.com/feed/");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items
-      .filter((i) => /AI|Artificial Intelligence/i.test(i.title))
-      .map((i) =>
-        createTrendFromRssItem(i, "AI", "global", "VentureBeat AI")
-      );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://venturebeat.com/category/ai/feed/");
+  return parseRSS(xml).map((i) => formatItem(i, "VentureBeat AI"));
 }
 
-// MIT Tech Review
 async function fetchMITTech() {
-  try {
-    const res = await fetchWithTimeout("https://www.technologyreview.com/feed/");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Tech", "global", "MIT Tech Review")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.technologyreview.com/feed/");
+  return parseRSS(xml).map((i) => formatItem(i, "MIT Tech Review"));
 }
 
-// Google News VN
 async function fetchGoogleNewsVN() {
-  try {
-    const res = await fetchWithTimeout(
-      "https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi"
-    );
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "News", "vn", "Google News VN")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi");
+  return parseRSS(xml).map((i) => formatItem(i, "Google News VN"));
 }
 
-// Yahoo Finance
 async function fetchYahooFinance() {
-  try {
-    const res = await fetchWithTimeout("https://finance.yahoo.com/news/rssindex");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Finance", "global", "Yahoo Finance")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://finance.yahoo.com/news/rssindex");
+  return parseRSS(xml).map((i) => formatItem(i, "Yahoo Finance"));
 }
 
-// CNBC Finance
 async function fetchCNBCFinance() {
-  try {
-    const res = await fetchWithTimeout("https://www.cnbc.com/id/10000664/device/rss/rss.html");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Finance", "global", "CNBC Finance")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.cnbc.com/id/10000664/device/rss/rss.html");
+  return parseRSS(xml).map((i) => formatItem(i, "CNBC Finance"));
 }
 
-// Science Magazine
 async function fetchScienceMagazine() {
-  try {
-    const res = await fetchWithTimeout("https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Science", "global", "Science Magazine")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.sciencemag.org/rss/news_current.xml");
+  return parseRSS(xml).map((i) => formatItem(i, "Science Magazine"));
 }
 
-// New Scientist
 async function fetchNewScientist() {
-  try {
-    const res = await fetchWithTimeout("https://www.newscientist.com/feed/home/");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Science", "global", "New Scientist")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.newscientist.com/feed/home/");
+  return parseRSS(xml).map((i) => formatItem(i, "New Scientist"));
 }
 
-// Apple Music Most Played VN
 async function fetchAppleMusicMostPlayedVN() {
-  try {
-    const res = await fetchWithTimeout("https://itunes.apple.com/vn/rss/topsongs/limit=50/json");
-    const data = await res.json();
-    return data.feed.entry.map((entry) => ({
-      id: entry.id.label,
-      title: entry["im:name"].label,
-      url: entry.id.label,
-      excerpt: entry["im:artist"].label,
-      date: new Date().toISOString(),
-      category: "Music",
-      region: "vn",
-      source: "Apple Music VN - Most Played",
-    }));
-  } catch {
-    return [];
-  }
+  const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/10/songs.json");
+  const data = JSON.parse(res);
+  return data.feed.results.map((i) => ({
+    title: i.name,
+    link: i.url,
+    pubDate: i.releaseDate || new Date().toISOString(),
+    source: "Apple Music Most Played VN",
+  }));
 }
 
-// Apple Music New Releases VN
 async function fetchAppleMusicNewReleasesVN() {
-  try {
-    const res = await fetchWithTimeout("https://itunes.apple.com/vn/rss/newmusic/limit=50/json");
-    const data = await res.json();
-    return data.feed.entry.map((entry) => ({
-      id: entry.id.label,
-      title: entry["im:name"].label,
-      url: entry.id.label,
-      excerpt: entry["im:artist"].label,
-      date: new Date().toISOString(),
-      category: "Music",
-      region: "vn",
-      source: "Apple Music VN - New Releases",
-    }));
-  } catch {
-    return [];
-  }
+  const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/10/albums.json");
+  const data = JSON.parse(res);
+  return data.feed.results.map((i) => ({
+    title: i.name,
+    link: i.url,
+    pubDate: i.releaseDate || new Date().toISOString(),
+    source: "Apple Music New Releases VN",
+  }));
 }
 
-// YouTube Trending VN (placeholder, cần API key)
 async function fetchYouTubeTrendingVN() {
-  return [];
+  const res = await fetchWithTimeout("https://yt.lemnoslife.com/charts/trending?region=VN");
+  const data = JSON.parse(res);
+  return (data?.items || []).map((i) => ({
+    title: i.snippet.title,
+    link: `https://www.youtube.com/watch?v=${i.id}`,
+    pubDate: i.snippet.publishedAt,
+    source: "YouTube Trending VN",
+  }));
 }
 
-// Variety
 async function fetchVariety() {
-  try {
-    const res = await fetchWithTimeout("https://variety.com/feed/");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Media", "global", "Variety")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://variety.com/feed/");
+  return parseRSS(xml).map((i) => formatItem(i, "Variety"));
 }
 
-// Deadline
 async function fetchDeadline() {
-  try {
-    const res = await fetchWithTimeout("https://deadline.com/feed/");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Media", "global", "Deadline")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://deadline.com/feed/");
+  return parseRSS(xml).map((i) => formatItem(i, "Deadline"));
 }
 
-// GameK.vn
 async function fetchGameKVN() {
-  try {
-    const res = await fetchWithTimeout("https://gamek.vn/rss.chn");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Gaming", "vn", "GameK.vn")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://gamek.vn/rss/home.rss");
+  return parseRSS(xml).map((i) => formatItem(i, "GameK VN"));
 }
 
-// Zing News (Entertainment)
 async function fetchZingNewsEntertainment() {
-  try {
-    const res = await fetchWithTimeout("https://zingnews.vn/rss/giai-tri.rss");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Media", "vn", "Zing News Entertainment")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://zingnews.vn/rss/giai-tri.rss");
+  return parseRSS(xml).map((i) => formatItem(i, "Zing News Giải trí"));
 }
 
-// BBC World
 async function fetchBBCWorld() {
-  try {
-    const res = await fetchWithTimeout("http://feeds.bbci.co.uk/news/world/rss.xml");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "News", "global", "BBC World")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("http://feeds.bbci.co.uk/news/world/rss.xml");
+  return parseRSS(xml).map((i) => formatItem(i, "BBC World"));
 }
 
-// ESPN
 async function fetchESPN() {
-  try {
-    const res = await fetchWithTimeout("https://www.espn.com/espn/rss/news");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Sports", "global", "ESPN")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.espn.com/espn/rss/news");
+  return parseRSS(xml).map((i) => formatItem(i, "ESPN"));
 }
 
-// Logistics (placeholder → Supply Chain Digital)
 async function fetchLogistics() {
-  try {
-    const res = await fetchWithTimeout("https://supplychaindigital.com/rss");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Logistics", "global", "Supply Chain Digital")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.logisticsmgmt.com/rss");
+  return parseRSS(xml).map((i) => formatItem(i, "Logistics"));
 }
 
-// Cybernews
 async function fetchCybernews() {
-  try {
-    const res = await fetchWithTimeout("https://cybernews.com/feed/");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Tech", "global", "Cybernews")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://cybernews.com/feed/");
+  return parseRSS(xml).map((i) => formatItem(i, "Cybernews"));
 }
 
-// Healthcare
 async function fetchHealthcare() {
-  try {
-    const res = await fetchWithTimeout("https://www.medicalnewstoday.com/rss");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Health", "global", "Medical News Today")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.healthcareitnews.com/home/feed");
+  return parseRSS(xml).map((i) => formatItem(i, "Healthcare"));
 }
 
-// Education (Edutopia RSS)
 async function fetchEducation() {
-  try {
-    const res = await fetchWithTimeout("https://www.edutopia.org/rss.xml");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Education", "global", "Edutopia")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.insidehighered.com/rss/news");
+  return parseRSS(xml).map((i) => formatItem(i, "Education"));
 }
 
-// Environment (NatGeo)
 async function fetchEnvironment() {
-  try {
-    const res = await fetchWithTimeout("https://www.nationalgeographic.com/expeditions/rss");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Environment", "global", "National Geographic")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.theguardian.com/environment/rss");
+  return parseRSS(xml).map((i) => formatItem(i, "Environment"));
 }
 
-// Politics (Reuters)
 async function fetchPolitics() {
-  try {
-    const res = await fetchWithTimeout("https://feeds.reuters.com/Reuters/PoliticsNews");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Politics", "global", "Reuters Politics")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.politico.com/rss/politics08.xml");
+  return parseRSS(xml).map((i) => formatItem(i, "Politics"));
 }
 
-// Travel (Travel + Leisure)
 async function fetchTravel() {
-  try {
-    const res = await fetchWithTimeout("https://www.travelandleisure.com/rss");
-    const xml = await res.text();
-    const feed = await parser.parseString(xml);
-    return feed.items.map((i) =>
-      createTrendFromRssItem(i, "Travel", "global", "Travel + Leisure")
-    );
-  } catch {
-    return [];
-  }
+  const xml = await fetchWithTimeout("https://www.travelandleisure.com/rss");
+  return parseRSS(xml).map((i) => formatItem(i, "Travel"));
 }
 
-// ===== Handler =====
+// ===== Main handler =====
 exports.handler = async function () {
-  const sources = [
-    fetchHackerNewsFrontpage(),
-    fetchTheVerge(),
-    fetchIGNGaming(),
-    fetchVentureBeatAI(),
-    fetchMITTech(),
-    fetchGoogleNewsVN(),
-    fetchYahooFinance(),
-    fetchCNBCFinance(),
-    fetchScienceMagazine(),
-    fetchNewScientist(),
-    fetchAppleMusicMostPlayedVN(),
-    fetchAppleMusicNewReleasesVN(),
-    fetchYouTubeTrendingVN(),
-    fetchVariety(),
-    fetchDeadline(),
-    fetchGameKVN(),
-    fetchZingNewsEntertainment(),
-    fetchBBCWorld(),
-    fetchESPN(),
-    fetchLogistics(),
-    fetchCybernews(),
-    fetchHealthcare(),
-    fetchEducation(),
-    fetchEnvironment(),
-    fetchPolitics(),
-    fetchTravel(),
-  ];
+  try {
+    const results = await Promise.allSettled([
+      fetchHackerNewsFrontpage(),
+      fetchTheVerge(),
+      fetchIGNGaming(),
+      fetchVentureBeatAI(),
+      fetchMITTech(),
+      fetchGoogleNewsVN(),
+      fetchYahooFinance(),
+      fetchCNBCFinance(),
+      fetchScienceMagazine(),
+      fetchNewScientist(),
+      fetchAppleMusicMostPlayedVN(),
+      fetchAppleMusicNewReleasesVN(),
+      fetchYouTubeTrendingVN(),
+      fetchVariety(),
+      fetchDeadline(),
+      fetchGameKVN(),
+      fetchZingNewsEntertainment(),
+      fetchBBCWorld(),
+      fetchESPN(),
+      fetchLogistics(),
+      fetchCybernews(),
+      fetchHealthcare(),
+      fetchEducation(),
+      fetchEnvironment(),
+      fetchPolitics(),
+      fetchTravel(),
+    ]);
 
-  let trends = [];
-  await Promise.allSettled(sources).then((results) => {
-    results.forEach((r) => {
-      if (r.status === "fulfilled") {
-        trends = trends.concat(r.value);
-      } else {
-        console.warn("A source failed:", r.reason?.message || r.reason);
-      }
-    });
-  });
+    const trends = results
+      .filter((r) => r.status === "fulfilled")
+      .flatMap((r) => r.value);
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      success: true,
-      count: trends.length,
-      trends: preprocessTrends(trends),
-    }),
-  };
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, trends }),
+    };
+  } catch (e) {
+    console.error("Fatal error in fetch-trends:", e.message);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ success: false, error: e.message }),
+    };
+  }
 };
