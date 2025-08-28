@@ -249,11 +249,13 @@ async function fetchDeadline() {
   return rssItems(xml).map(block => createTrendFromRssItem(block, "Entertainment", "us", "Deadline"));
 }
 
-// Kênh14
-async function fetchKenh14() {
-  const res = await fetchWithTimeout("https://kenh14.vn/giai-tri.rss");
+// GameK.vn (Gaming VN)
+async function fetchGameKVN() {
+  const res = await fetchWithTimeout("https://gamek.vn/rss.chn");
   const xml = await res.text();
-  return rssItems(xml).map(block => createTrendFromRssItem(block, "Entertainment", "vn", "Kênh14"));
+  return rssItems(xml).map(block =>
+    createTrendFromRssItem(block, "Gaming", "vn", "GameK.vn")
+  );
 }
 
 // Zing News
@@ -351,7 +353,7 @@ exports.handler = async (event) => {
       fetchYouTubeTrendingVN(),
       fetchVariety(),
       fetchDeadline(),
-      fetchKenh14(),
+      fetchGameKVN(),
       fetchZingNewsEntertainment(),
       fetchBBCWorld(),
       fetchESPN(),
