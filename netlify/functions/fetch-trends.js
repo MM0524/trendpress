@@ -1,239 +1,116 @@
-// File: netlify/functions/fetch-trends.js
+// netlify/functions/fetch-trends.js
 const fetch = require("node-fetch");
 const { XMLParser } = require("fast-xml-parser");
 
-const parser = new XMLParser({
-  ignoreAttributes: false,
-  attributeNamePrefix: "@_",
-});
-
 // ===== Helpers =====
-async function fetchWithTimeout(url, options = {}, ms = 10000) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), ms);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
-  } finally {
-    clearTimeout(timeout);
-  }
+function normalizeItem(item, sourceName) {
+  return {
+    title:
+      item.title?.toString() ||
+      item["media:title"]?.toString() ||
+      "Untitled",
+    link:
+      item.link?.href ||
+      item.link ||
+      item.id ||
+      "#",
+    published: item.pubDate || item.published || item.updated || null,
+    source: sourceName,
+  };
 }
 
-function parseRSS(xml) {
+async function fetchRSS(source) {
   try {
-    const data = parser.parse(xml);
-    const items = data?.rss?.channel?.item || data?.feed?.entry || [];
-    return Array.isArray(items) ? items : [items];
-  } catch (e) {
-    console.warn("XML parse error:", e.message);
+    const res = await fetch(source.url, { timeout: 10000 });
+    const text = await res.text();
+
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "",
+    });
+    const parsed = parser.parse(text);
+
+    let items = [];
+
+    // Kiểu RSS truyền thống
+    if (parsed?.rss?.channel?.item) {
+      items = parsed.rss.channel.item.map((it) =>
+        normalizeItem(it, source.name)
+      );
+    }
+    // Kiểu Atom feed
+    else if (parsed?.feed?.entry) {
+      items = parsed.feed.entry.map((it) =>
+        normalizeItem(
+          {
+            title: it.title,
+            link: it.link?.href || it.id,
+            pubDate: it.updated,
+          },
+          source.name
+        )
+      );
+    }
+
+    return items;
+  } catch (err) {
+    console.error(`❌ Lỗi khi fetch ${source.name}:`, err.message);
     return [];
   }
 }
 
-function formatItem(item, source) {
-  return {
-    title: item.title?.["#text"] || item.title || "No title",
-    link: item.link?.["@_href"] || item.link || item.guid || "",
-    pubDate: item.pubDate || item.published || item.updated || new Date().toISOString(),
-    source,
-  };
-}
-
 // ===== Sources =====
-async function fetchHackerNewsFrontpage() {
-  const xml = await fetchWithTimeout("https://hnrss.org/frontpage");
-  return parseRSS(xml).map((i) => formatItem(i, "Hacker News"));
-}
+const sources = [
+  // Tech / AI
+  { name: "Hacker News", url: "https://hnrss.org/frontpage", type: "rss" },
+  { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", type: "rss" },
+  { name: "IGN Gaming", url: "https://feeds.ign.com/ign/games-all", type: "rss" },
+  { name: "VentureBeat AI", url: "https://venturebeat.com/category/ai/feed/", type: "rss" },
+  { name: "MIT Tech Review", url: "https://www.technologyreview.com/feed/", type: "rss" },
 
-async function fetchTheVerge() {
-  const xml = await fetchWithTimeout("https://www.theverge.com/rss/index.xml");
-  return parseRSS(xml).map((i) => formatItem(i, "The Verge"));
-}
+  // News / Finance
+  { name: "Google News VN", url: "https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi", type: "rss" },
+  { name: "Yahoo Finance", url: "https://finance.yahoo.com/news/rss", type: "rss" },
+  { name: "CNBC Finance", url: "https://www.cnbc.com/id/10000664/device/rss/rss.html", type: "rss" },
 
-async function fetchIGNGaming() {
-  const xml = await fetchWithTimeout("https://www.ign.com/rss");
-  return parseRSS(xml).map((i) => formatItem(i, "IGN Gaming"));
-}
+  // Science
+  { name: "Science Magazine", url: "https://www.sciencemag.org/rss/news_current.xml", type: "rss" },
+  { name: "New Scientist", url: "https://www.newscientist.com/feed/home/", type: "rss" },
 
-async function fetchVentureBeatAI() {
-  const xml = await fetchWithTimeout("https://venturebeat.com/category/ai/feed/");
-  return parseRSS(xml).map((i) => formatItem(i, "VentureBeat AI"));
-}
+  // Music
+  { name: "Apple Music Most Played VN", url: "https://rss.applemarketingtools.com/api/v2/vn/music/most-played/10/songs.rss", type: "rss" },
+  { name: "Apple Music New Releases VN", url: "https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/10/albums.rss", type: "rss" },
 
-async function fetchMITTech() {
-  const xml = await fetchWithTimeout("https://www.technologyreview.com/feed/");
-  return parseRSS(xml).map((i) => formatItem(i, "MIT Tech Review"));
-}
+  // Video
+  { name: "YouTube Trending VN", url: "https://www.youtube.com/feeds/videos.xml?playlist_id=PL5d1KNNFArxxwCJAFMdG8sSUxFuFQO6hx", type: "rss" },
 
-async function fetchGoogleNewsVN() {
-  const xml = await fetchWithTimeout("https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi");
-  return parseRSS(xml).map((i) => formatItem(i, "Google News VN"));
-}
+  // Media & Entertainment
+  { name: "Variety", url: "https://variety.com/feed/", type: "rss" },
+  { name: "Deadline", url: "https://deadline.com/feed/", type: "rss" },
+  { name: "GameK VN", url: "https://gamek.vn/home.rss", type: "rss" },
+  { name: "ZingNews Entertainment", url: "https://zingnews.vn/rss/giai-tri.rss", type: "rss" },
 
-async function fetchYahooFinance() {
-  const xml = await fetchWithTimeout("https://finance.yahoo.com/news/rssindex");
-  return parseRSS(xml).map((i) => formatItem(i, "Yahoo Finance"));
-}
+  // General News / Sports
+  { name: "BBC World", url: "http://feeds.bbci.co.uk/news/world/rss.xml", type: "rss" },
+  { name: "ESPN", url: "https://www.espn.com/espn/rss/news", type: "rss" },
 
-async function fetchCNBCFinance() {
-  const xml = await fetchWithTimeout("https://www.cnbc.com/id/10000664/device/rss/rss.html");
-  return parseRSS(xml).map((i) => formatItem(i, "CNBC Finance"));
-}
-
-async function fetchScienceMagazine() {
-  const xml = await fetchWithTimeout("https://www.sciencemag.org/rss/news_current.xml");
-  return parseRSS(xml).map((i) => formatItem(i, "Science Magazine"));
-}
-
-async function fetchNewScientist() {
-  const xml = await fetchWithTimeout("https://www.newscientist.com/feed/home/");
-  return parseRSS(xml).map((i) => formatItem(i, "New Scientist"));
-}
-
-async function fetchAppleMusicMostPlayedVN() {
-  const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/10/songs.json");
-  const data = JSON.parse(res);
-  return data.feed.results.map((i) => ({
-    title: i.name,
-    link: i.url,
-    pubDate: i.releaseDate || new Date().toISOString(),
-    source: "Apple Music Most Played VN",
-  }));
-}
-
-async function fetchAppleMusicNewReleasesVN() {
-  const res = await fetchWithTimeout("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/10/albums.json");
-  const data = JSON.parse(res);
-  return data.feed.results.map((i) => ({
-    title: i.name,
-    link: i.url,
-    pubDate: i.releaseDate || new Date().toISOString(),
-    source: "Apple Music New Releases VN",
-  }));
-}
-
-async function fetchYouTubeTrendingVN() {
-  const res = await fetchWithTimeout("https://yt.lemnoslife.com/charts/trending?region=VN");
-  const data = JSON.parse(res);
-  return (data?.items || []).map((i) => ({
-    title: i.snippet.title,
-    link: `https://www.youtube.com/watch?v=${i.id}`,
-    pubDate: i.snippet.publishedAt,
-    source: "YouTube Trending VN",
-  }));
-}
-
-async function fetchVariety() {
-  const xml = await fetchWithTimeout("https://variety.com/feed/");
-  return parseRSS(xml).map((i) => formatItem(i, "Variety"));
-}
-
-async function fetchDeadline() {
-  const xml = await fetchWithTimeout("https://deadline.com/feed/");
-  return parseRSS(xml).map((i) => formatItem(i, "Deadline"));
-}
-
-async function fetchGameKVN() {
-  const xml = await fetchWithTimeout("https://gamek.vn/rss/home.rss");
-  return parseRSS(xml).map((i) => formatItem(i, "GameK VN"));
-}
-
-async function fetchZingNewsEntertainment() {
-  const xml = await fetchWithTimeout("https://zingnews.vn/rss/giai-tri.rss");
-  return parseRSS(xml).map((i) => formatItem(i, "Zing News Giải trí"));
-}
-
-async function fetchBBCWorld() {
-  const xml = await fetchWithTimeout("http://feeds.bbci.co.uk/news/world/rss.xml");
-  return parseRSS(xml).map((i) => formatItem(i, "BBC World"));
-}
-
-async function fetchESPN() {
-  const xml = await fetchWithTimeout("https://www.espn.com/espn/rss/news");
-  return parseRSS(xml).map((i) => formatItem(i, "ESPN"));
-}
-
-async function fetchLogistics() {
-  const xml = await fetchWithTimeout("https://www.logisticsmgmt.com/rss");
-  return parseRSS(xml).map((i) => formatItem(i, "Logistics"));
-}
-
-async function fetchCybernews() {
-  const xml = await fetchWithTimeout("https://cybernews.com/feed/");
-  return parseRSS(xml).map((i) => formatItem(i, "Cybernews"));
-}
-
-async function fetchHealthcare() {
-  const xml = await fetchWithTimeout("https://www.healthcareitnews.com/home/feed");
-  return parseRSS(xml).map((i) => formatItem(i, "Healthcare"));
-}
-
-async function fetchEducation() {
-  const xml = await fetchWithTimeout("https://www.insidehighered.com/rss/news");
-  return parseRSS(xml).map((i) => formatItem(i, "Education"));
-}
-
-async function fetchEnvironment() {
-  const xml = await fetchWithTimeout("https://www.theguardian.com/environment/rss");
-  return parseRSS(xml).map((i) => formatItem(i, "Environment"));
-}
-
-async function fetchPolitics() {
-  const xml = await fetchWithTimeout("https://www.politico.com/rss/politics08.xml");
-  return parseRSS(xml).map((i) => formatItem(i, "Politics"));
-}
-
-async function fetchTravel() {
-  const xml = await fetchWithTimeout("https://www.travelandleisure.com/rss");
-  return parseRSS(xml).map((i) => formatItem(i, "Travel"));
-}
+  // Other fields
+  { name: "Logistics", url: "https://www.supplychaindigital.com/rss", type: "rss" },
+  { name: "Cybernews", url: "https://cybernews.com/feed/", type: "rss" },
+  { name: "Healthcare", url: "https://www.healthcareitnews.com/rss.xml", type: "rss" },
+  { name: "Education", url: "https://www.chronicle.com/section/News/6/rss", type: "rss" },
+  { name: "Environment", url: "https://www.theguardian.com/environment/rss", type: "rss" },
+  { name: "Politics", url: "https://www.politico.com/rss/politics08.xml", type: "rss" },
+  { name: "Travel", url: "https://www.travelandleisure.com/rss", type: "rss" },
+];
 
 // ===== Main handler =====
 exports.handler = async function () {
-  try {
-    const results = await Promise.allSettled([
-      fetchHackerNewsFrontpage(),
-      fetchTheVerge(),
-      fetchIGNGaming(),
-      fetchVentureBeatAI(),
-      fetchMITTech(),
-      fetchGoogleNewsVN(),
-      fetchYahooFinance(),
-      fetchCNBCFinance(),
-      fetchScienceMagazine(),
-      fetchNewScientist(),
-      fetchAppleMusicMostPlayedVN(),
-      fetchAppleMusicNewReleasesVN(),
-      fetchYouTubeTrendingVN(),
-      fetchVariety(),
-      fetchDeadline(),
-      fetchGameKVN(),
-      fetchZingNewsEntertainment(),
-      fetchBBCWorld(),
-      fetchESPN(),
-      fetchLogistics(),
-      fetchCybernews(),
-      fetchHealthcare(),
-      fetchEducation(),
-      fetchEnvironment(),
-      fetchPolitics(),
-      fetchTravel(),
-    ]);
+  const results = await Promise.all(sources.map(fetchRSS));
+  const trends = results.flat();
 
-    const trends = results
-      .filter((r) => r.status === "fulfilled")
-      .flatMap((r) => r.value);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, trends }),
-    };
-  } catch (e) {
-    console.error("Fatal error in fetch-trends:", e.message);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ success: false, error: e.message }),
-    };
-  }
+  return {
+    statusCode: 200,
+    body: JSON.stringify(trends, null, 2),
+  };
 };
