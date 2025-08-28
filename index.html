@@ -115,6 +115,7 @@
         #login-choice-modal .modal-title { color: var(--primary-light); font-size: 1.75rem; margin-bottom: 0.5rem; }
         #login-choice-modal .modal-body { margin-bottom: 2rem; font-size: 0.9rem; }
         #login-choice-modal .modal-actions { display: flex; flex-direction: column; gap: 1rem; }
+        /* Cập nhật các nút đăng nhập để chỉ có SVG và span trống */
         #login-choice-modal .btn-social { background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 1rem; text-align: center; font-size: 0.95rem; font-weight: 500; position: relative; }
         #login-choice-modal .btn-social:hover { border-color: var(--primary-color); background-color: #21233a; }
         #login-choice-modal .btn-social svg { position: absolute; left: 1.5rem; stroke: var(--text-muted-color); width: 20px; height: 20px; }
@@ -287,7 +288,11 @@
 
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
-    <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Sign in with Google</span></button><button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span>Sign in with Work/School</span></button></div></div></div>
+    <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions">
+        <!-- CẬP NHẬT HTML: Thêm ID cho span và loại bỏ văn bản tiếng Anh cứng nhắc -->
+        <button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span id="login-google-text"></span></button>
+        <button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span id="login-work-text"></span></button>
+    </div></div></div>
     <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
     <div class="modal-overlay" id="about-modal"><div class="modal-content"><button class="modal-close" data-close="about-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p></div></div>
     
@@ -311,7 +316,7 @@
         let currentView = localStorage.getItem('currentView') || 'main';
         let hotTrendsChart = null;
         let analysisChart = null;
-        let allTrends = []; // This will now hold trends fetched from the Netlify Function
+        let allTrends = [];
         let categories = [];
         let currentLanguage = localStorage.getItem('lang') || 'vi';
 
@@ -327,30 +332,42 @@
 
         const translations = {
             vi: {
-                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign In': 'Đăng nhập', 'Sign Out': 'Đăng xuất', 'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google', 'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại', 'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': '🔍 Phân tích', 'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium', 'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.', 'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Top 5 Hot Trends': 'Top 5 Xu Hướng Nóng Nhất', 'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi', 'Category Leaderboards': 'Bảng xếp hạng danh mục', 'About TrendPulse': 'Giới thiệu TrendPulse', "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": 'Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề xu hướng để có thông tin chi tiết từ AI.', 'Footer Description': 'Nền tảng phân tích và dự đoán xu hướng hàng đầu, giúp bạn nắm bắt những thay đổi mới nhất trong thế giới số.', 'Quick Links': 'Liên kết nhanh', 'Features': 'Tính năng', 'AI Analysis': 'Phân tích AI', 'Trend Prediction': 'Dự đoán xu hướng', 'Leaderboards': 'Bảng xếp hạng', 'Personal Recommendations': 'Gợi ý cá nhân', 'Contact': 'Liên hệ', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Hỗ trợ: support@trendpulse.com', 'All rights reserved.': 'Tất cả quyền được bảo lưu.', 'AI: Checking...': 'AI: Đang kiểm tra...', 'AI: Ready': 'AI: Sẵn sàng', 'AI: Unavailable': 'AI: Không khả dụng', 'AI: Connection error': 'AI: Lỗi kết nối', 'AI Insight for': 'AI Insight cho', 'AI Analysis Summary for': 'Tóm tắt Phân tích AI cho', 'AI Deep Dive for': 'Phân tích Chuyên sâu cho', 'Analyzing trend...': 'Đang phân tích xu hướng...', 'Unable to analyze trend.': 'Không thể phân tích xu hướng.', 'Trends for': 'Xu hướng cho', 'Success Score': 'Tỷ Lệ Thành Công', 'Summary': 'Tóm Tắt', 'Interest Over Time': 'Mức Độ Quan Tâm', 'Engagement': 'Tương tác', 'Find Trends': 'Tìm & Lọc Trends', 'Popular Tags': 'Thẻ Phổ Biến', 'Trending Topics': 'Chủ đề tìm kiếm', 'Trending Queries': 'Cụm từ tìm kiếm', 'Growth': 'Gia tăng', 'All Categories': 'Tất cả danh mục',
-                'Search by keyword...': 'Tìm kiếm theo từ khóa...',
-                'Add search term': 'Thêm cụm từ tìm kiếm',
-                '+ Compare': '+ So sánh',
+                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign In': 'Đăng nhập', 'Sign Out': 'Đăng xuất',
+                'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google',
+                'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại',
+                'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': '🔍 Phân tích',
+                'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium',
+                'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.',
+                'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Top 5 Hot Trends': 'Top 5 Xu Hướng Nóng Nhất', 'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi', 'Category Leaderboards': 'Bảng xếp hạng danh mục', 'About TrendPulse': 'Giới thiệu TrendPulse',
+                "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": 'Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề xu hướng để có thông tin chi tiết từ AI.',
+                'Footer Description': 'Nền tảng phân tích và dự đoán xu hướng hàng đầu, giúp bạn nắm bắt những thay đổi mới nhất trong thế giới số.', 'Quick Links': 'Liên kết nhanh', 'Features': 'Tính năng', 'AI Analysis': 'Phân tích AI', 'Trend Prediction': 'Dự đoán xu hướng', 'Leaderboards': 'Bảng xếp hạng', 'Personal Recommendations': 'Gợi ý cá nhân', 'Contact': 'Liên hệ', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Hỗ trợ: support@trendpulse.com', 'All rights reserved.': 'Tất cả quyền được bảo lưu.',
+                'AI: Checking...': 'AI: Đang kiểm tra...', 'AI: Ready': 'AI: Sẵn sàng', 'AI: Unavailable': 'AI: Không khả dụng', 'AI: Connection error': 'AI: Lỗi kết nối', 'AI Insight for': 'AI Insight cho', 'AI Analysis Summary for': 'Tóm tắt Phân tích AI cho', 'AI Deep Dive for': 'Phân tích Chuyên sâu cho', 'Analyzing trend...': 'Đang phân tích xu hướng...', 'Unable to analyze trend.': 'Không thể phân tích xu hướng.', 'Trends for': 'Xu hướng cho', 'Success Score': 'Tỷ Lệ Thành Công', 'Summary': 'Tóm Tắt', 'Interest Over Time': 'Mức Độ Quan Tâm', 'Engagement': 'Tương tác', 'Find Trends': 'Tìm & Lọc Trends', 'Popular Tags': 'Thẻ Phổ Biến', 'Trending Topics': 'Chủ đề tìm kiếm', 'Trending Queries': 'Cụm từ tìm kiếm', 'Growth': 'Gia tăng', 'All Categories': 'Tất cả danh mục',
+                'Search by keyword...': 'Tìm kiếm theo từ khóa...', 'Add search term': 'Thêm cụm từ tìm kiếm', '+ Compare': '+ So sánh',
                 'Vietnam': 'Việt Nam', 'United States': 'Hoa Kỳ', 'Global': 'Toàn cầu',
                 'Last 12 months': '12 tháng qua', 'Last 30 days': '30 ngày qua', 'Last 7 days': '7 ngày qua',
-                'Rising': 'Đột phá', 'New': 'Mới', 'Stable': 'Ổn định',
-                'Your Trends': 'Xu hướng của bạn', // For For You leaderboard
-                'Top in': 'Top đầu trong',
-                'Trending Sources': 'Nguồn phổ biến',
-                'No trends found.': 'Không tìm thấy xu hướng nào.'
+                'Rising': 'Đột phá', 'No trends found.': 'Không tìm thấy xu hướng nào.',
+                'No Title Available': 'Không có tiêu đề', // NEW: Fallback for missing title
+                // NEW: Category translations
+                'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị' // Add other categories you might have
             },
             en: {
-                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out', 'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google', 'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now', 'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': '🔍 Analyze', 'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences', 'Premium Access Required': 'Premium Access Required', 'Please sign in with a company or school email to view the Trending Board.': 'Please sign in with a company or school email to view the Trending Board.', 'Log In': 'Log In', 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.', 'Trending Board Dashboard': 'Trending Board Dashboard', 'Top 5 Hot Trends': 'Top 5 Hot Trends', 'Your Followed Trends': 'Your Followed Trends', 'Category Leaderboards': 'Category Leaderboards', 'About TrendPulse': 'About TrendPulse', "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.", 'Footer Description': 'A leading platform for trend analysis and prediction, helping you stay ahead of the curve in the digital world.', 'Quick Links': 'Quick Links', 'Features': 'Features', 'AI Analysis': 'AI Analysis', 'Trend Prediction': 'Trend Prediction', 'Leaderboards': 'Leaderboards', 'Personal Recommendations': 'Personal Recommendations', 'Contact': 'Contact', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Support: support@trendpulse.com', 'All rights reserved.': 'All rights reserved.', 'AI: Checking...': 'AI: Checking...', 'AI: Ready': 'AI: Ready', 'AI: Unavailable': 'AI: Unavailable', 'AI: Connection error': 'AI: Connection error', 'AI Insight for': 'AI Insight for', 'AI Analysis Summary for': 'AI Analysis Summary for', 'AI Deep Dive for': 'AI Deep Dive for', 'Analyzing trend...': 'Analyzing trend...', 'Unable to analyze trend.': 'Unable to analyze trend.', 'Trends for': 'Trends for', 'Success Score': 'Success Score', 'Summary': 'Summary', 'Interest Over Time': 'Interest Over Time', 'Engagement': 'Engagement', 'Find Trends': 'Find & Filter Trends', 'Popular Tags': 'Popular Tags', 'Trending Topics': 'Trending Topics', 'Trending Queries': 'Trending Queries', 'Growth': 'Growth', 'All Categories': 'All Categories',
-                'Search by keyword...': 'Search by keyword...',
-                'Add search term': 'Add search term',
-                '+ Compare': '+ Compare',
+                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
+                'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google',
+                'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now',
+                'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': '🔍 Analyze',
+                'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences', 'Premium Access Required': 'Premium Access Required',
+                'Please sign in with a company or school email to view the Trending Board.': 'Please sign in with a company or school email to view the Trending Board.', 'Log In': 'Log In', 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.',
+                'Trending Board Dashboard': 'Trending Board Dashboard', 'Top 5 Hot Trends': 'Top 5 Hot Trends', 'Your Followed Trends': 'Your Followed Trends', 'Category Leaderboards': 'Category Leaderboards', 'About TrendPulse': 'About TrendPulse',
+                "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.",
+                'Footer Description': 'A leading platform for trend analysis and prediction, helping you stay ahead of the curve in the digital world.', 'Quick Links': 'Quick Links', 'Features': 'Features', 'AI Analysis': 'AI Analysis', 'Trend Prediction': 'Trend Prediction', 'Leaderboards': 'Leaderboards', 'Personal Recommendations': 'Personal Recommendations', 'Contact': 'Contact', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Support: support@trendpulse.com', 'All rights reserved.': 'All rights reserved.',
+                'AI: Checking...': 'AI: Checking...', 'AI: Ready': 'AI: Ready', 'AI: Unavailable': 'AI: Unavailable', 'AI: Connection error': 'AI: Connection error', 'AI Insight for': 'AI Insight for', 'AI Analysis Summary for': 'AI Analysis Summary for', 'AI Deep Dive for': 'AI Deep Dive for', 'Analyzing trend...': 'Analyzing trend...', 'Unable to analyze trend.': 'Unable to analyze trend.', 'Trends for': 'Trends for', 'Success Score': 'Success Score', 'Summary': 'Summary', 'Interest Over Time': 'Interest Over Time', 'Engagement': 'Engagement', 'Find Trends': 'Find & Filter Trends', 'Popular Tags': 'Popular Tags', 'Trending Topics': 'Trending Topics', 'Trending Queries': 'Trending Queries', 'Growth': 'Growth', 'All Categories': 'All Categories',
+                'Search by keyword...': 'Search by keyword...', 'Add search term': 'Add search term', '+ Compare': '+ Compare',
                 'Vietnam': 'Vietnam', 'United States': 'United States', 'Global': 'Global',
                 'Last 12 months': 'Last 12 months', 'Last 30 days': 'Last 30 days', 'Last 7 days': 'Last 7 days',
-                'Rising': 'Rising', 'New': 'New', 'Stable': 'Stable',
-                'Your Trends': 'Your Trends',
-                'Top in': 'Top in',
-                'Trending Sources': 'Trending Sources',
-                'No trends found.': 'No trends found.'
+                'Rising': 'Rising', 'No trends found.': 'No trends found.',
+                'No Title Available': 'No Title Available',
+                // NEW: Category translations
+                'Technology': 'Technology', 'Fashion': 'Fashion', 'Gaming': 'Gaming', 'Finance': 'Finance', 'Health': 'Health', 'Travel': 'Travel', 'Food': 'Food', 'AI': 'AI', 'News': 'News', 'Science': 'Science', 'Music': 'Music', 'Media': 'Media', 'Entertainment': 'Entertainment', 'Sports': 'Sports', 'Logistics': 'Logistics', 'Cybersecurity': 'Cybersecurity', 'Healthcare': 'Healthcare', 'Education': 'Education', 'Environment': 'Environment', 'Politics': 'Politics', 'Marketing': 'Marketing'
             }
         };
 
@@ -358,7 +375,10 @@
             { selector: '#nav-top-trends', key: 'Top Trends' }, { selector: '#nav-trending-board', key: 'Trending Board' },
             { selector: '#nav-for-u a', key: 'For U' }, { selector: '#nav-about', key: 'About' },
             { selector: '#sign-in-btn', key: 'Sign In' }, { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' },
-            { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' }, { selector: '#login-google-btn span', key: 'Sign in with Google' },
+            { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' },
+            // CẬP NHẬT: Selector mới cho các nút đăng nhập
+            { selector: '#login-google-text', key: 'Sign in with Google' },
+            { selector: '#login-work-text', key: 'Sign in with Work/School' },
             { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' }, { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' },
             { selector: '#trending-header-text', key: 'Trending Now' }, { selector: '#clear-filter-btn', key: 'Show All Trends' },
             { selector: '#load-more-btn', key: 'Load More' }, { selector: '#for-u-load-more-btn', key: 'Load More' },
@@ -411,7 +431,6 @@
         function openModal(modalId) { document.getElementById(modalId).classList.add('show'); }
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
 
-        // UPDATED: fetchLiveTrends now sends filters to Netlify Function
         async function fetchLiveTrends(filters = {}) {
             try {
                 const params = new URLSearchParams();
@@ -419,9 +438,10 @@
                 if (filters.category && filters.category !== 'All') params.append('category', filters.category);
                 if (filters.timeframe && filters.timeframe !== 'all') params.append('timeframe', filters.timeframe);
                 if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
+                if (filters.hashtag) params.append('hashtag', filters.hashtag); // NEW: Pass hashtag filter to backend
                 
                 const url = `/.netlify/functions/fetch-trends?${params.toString()}`;
-                console.log("Fetching trends from:", url); // Log the URL for debugging
+                console.log("Fetching trends from:", url);
 
                 const res = await fetch(url);
                 if (!res.ok) {
@@ -471,16 +491,14 @@
             } catch (error) { console.error("Secure analysis request failed:", error); throw error; }
         }
 
-        // UPDATED: preprocessTrends on frontend is simpler now, as backend handles initial data prep
         function preprocessTrends(trends) {
             if (!trends || trends.length === 0) return [];
             trends.forEach((trendItem, i) => {
-                trendItem.id = trendItem.id || i; // Ensure ID
-                // Generate metrics for frontend hotness scoring, assuming backend doesn't provide them yet
+                trendItem.id = trendItem.id || i;
                 trendItem.views = (trendItem.votes || 0) * (Math.random() * 50 + 10);
                 trendItem.interactions = (trendItem.votes || 0) * (Math.random() * 5 + 1);
                 trendItem.searches = (trendItem.votes || 0) * (Math.random() * 2 + 0.5);
-                trendItem.type = trendItem.type || (i % 3 === 0 ? 'topic' : 'query'); // Assign type if not from backend
+                trendItem.type = trendItem.type || (i % 3 === 0 ? 'topic' : 'query');
             });
 
             const maxValues = {
@@ -547,7 +565,8 @@
         }
 
         function createTrendCard(trend, delay = 0) {
-            if (!trend || typeof trend.title_en === 'undefined') { console.error("Invalid trend data passed to createTrendCard:", trend); return document.createElement('div'); }
+            // Updated check: now expects title_en or title_vi to be present from backend
+            if (!trend || (!trend.title_en && !trend.title_vi)) { console.error("Invalid trend data passed to createTrendCard: Missing title", trend); return document.createElement('div'); }
             const trendCard = document.createElement('div');
             trendCard.className = 'trend-card';
             trendCard.dataset.trendId = trend.id;
@@ -566,7 +585,7 @@
                 <p class="trend-description">${localizedDesc}</p>
                 <div class="trend-footer">
                     <div class="trend-tags">
-                        <span class="tag category">${trend.category}</span>
+                        <span class="tag category">${t(trend.category)}</span> // NEW: Translate category here
                         ${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${tag}">#${tag}</span>`).join('')}
                     </div>
                     <div class="trend-actions">
@@ -580,9 +599,8 @@
             return trendCard;
         }
 
-        // UPDATED: getVisibleTrends will now use `allTrends` directly, which comes from backend after initial filtering
         function getVisibleTrends() {
-            let filtered = [...allTrends]; // allTrends is already filtered by backend based on TB filters
+            let filtered = [...allTrends];
 
             if (currentView === 'forU') {
                 if (!user.isLoggedIn || user.accountType !== 'work') return [];
@@ -601,11 +619,12 @@
                     });
             }
 
-            // For 'main' view, further filter the already backend-filtered allTrends
             if (currentFilter.type === 'category' && currentFilter.value !== 'All') {
                 filtered = filtered.filter(trendItem => trendItem && trendItem.category === currentFilter.value);
             }
             if (currentFilter.hashtag) {
+                // If hashtag filtering is complex (e.g., includes partial matches), you might need backend support.
+                // For exact match on tags:
                 filtered = filtered.filter(trendItem => trendItem && (trendItem.tags || []).includes(currentFilter.hashtag));
             }
             if (currentFilter.searchTerm) {
@@ -625,7 +644,7 @@
 
             const listElement = currentView === 'main' ? DOM.trendsList : DOM.forUTrendsList;
             const footerButton = currentView === 'main' ? DOM.loadMoreBtn : DOM.forULoadMoreBtn;
-            const trendsToDisplay = getVisibleTrends(); // Gets filtered trends
+            const trendsToDisplay = getVisibleTrends();
 
             if (!listElement) {
                 console.error("Trends list element not found for current view:", currentView);
@@ -664,10 +683,13 @@
             }
         }
 
-        function clearMainViewFilters() {
+        async function clearMainViewFilters() { // Made async because it fetches data
             currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '' };
             if (DOM.searchInput) DOM.searchInput.value = '';
             if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Re-fetch unfiltered trends for the main view
+            allTrends = await fetchLiveTrends({});
             updateUIForFilter();
         }
 
@@ -676,7 +698,6 @@
             displayTrends();
         }
 
-        // UPDATED: switchView now handles fetching data when switching to Trending Board
         async function switchView(view) {
             currentView = view;
             localStorage.setItem('currentView', view);
@@ -689,8 +710,7 @@
 
             if (view === 'main') {
                 if (DOM.mainViewContainer) DOM.mainViewContainer.classList.remove('hidden');
-                // On main view, fetch all trends (or default unfiltered view)
-                allTrends = await fetchLiveTrends({}); // No specific filters for main view initially
+                allTrends = await fetchLiveTrends({});
             } else if (view === 'forU') {
                 if (!user.isLoggedIn || user.accountType !== 'work') {
                     switchView('main');
@@ -698,7 +718,6 @@
                     return;
                 }
                 if (DOM.forUViewContainer) DOM.forUViewContainer.classList.remove('hidden');
-                // For "For U", fetch all and then filter by user preferences on frontend
                 allTrends = await fetchLiveTrends({});
             } else if (view === 'trendingBoard') {
                 if (!user.isLoggedIn || user.accountType !== 'work') {
@@ -715,18 +734,16 @@
                 if (DOM.tbSearchInput) DOM.tbSearchInput.value = '';
                 if (DOM.tbCompareInput) DOM.tbCompareInput.value = '';
                 
-                // Fetch trends for Trending Board with current filters
                 const tbFilters = {
                     region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
                     category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
                     timeframe: DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m',
-                    // searchTerm will be handled by specific search in TB, not initial fetch
                 };
                 allTrends = await fetchLiveTrends(tbFilters);
-                createHotTrendsChart(); // Now uses the already filtered `allTrends`
+                createHotTrendsChart();
             }
 
-            displayTrends(); // Re-display trends for the current view
+            displayTrends();
             updateActiveNav(view);
             if (DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active')) {
                 DOM.hamburgerMenu.click();
@@ -777,7 +794,7 @@
             categories = [...new Set(allTrends.map(trendItem => trendItem.category))].sort();
             const allOptionText = t('All Categories');
             if (DOM.filterButtonsContainer) {
-                DOM.filterButtonsContainer.innerHTML = [`<button class="filter-btn ${currentFilter.value === 'All' ? 'active' : ''}" data-filter="All">${allOptionText}</button>`, ...categories.map(category => `<button class="filter-btn ${category === currentFilter.value ? 'active' : ''}" data-filter="${category}">${category}</button>`)].join('');
+                DOM.filterButtonsContainer.innerHTML = [`<button class="filter-btn ${currentFilter.value === 'All' ? 'active' : ''}" data-filter="All">${allOptionText}</button>`, ...categories.map(category => `<button class="filter-btn ${category === currentFilter.value ? 'active' : ''}" data-filter="${category}">${t(category)}</button>`)].join(''); // NEW: Translate category name
             }
 
             if (DOM.tbCategoryFilter) {
@@ -786,7 +803,7 @@
                 categories.forEach(cat => {
                     const option = document.createElement('option');
                     option.value = cat;
-                    option.textContent = cat;
+                    option.textContent = t(cat); // NEW: Translate category name
                     DOM.tbCategoryFilter.appendChild(option);
                 });
                 DOM.tbCategoryFilter.value = currentCategory;
@@ -795,7 +812,7 @@
 
         function populatePreferenceCheckboxes() {
             if (DOM.preferencesGrid) {
-                DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}" ${user.preferences.includes(category) ? 'checked' : ''}> ${category}</label></div>`).join('');
+                DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}" ${user.preferences.includes(category) ? 'checked' : ''}> ${t(category)}</label></div>`).join(''); // NEW: Translate category name
             }
         }
 
@@ -850,7 +867,7 @@
                 const leaderboardDiv = document.createElement('div');
                 leaderboardDiv.className = 'leaderboard-widget';
                 let listItems = topTrends.map(trendItem => `<li data-trend-id="${trendItem.id}">${truncateText(getLocalizedTrendText(trendItem).title, 35)}</li>`).join('');
-                leaderboardDiv.innerHTML = `<h4>${t('Top in')} ${category}</h4><ul>${listItems}</ul>`;
+                leaderboardDiv.innerHTML = `<h4>${t('Top in')} ${t(category)}</h4><ul>${listItems}</ul>`; // NEW: Translate category name
                 container.appendChild(leaderboardDiv);
             });
         }
@@ -920,10 +937,18 @@
         function getCombinedMetric(trend) { return (trend.views || 0) + (trend.interactions || 0) + (trend.searches || 0); }
 
         function getLocalizedTrendText(trend) {
-            if (!trend) return { title: 'Invalid Trend', description: '' };
+            // UPDATED: Improved fallback for title and description
+            const defaultTitle = t('No Title Available');
+            const defaultDescription = t('No Description Available'); // Assuming you add this to translations
+
+            const title_vi = trend.title_vi || trend.title_en || defaultTitle;
+            const description_vi = trend.description_vi || trend.description_en || defaultDescription;
+            const title_en = trend.title_en || trend.title_vi || defaultTitle;
+            const description_en = trend.description_en || trend.description_vi || defaultDescription;
+
             return currentLanguage === 'vi' ?
-                { title: trend.title_vi || trend.title_en || trend.title, description: trend.description_vi || trend.description_en || trend.description } :
-                { title: trend.title_en || trend.title_vi || trend.title, description: trend.description_en || trend.description_vi || trend.description };
+                { title: title_vi, description: description_vi } :
+                { title: title_en, description: description_en };
         }
 
         function truncateText(text = '', maxLength = 180) {
@@ -932,11 +957,14 @@
             return cut.slice(0, cut.lastIndexOf(' ', maxLength) || maxLength) + '…';
         }
 
-        function makeTrendKey(trend) { return `${getLocalizedTrendText(trend).title || ''}|${trend.source || ''}|${trend.date || ''}`.toLowerCase(); }
+        function makeTrendKey(trend) { 
+            // Use localized title for key if available, otherwise fallback
+            const { title: localizedTitle } = getLocalizedTrendText(trend);
+            return `${localizedTitle || ''}|${trend.source || ''}|${trend.date || ''}`.toLowerCase(); 
+        }
         function loadSeenTrends() { try { return JSON.parse(localStorage.getItem('seenTrends') || '[]'); } catch { return []; } }
         function saveSeenTrendKey(key) { try { const seen = new Set(loadSeenTrends()); if (!seen.has(key)) localStorage.setItem('seenTrends', JSON.stringify([...seen, key])); } catch {} }
 
-        // UPDATED: applyTrendOrdering now uses localized title for key
         function applyTrendOrdering() {
             const seenKeys = new Set(loadSeenTrends());
             const unseen = [];
@@ -1118,9 +1146,6 @@
         }
 
         async function renderTBDashboard(timeframe) {
-            const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All';
-            const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
-            
             // Note: allTrends is already filtered by fetchLiveTrends based on region, category, timeframe
             // We just need to filter by type (topic/query) for leaderboards
             let trendsForLeaderboard = [...allTrends];
@@ -1152,7 +1177,6 @@
             }
         }
 
-        // UPDATED: createHotTrendsChart now triggers data fetch from backend
         async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             if (!canvas) {
@@ -1197,27 +1221,21 @@
                 // searchTerm will be applied if there are user.tbSearchTerms
             };
 
-            // If there are search terms, fetch specific trends
             if (user.tbSearchTerms.length > 0) {
-                // Fetch trends specifically for these search terms (and other filters)
-                // This would ideally be another Netlify function or an extension of fetch-trends
-                // For now, we'll refilter allTrends (which was fetched with category/region/timeframe)
-                // This means search terms are applied client-side *after* initial backend filtering
-                let currentAllTrends = await fetchLiveTrends(tbFilters); // Re-fetch with current filters
-                trendsForChart = currentAllTrends.filter(trendItem =>
-                    user.tbSearchTerms.some(term => getLocalizedTrendText(trendItem).title.toLowerCase().includes(term.toLowerCase()))
-                );
-
+                // For search terms, we also need to send them to the backend filter
+                tbFilters.searchTerm = user.tbSearchTerms.join(' '); // Send all terms as one string for now
+                allTrends = await fetchLiveTrends(tbFilters); // Re-fetch with all TB filters + search terms
+                trendsForChart = [...allTrends]; // Since backend already filtered, use all of them
+                
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('Interest Over Time');
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
             } else {
-                // Default view: Top 5 hot trends based on current filters
-                allTrends = await fetchLiveTrends(tbFilters); // Fetch with current filters
+                allTrends = await fetchLiveTrends(tbFilters);
                 trendsForChart = [...allTrends].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
                 
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t('Top 5 Hot Trends')} - ${t('Interest Over Time')}`;
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
-                renderTBDashboard(timeframe); // Pass timeframe here
+                renderTBDashboard(timeframe);
             }
 
             const labels = generateChartLabels(timeframe);
@@ -1292,10 +1310,10 @@
                     });
                 } else if (targetElement.matches('.tag.hashtag')) {
                     currentFilter.type = 'hashtag';
-                    currentFilter.value = 'All';
-                    currentFilter.hashtag = targetElement.dataset.hashtag;
-                    currentFilter.searchTerm = '';
-                    switchView('main');
+                    currentFilter.value = 'All'; // Reset category filter when hashtag is selected
+                    currentFilter.hashtag = targetElement.dataset.tag;
+                    currentFilter.searchTerm = ''; // Clear search term
+                    switchView('main'); // Always switch to main view to apply general filters
                     updateUIForFilter();
                 }
             }
@@ -1332,9 +1350,20 @@
             if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
             if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
 
-            // Initial fetch of trends (unfiltered or default filtered)
-            allTrends = await fetchLiveTrends({}); 
-            applyTrendOrdering(); // This re-orders based on seen trends, but on the fetched set
+            // Initial fetch of trends (unfiltered for main/forU, or default filtered for TB)
+            if (currentView === 'trendingBoard') {
+                const tbFilters = {
+                    region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
+                    category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
+                    timeframe: DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m',
+                };
+                allTrends = await fetchLiveTrends(tbFilters);
+                createHotTrendsChart(); // This will use the already fetched allTrends
+            } else {
+                allTrends = await fetchLiveTrends({}); // Fetch all trends for main/forU default view
+            }
+            
+            applyTrendOrdering();
             populateCategoryFilters();
             populateHashtagFilters();
             updateAuthUI();
@@ -1342,11 +1371,8 @@
             updateActiveNav(currentView);
             updateClearFilterButtonVisibility();
 
-            // If starting on Trending Board, ensure chart is initialized with appropriate data
-            if (currentView === 'trendingBoard') {
-                createHotTrendsChart(); // This will trigger fetchLiveTrends again with TB filters
-            } else {
-                displayTrends(); // Display trends for main/forU view
+            if (currentView !== 'trendingBoard') { // Only display trends for main/forU if not on TB
+                displayTrends();
             }
 
             document.getElementById('loader')?.classList.add('loader-hidden');
@@ -1393,28 +1419,30 @@
             if (list) list.addEventListener('click', handleInteraction);
         });
 
-        if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.addEventListener('click', (e) => {
+        if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.addEventListener('click', async (e) => { // Made async
             if (e.target.matches('.filter-btn')) {
                 currentFilter.type = 'category';
                 currentFilter.value = e.target.dataset.filter;
                 currentFilter.hashtag = '';
                 if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
 
+                // Re-fetch trends with new category filter
+                allTrends = await fetchLiveTrends({ category: currentFilter.value });
                 updateUIForFilter();
             }
         });
         if (DOM.clearFilterBtn) DOM.clearFilterBtn.addEventListener('click', clearMainViewFilters);
 
-        const debouncedSearch = debounce(async () => { // Made async
+        const debouncedSearch = debounce(async () => {
             currentFilter.searchTerm = DOM.searchInput ? DOM.searchInput.value : '';
-            // Fetch trends with current search term and other filters
+            // Re-fetch trends with new search term filter
             allTrends = await fetchLiveTrends({ searchTerm: currentFilter.searchTerm });
             displayedTrends.main = 0;
             displayTrends();
         }, 300);
         if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedSearch);
 
-        if (DOM.hashtagList) DOM.hashtagList.addEventListener('click', async (e) => { // Made async
+        if (DOM.hashtagList) DOM.hashtagList.addEventListener('click', async (e) => {
             if (e.target.matches('.hashtag-btn')) {
                 const hashtag = e.target.dataset.hashtag;
                 if (currentFilter.hashtag === hashtag) {
@@ -1423,18 +1451,43 @@
                     currentFilter.hashtag = hashtag;
                 }
                 currentFilter.type = 'hashtag';
-                currentFilter.value = 'All';
+                currentFilter.value = 'All'; // Clear category filter when hashtag is selected
                 if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
 
-                // Fetch trends with current hashtag and other filters
+                // Re-fetch trends with new hashtag filter
                 allTrends = await fetchLiveTrends({ hashtag: currentFilter.hashtag });
                 displayedTrends.main = 0;
                 displayTrends();
-                updateUIForFilter(); // This is mostly for UI updates now, as data is fetched
+                updateUIForFilter();
             }
         });
 
-        // UPDATED: TB filters now trigger fetchLiveTrends for new data
+        if (DOM.tbSearchInput) DOM.tbSearchInput.addEventListener('keypress', async function(e) { // Made async
+            if (e.key === 'Enter' && this.value.trim() !== '') {
+                // When adding search term, `createHotTrendsChart` will handle refetching
+                await createHotTrendsChart(this.value.trim());
+                this.value = '';
+            }
+        });
+
+        if (DOM.tbCompareInput) DOM.tbCompareInput.addEventListener('keypress', async function(e) { // Made async
+            if (e.key === 'Enter' && this.value.trim() !== '') {
+                // When adding compare term, `createHotTrendsChart` will handle refetching
+                await createHotTrendsChart(null, this.value.trim());
+                this.value = '';
+            }
+        });
+
+        if (DOM.tbSearchChipsContainer) DOM.tbSearchChipsContainer.addEventListener('click', async function(e) { // Made async
+            if (e.target.classList.contains('tb-search-chip-remove')) {
+                const termToRemove = e.target.dataset.term;
+                user.tbSearchTerms = user.tbSearchTerms.filter(term => term !== termToRemove);
+                // After removing, re-render chart, which will trigger a fetch
+                await createHotTrendsChart();
+            }
+        });
+
+        // These event listeners now trigger `createHotTrendsChart` which internally fetches new data
         if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
         if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.addEventListener('change', () => createHotTrendsChart());
         if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart());
@@ -1448,7 +1501,7 @@
             }
         });
 
-        document.getElementById('language-toggle')?.addEventListener('click', async () => { // Made async
+        document.getElementById('language-toggle')?.addEventListener('click', async () => {
             currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi';
             localStorage.setItem('lang', currentLanguage);
             applyTranslations();
@@ -1456,15 +1509,14 @@
             
             // Re-fetch data based on current view/filters for correct language localization from backend
             if (currentView === 'trendingBoard') {
-                await createHotTrendsChart(); // Re-fetches with TB filters
+                await createHotTrendsChart();
             } else {
-                // For main/forU, re-fetch with current main filters
-                const mainFilters = { 
+                const currentMainFilters = { 
                     category: currentFilter.value, 
                     searchTerm: currentFilter.searchTerm, 
-                    hashtag: currentFilter.hashtag // You might need to handle hashtag filtering in backend if complex
+                    hashtag: currentFilter.hashtag
                 };
-                allTrends = await fetchLiveTrends(mainFilters);
+                allTrends = await fetchLiveTrends(currentMainFilters);
                 displayTrends();
             }
         });
