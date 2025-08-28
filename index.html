@@ -114,7 +114,6 @@
         #login-choice-modal .modal-content { max-width: 420px; }
         #login-choice-modal .modal-title { color: var(--primary-light); font-size: 1.75rem; margin-bottom: 0.5rem; }
         #login-choice-modal .modal-body { margin-bottom: 2rem; font-size: 0.9rem; }
-        #login-choice-modal .modal-actions { display: flex; flex-direction: column; gap: 1rem; }
         /* Cập nhật các nút đăng nhập để chỉ có SVG và span trống */
         #login-choice-modal .btn-social { background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 1rem; text-align: center; font-size: 0.95rem; font-weight: 500; position: relative; }
         #login-choice-modal .btn-social:hover { border-color: var(--primary-color); background-color: #21233a; }
@@ -316,7 +315,7 @@
         let currentView = localStorage.getItem('currentView') || 'main';
         let hotTrendsChart = null;
         let analysisChart = null;
-        let allTrends = [];
+        let allTrends = []; // This will now hold trends fetched from the Netlify Function
         let categories = [];
         let currentLanguage = localStorage.getItem('lang') || 'vi';
 
@@ -347,8 +346,10 @@
                 'Last 12 months': '12 tháng qua', 'Last 30 days': '30 ngày qua', 'Last 7 days': '7 ngày qua',
                 'Rising': 'Đột phá', 'No trends found.': 'Không tìm thấy xu hướng nào.',
                 'No Title Available': 'Không có tiêu đề', // NEW: Fallback for missing title
+                'No Description Available': 'Không có mô tả', // NEW: Fallback for missing description
                 // NEW: Category translations
-                'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị' // Add other categories you might have
+                'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị', // Add other categories you might have
+                'General': 'Chung' // NEW: Default category translation
             },
             en: {
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
@@ -366,8 +367,10 @@
                 'Last 12 months': 'Last 12 months', 'Last 30 days': 'Last 30 days', 'Last 7 days': 'Last 7 days',
                 'Rising': 'Rising', 'No trends found.': 'No trends found.',
                 'No Title Available': 'No Title Available',
+                'No Description Available': 'No Description Available',
                 // NEW: Category translations
-                'Technology': 'Technology', 'Fashion': 'Fashion', 'Gaming': 'Gaming', 'Finance': 'Finance', 'Health': 'Health', 'Travel': 'Travel', 'Food': 'Food', 'AI': 'AI', 'News': 'News', 'Science': 'Science', 'Music': 'Music', 'Media': 'Media', 'Entertainment': 'Entertainment', 'Sports': 'Sports', 'Logistics': 'Logistics', 'Cybersecurity': 'Cybersecurity', 'Healthcare': 'Healthcare', 'Education': 'Education', 'Environment': 'Environment', 'Politics': 'Politics', 'Marketing': 'Marketing'
+                'Technology': 'Technology', 'Fashion': 'Fashion', 'Gaming': 'Gaming', 'Finance': 'Finance', 'Health': 'Health', 'Travel': 'Travel', 'Food': 'Food', 'AI': 'AI', 'News': 'News', 'Science': 'Science', 'Music': 'Music', 'Media': 'Media', 'Entertainment': 'Entertainment', 'Sports': 'Sports', 'Logistics': 'Logistics', 'Cybersecurity': 'Cybersecurity', 'Healthcare': 'Healthcare', 'Education': 'Education', 'Environment': 'Environment', 'Politics': 'Politics', 'Marketing': 'Marketing',
+                'General': 'General'
             }
         };
 
@@ -376,7 +379,6 @@
             { selector: '#nav-for-u a', key: 'For U' }, { selector: '#nav-about', key: 'About' },
             { selector: '#sign-in-btn', key: 'Sign In' }, { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' },
             { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' },
-            // CẬP NHẬT: Selector mới cho các nút đăng nhập
             { selector: '#login-google-text', key: 'Sign in with Google' },
             { selector: '#login-work-text', key: 'Sign in with Work/School' },
             { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' }, { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' },
@@ -438,7 +440,7 @@
                 if (filters.category && filters.category !== 'All') params.append('category', filters.category);
                 if (filters.timeframe && filters.timeframe !== 'all') params.append('timeframe', filters.timeframe);
                 if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
-                if (filters.hashtag) params.append('hashtag', filters.hashtag); // NEW: Pass hashtag filter to backend
+                if (filters.hashtag) params.append('hashtag', filters.hashtag);
                 
                 const url = `/.netlify/functions/fetch-trends?${params.toString()}`;
                 console.log("Fetching trends from:", url);
@@ -448,7 +450,7 @@
                     const errorText = await res.text();
                     throw new Error(`HTTP error! Status: ${res.status} - ${errorText}`);
                 }
-                const data = await res.json();
+                const data = await res.json(); // Backend now returns { success: true, trends: [...] }
                 if (!data.success) {
                     throw new Error(data.message || "Failed to fetch trends from backend.");
                 }
@@ -565,7 +567,6 @@
         }
 
         function createTrendCard(trend, delay = 0) {
-            // Updated check: now expects title_en or title_vi to be present from backend
             if (!trend || (!trend.title_en && !trend.title_vi)) { console.error("Invalid trend data passed to createTrendCard: Missing title", trend); return document.createElement('div'); }
             const trendCard = document.createElement('div');
             trendCard.className = 'trend-card';
@@ -585,7 +586,7 @@
                 <p class="trend-description">${localizedDesc}</p>
                 <div class="trend-footer">
                     <div class="trend-tags">
-                        <span class="tag category">${t(trend.category)}</span> // NEW: Translate category here
+                        <span class="tag category">${t(trend.category)}</span>
                         ${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${tag}">#${tag}</span>`).join('')}
                     </div>
                     <div class="trend-actions">
@@ -623,8 +624,6 @@
                 filtered = filtered.filter(trendItem => trendItem && trendItem.category === currentFilter.value);
             }
             if (currentFilter.hashtag) {
-                // If hashtag filtering is complex (e.g., includes partial matches), you might need backend support.
-                // For exact match on tags:
                 filtered = filtered.filter(trendItem => trendItem && (trendItem.tags || []).includes(currentFilter.hashtag));
             }
             if (currentFilter.searchTerm) {
@@ -683,12 +682,11 @@
             }
         }
 
-        async function clearMainViewFilters() { // Made async because it fetches data
+        async function clearMainViewFilters() {
             currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '' };
             if (DOM.searchInput) DOM.searchInput.value = '';
             if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
             
-            // Re-fetch unfiltered trends for the main view
             allTrends = await fetchLiveTrends({});
             updateUIForFilter();
         }
@@ -794,7 +792,7 @@
             categories = [...new Set(allTrends.map(trendItem => trendItem.category))].sort();
             const allOptionText = t('All Categories');
             if (DOM.filterButtonsContainer) {
-                DOM.filterButtonsContainer.innerHTML = [`<button class="filter-btn ${currentFilter.value === 'All' ? 'active' : ''}" data-filter="All">${allOptionText}</button>`, ...categories.map(category => `<button class="filter-btn ${category === currentFilter.value ? 'active' : ''}" data-filter="${category}">${t(category)}</button>`)].join(''); // NEW: Translate category name
+                DOM.filterButtonsContainer.innerHTML = [`<button class="filter-btn ${currentFilter.value === 'All' ? 'active' : ''}" data-filter="All">${allOptionText}</button>`, ...categories.map(category => `<button class="filter-btn ${category === currentFilter.value ? 'active' : ''}" data-filter="${category}">${t(category)}</button>`)].join('');
             }
 
             if (DOM.tbCategoryFilter) {
@@ -803,7 +801,7 @@
                 categories.forEach(cat => {
                     const option = document.createElement('option');
                     option.value = cat;
-                    option.textContent = t(cat); // NEW: Translate category name
+                    option.textContent = t(cat);
                     DOM.tbCategoryFilter.appendChild(option);
                 });
                 DOM.tbCategoryFilter.value = currentCategory;
@@ -812,7 +810,7 @@
 
         function populatePreferenceCheckboxes() {
             if (DOM.preferencesGrid) {
-                DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}" ${user.preferences.includes(category) ? 'checked' : ''}> ${t(category)}</label></div>`).join(''); // NEW: Translate category name
+                DOM.preferencesGrid.innerHTML = categories.map(category => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${category}" ${user.preferences.includes(category) ? 'checked' : ''}> ${t(category)}</label></div>`).join('');
             }
         }
 
@@ -867,7 +865,7 @@
                 const leaderboardDiv = document.createElement('div');
                 leaderboardDiv.className = 'leaderboard-widget';
                 let listItems = topTrends.map(trendItem => `<li data-trend-id="${trendItem.id}">${truncateText(getLocalizedTrendText(trendItem).title, 35)}</li>`).join('');
-                leaderboardDiv.innerHTML = `<h4>${t('Top in')} ${t(category)}</h4><ul>${listItems}</ul>`; // NEW: Translate category name
+                leaderboardDiv.innerHTML = `<h4>${t('Top in')} ${t(category)}</h4><ul>${listItems}</ul>`;
                 container.appendChild(leaderboardDiv);
             });
         }
@@ -937,10 +935,10 @@
         function getCombinedMetric(trend) { return (trend.views || 0) + (trend.interactions || 0) + (trend.searches || 0); }
 
         function getLocalizedTrendText(trend) {
-            // UPDATED: Improved fallback for title and description
             const defaultTitle = t('No Title Available');
-            const defaultDescription = t('No Description Available'); // Assuming you add this to translations
+            const defaultDescription = t('No Description Available');
 
+            // Prioritize current language, then other language, then default
             const title_vi = trend.title_vi || trend.title_en || defaultTitle;
             const description_vi = trend.description_vi || trend.description_en || defaultDescription;
             const title_en = trend.title_en || trend.title_vi || defaultTitle;
@@ -958,7 +956,6 @@
         }
 
         function makeTrendKey(trend) { 
-            // Use localized title for key if available, otherwise fallback
             const { title: localizedTitle } = getLocalizedTrendText(trend);
             return `${localizedTitle || ''}|${trend.source || ''}|${trend.date || ''}`.toLowerCase(); 
         }
@@ -1146,8 +1143,6 @@
         }
 
         async function renderTBDashboard(timeframe) {
-            // Note: allTrends is already filtered by fetchLiveTrends based on region, category, timeframe
-            // We just need to filter by type (topic/query) for leaderboards
             let trendsForLeaderboard = [...allTrends];
 
             const topics = trendsForLeaderboard.filter(trendItem => trendItem.type === 'topic').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
@@ -1218,14 +1213,12 @@
                 region: selectedRegion,
                 category: selectedCategory,
                 timeframe: timeframe,
-                // searchTerm will be applied if there are user.tbSearchTerms
             };
 
             if (user.tbSearchTerms.length > 0) {
-                // For search terms, we also need to send them to the backend filter
-                tbFilters.searchTerm = user.tbSearchTerms.join(' '); // Send all terms as one string for now
-                allTrends = await fetchLiveTrends(tbFilters); // Re-fetch with all TB filters + search terms
-                trendsForChart = [...allTrends]; // Since backend already filtered, use all of them
+                tbFilters.searchTerm = user.tbSearchTerms.join(' ');
+                allTrends = await fetchLiveTrends(tbFilters);
+                trendsForChart = [...allTrends];
                 
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('Interest Over Time');
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
@@ -1293,7 +1286,9 @@
                     const isSummary = !!targetElement.closest('.analyze-trend-btn');
                     const analysisType = isSummary ? 'summary' : 'detailed';
                     const titleKey = isSummary ? 'AI Analysis Summary for' : 'AI Deep Dive for';
-                    document.getElementById('ai-insight-title').textContent = `${t(titleKey)} "${truncateText(getLocalizedTrendText(trend).title, 20)}"`;
+                    
+                    const { title: localizedTrendTitle } = getLocalizedTrendText(trend); // Use localized title for AI call
+                    document.getElementById('ai-insight-title').textContent = `${t(titleKey)} "${truncateText(localizedTrendTitle, 20)}"`;
                     const modalBody = document.getElementById('ai-insight-body');
                     if (!modalBody) return;
                     modalBody.classList.remove('error-message');
@@ -1310,10 +1305,10 @@
                     });
                 } else if (targetElement.matches('.tag.hashtag')) {
                     currentFilter.type = 'hashtag';
-                    currentFilter.value = 'All'; // Reset category filter when hashtag is selected
+                    currentFilter.value = 'All';
                     currentFilter.hashtag = targetElement.dataset.tag;
-                    currentFilter.searchTerm = ''; // Clear search term
-                    switchView('main'); // Always switch to main view to apply general filters
+                    currentFilter.searchTerm = '';
+                    switchView('main');
                     updateUIForFilter();
                 }
             }
@@ -1325,7 +1320,8 @@
 
                 const analysisType = 'detailed';
                 const insightTitle = document.getElementById('ai-insight-title');
-                if (insightTitle) insightTitle.textContent = `${t('AI Deep Dive for')} "${truncateText(getLocalizedTrendText(trend).title, 20)}"`;
+                const { title: localizedTrendTitle } = getLocalizedTrendText(trend); // Use localized title for AI call
+                if (insightTitle) insightTitle.textContent = `${t('AI Deep Dive for')} "${truncateText(localizedTrendTitle, 20)}"`;
                 const modalBody = document.getElementById('ai-insight-body');
                 if (!modalBody) return;
                 modalBody.classList.remove('error-message');
@@ -1350,7 +1346,6 @@
             if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
             if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
 
-            // Initial fetch of trends (unfiltered for main/forU, or default filtered for TB)
             if (currentView === 'trendingBoard') {
                 const tbFilters = {
                     region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
@@ -1358,9 +1353,9 @@
                     timeframe: DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m',
                 };
                 allTrends = await fetchLiveTrends(tbFilters);
-                createHotTrendsChart(); // This will use the already fetched allTrends
+                createHotTrendsChart();
             } else {
-                allTrends = await fetchLiveTrends({}); // Fetch all trends for main/forU default view
+                allTrends = await fetchLiveTrends({}); 
             }
             
             applyTrendOrdering();
@@ -1371,7 +1366,7 @@
             updateActiveNav(currentView);
             updateClearFilterButtonVisibility();
 
-            if (currentView !== 'trendingBoard') { // Only display trends for main/forU if not on TB
+            if (currentView !== 'trendingBoard') {
                 displayTrends();
             }
 
@@ -1419,14 +1414,13 @@
             if (list) list.addEventListener('click', handleInteraction);
         });
 
-        if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.addEventListener('click', async (e) => { // Made async
+        if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.addEventListener('click', async (e) => {
             if (e.target.matches('.filter-btn')) {
                 currentFilter.type = 'category';
                 currentFilter.value = e.target.dataset.filter;
                 currentFilter.hashtag = '';
                 if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
 
-                // Re-fetch trends with new category filter
                 allTrends = await fetchLiveTrends({ category: currentFilter.value });
                 updateUIForFilter();
             }
@@ -1435,7 +1429,6 @@
 
         const debouncedSearch = debounce(async () => {
             currentFilter.searchTerm = DOM.searchInput ? DOM.searchInput.value : '';
-            // Re-fetch trends with new search term filter
             allTrends = await fetchLiveTrends({ searchTerm: currentFilter.searchTerm });
             displayedTrends.main = 0;
             displayTrends();
@@ -1451,10 +1444,9 @@
                     currentFilter.hashtag = hashtag;
                 }
                 currentFilter.type = 'hashtag';
-                currentFilter.value = 'All'; // Clear category filter when hashtag is selected
+                currentFilter.value = 'All';
                 if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
 
-                // Re-fetch trends with new hashtag filter
                 allTrends = await fetchLiveTrends({ hashtag: currentFilter.hashtag });
                 displayedTrends.main = 0;
                 displayTrends();
@@ -1462,32 +1454,28 @@
             }
         });
 
-        if (DOM.tbSearchInput) DOM.tbSearchInput.addEventListener('keypress', async function(e) { // Made async
+        if (DOM.tbSearchInput) DOM.tbSearchInput.addEventListener('keypress', async function(e) {
             if (e.key === 'Enter' && this.value.trim() !== '') {
-                // When adding search term, `createHotTrendsChart` will handle refetching
                 await createHotTrendsChart(this.value.trim());
                 this.value = '';
             }
         });
 
-        if (DOM.tbCompareInput) DOM.tbCompareInput.addEventListener('keypress', async function(e) { // Made async
+        if (DOM.tbCompareInput) DOM.tbCompareInput.addEventListener('keypress', async function(e) {
             if (e.key === 'Enter' && this.value.trim() !== '') {
-                // When adding compare term, `createHotTrendsChart` will handle refetching
                 await createHotTrendsChart(null, this.value.trim());
                 this.value = '';
             }
         });
 
-        if (DOM.tbSearchChipsContainer) DOM.tbSearchChipsContainer.addEventListener('click', async function(e) { // Made async
+        if (DOM.tbSearchChipsContainer) DOM.tbSearchChipsContainer.addEventListener('click', async function(e) {
             if (e.target.classList.contains('tb-search-chip-remove')) {
                 const termToRemove = e.target.dataset.term;
                 user.tbSearchTerms = user.tbSearchTerms.filter(term => term !== termToRemove);
-                // After removing, re-render chart, which will trigger a fetch
                 await createHotTrendsChart();
             }
         });
 
-        // These event listeners now trigger `createHotTrendsChart` which internally fetches new data
         if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
         if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.addEventListener('change', () => createHotTrendsChart());
         if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart());
@@ -1507,7 +1495,6 @@
             applyTranslations();
             updateLanguageToggleUI();
             
-            // Re-fetch data based on current view/filters for correct language localization from backend
             if (currentView === 'trendingBoard') {
                 await createHotTrendsChart();
             } else {
