@@ -10,8 +10,7 @@ function normalizeItem(item, sourceName) {
       item["media:title"]?.toString() ||
       "Untitled",
     link:
-      item.link?.href ||
-      item.link ||
+      (typeof item.link === "string" ? item.link : item.link?.href) ||
       item.id ||
       "#",
     published: item.pubDate || item.published || item.updated || null,
@@ -19,9 +18,9 @@ function normalizeItem(item, sourceName) {
   };
 }
 
-async function fetchRSS(source) {
+async function fetchRSS(url, sourceName) {
   try {
-    const res = await fetch(source.url, { timeout: 10000 });
+    const res = await fetch(url, { timeout: 10000 });
     const text = await res.text();
 
     const parser = new XMLParser({
@@ -32,13 +31,13 @@ async function fetchRSS(source) {
 
     let items = [];
 
-    // Kiểu RSS truyền thống
+    // RSS
     if (parsed?.rss?.channel?.item) {
       items = parsed.rss.channel.item.map((it) =>
-        normalizeItem(it, source.name)
+        normalizeItem(it, sourceName)
       );
     }
-    // Kiểu Atom feed
+    // Atom
     else if (parsed?.feed?.entry) {
       items = parsed.feed.entry.map((it) =>
         normalizeItem(
@@ -47,67 +46,139 @@ async function fetchRSS(source) {
             link: it.link?.href || it.id,
             pubDate: it.updated,
           },
-          source.name
+          sourceName
         )
       );
     }
 
     return items;
   } catch (err) {
-    console.error(`❌ Lỗi khi fetch ${source.name}:`, err.message);
+    console.error(`❌ Lỗi khi fetch ${sourceName}:`, err.message);
     return [];
   }
 }
 
-// ===== Sources =====
-const sources = [
-  // Tech / AI
-  { name: "Hacker News", url: "https://hnrss.org/frontpage", type: "rss" },
-  { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", type: "rss" },
-  { name: "IGN Gaming", url: "https://feeds.ign.com/ign/games-all", type: "rss" },
-  { name: "VentureBeat AI", url: "https://venturebeat.com/category/ai/feed/", type: "rss" },
-  { name: "MIT Tech Review", url: "https://www.technologyreview.com/feed/", type: "rss" },
+// ===== Individual fetch functions =====
+const fetchHackerNewsFrontpage = () =>
+  fetchRSS("https://hnrss.org/frontpage", "Hacker News");
 
-  // News / Finance
-  { name: "Google News VN", url: "https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi", type: "rss" },
-  { name: "Yahoo Finance", url: "https://finance.yahoo.com/news/rss", type: "rss" },
-  { name: "CNBC Finance", url: "https://www.cnbc.com/id/10000664/device/rss/rss.html", type: "rss" },
+const fetchTheVerge = () =>
+  fetchRSS("https://www.theverge.com/rss/index.xml", "The Verge");
 
-  // Science
-  { name: "Science Magazine", url: "https://www.sciencemag.org/rss/news_current.xml", type: "rss" },
-  { name: "New Scientist", url: "https://www.newscientist.com/feed/home/", type: "rss" },
+const fetchIGNGaming = () =>
+  fetchRSS("https://feeds.ign.com/ign/games-all", "IGN Gaming");
 
-  // Music
-  { name: "Apple Music Most Played VN", url: "https://rss.applemarketingtools.com/api/v2/vn/music/most-played/10/songs.rss", type: "rss" },
-  { name: "Apple Music New Releases VN", url: "https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/10/albums.rss", type: "rss" },
+const fetchVentureBeatAI = () =>
+  fetchRSS("https://venturebeat.com/category/ai/feed/", "VentureBeat AI");
 
-  // Video
-  { name: "YouTube Trending VN", url: "https://www.youtube.com/feeds/videos.xml?playlist_id=PL5d1KNNFArxxwCJAFMdG8sSUxFuFQO6hx", type: "rss" },
+const fetchMITTech = () =>
+  fetchRSS("https://www.technologyreview.com/feed/", "MIT Tech Review");
 
-  // Media & Entertainment
-  { name: "Variety", url: "https://variety.com/feed/", type: "rss" },
-  { name: "Deadline", url: "https://deadline.com/feed/", type: "rss" },
-  { name: "GameK VN", url: "https://gamek.vn/home.rss", type: "rss" },
-  { name: "ZingNews Entertainment", url: "https://zingnews.vn/rss/giai-tri.rss", type: "rss" },
+const fetchGoogleNewsVN = () =>
+  fetchRSS(
+    "https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi",
+    "Google News VN"
+  );
 
-  // General News / Sports
-  { name: "BBC World", url: "http://feeds.bbci.co.uk/news/world/rss.xml", type: "rss" },
-  { name: "ESPN", url: "https://www.espn.com/espn/rss/news", type: "rss" },
+const fetchYahooFinance = () =>
+  fetchRSS("https://finance.yahoo.com/news/rss", "Yahoo Finance");
 
-  // Other fields
-  { name: "Logistics", url: "https://www.supplychaindigital.com/rss", type: "rss" },
-  { name: "Cybernews", url: "https://cybernews.com/feed/", type: "rss" },
-  { name: "Healthcare", url: "https://www.healthcareitnews.com/rss.xml", type: "rss" },
-  { name: "Education", url: "https://www.chronicle.com/section/News/6/rss", type: "rss" },
-  { name: "Environment", url: "https://www.theguardian.com/environment/rss", type: "rss" },
-  { name: "Politics", url: "https://www.politico.com/rss/politics08.xml", type: "rss" },
-  { name: "Travel", url: "https://www.travelandleisure.com/rss", type: "rss" },
-];
+const fetchCNBCFinance = () =>
+  fetchRSS("https://www.cnbc.com/id/10000664/device/rss/rss.html", "CNBC Finance");
+
+const fetchScienceMagazine = () =>
+  fetchRSS("https://www.sciencemag.org/rss/news_current.xml", "Science Magazine");
+
+const fetchNewScientist = () =>
+  fetchRSS("https://www.newscientist.com/feed/home/", "New Scientist");
+
+const fetchAppleMusicMostPlayedVN = () =>
+  fetchRSS(
+    "https://rss.applemarketingtools.com/api/v2/vn/music/most-played/10/songs.rss",
+    "Apple Music Most Played VN"
+  );
+
+const fetchAppleMusicNewReleasesVN = () =>
+  fetchRSS(
+    "https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/10/albums.rss",
+    "Apple Music New Releases VN"
+  );
+
+const fetchYouTubeTrendingVN = () =>
+  fetchRSS(
+    "https://www.youtube.com/feeds/videos.xml?playlist_id=PL5d1KNNFArxxwCJAFMdG8sSUxFuFQO6hx",
+    "YouTube Trending VN"
+  );
+
+const fetchVariety = () => fetchRSS("https://variety.com/feed/", "Variety");
+
+const fetchDeadline = () => fetchRSS("https://deadline.com/feed/", "Deadline");
+
+const fetchGameKVN = () => fetchRSS("https://gamek.vn/home.rss", "GameK VN");
+
+const fetchZingNewsEntertainment = () =>
+  fetchRSS("https://zingnews.vn/rss/giai-tri.rss", "ZingNews Entertainment");
+
+const fetchBBCWorld = () =>
+  fetchRSS("http://feeds.bbci.co.uk/news/world/rss.xml", "BBC World");
+
+const fetchESPN = () => fetchRSS("https://www.espn.com/espn/rss/news", "ESPN");
+
+const fetchLogistics = () =>
+  fetchRSS("https://www.supplychaindigital.com/rss", "Logistics");
+
+const fetchCybernews = () => fetchRSS("https://cybernews.com/feed/", "Cybernews");
+
+const fetchHealthcare = () =>
+  fetchRSS("https://www.healthcareitnews.com/rss.xml", "Healthcare");
+
+const fetchEducation = () =>
+  fetchRSS("https://www.chronicle.com/section/News/6/rss", "Education");
+
+const fetchEnvironment = () =>
+  fetchRSS("https://www.theguardian.com/environment/rss", "Environment");
+
+const fetchPolitics = () =>
+  fetchRSS("https://www.politico.com/rss/politics08.xml", "Politics");
+
+const fetchTravel = () =>
+  fetchRSS("https://www.travelandleisure.com/rss", "Travel");
 
 // ===== Main handler =====
 exports.handler = async function () {
-  const results = await Promise.all(sources.map(fetchRSS));
-  const trends = results.flat();
+  const results = await Promise.allSettled([
+    fetchHackerNewsFrontpage(),
+    fetchTheVerge(),
+    fetchIGNGaming(),
+    fetchVentureBeatAI(),
+    fetchMITTech(),
+    fetchGoogleNewsVN(),
+    fetchYahooFinance(),
+    fetchCNBCFinance(),
+    fetchScienceMagazine(),
+    fetchNewScientist(),
+    fetchAppleMusicMostPlayedVN(),
+    fetchAppleMusicNewReleasesVN(),
+    fetchYouTubeTrendingVN(),
+    fetchVariety(),
+    fetchDeadline(),
+    fetchGameKVN(),
+    fetchZingNewsEntertainment(),
+    fetchBBCWorld(),
+    fetchESPN(),
+    fetchLogistics(),
+    fetchCybernews(),
+    fetchHealthcare(),
+    fetchEducation(),
+    fetchEnvironment(),
+    fetchPolitics(),
+    fetchTravel(),
+  ]);
+
+  // Gom dữ liệu hợp lệ
+  const trends = results
+    .filter((r) => r.status === "fulfilled")
+    .flatMap((r) => r.value);
 
   return {
     statusCode: 200,
