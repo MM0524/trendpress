@@ -1,7 +1,5 @@
 // File: netlify/functions/fetch-trends.js
 const fetch = require("node-fetch");
-const Parser = require("rss-parser");
-const parser = new Parser();
 
 // ===== Helpers =====
 async function fetchWithTimeout(url, options = {}, ms = 10000) {
