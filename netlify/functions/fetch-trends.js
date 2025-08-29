@@ -250,11 +250,9 @@ const fetchAppleMusicMostPlayedVN = () =>
   fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json", "Apple Music Most Played VN", "Music", "vn", ["AppleMusic", "Vietnam", "MostPlayed"]);
 
 const fetchAppleMusicNewReleasesVN = () =>
-  fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/100/albums.json", "Apple Music New Releases VN", "Music", "vn", ["AppleMusic", "Vietnam", "NewReleases"]);
+  fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/10/albums.rss", "Apple Music New Releases VN", "Music", "vn", ["AppleMusic", "Vietnam", "NewReleases"]);
 
 // Media / Entertainment
-const fetchYouTubeTrendingVN = () =>
-  fetchAndParseXmlFeed("https://rsshub.app/youtube/trending/region/VN", "YouTube Trending VN", "Media", "vn", ["YouTube", "Trending", "VN"]);
 
 const fetchVariety = () =>
   fetchAndParseXmlFeed("https://variety.com/feed/", "Variety", "Entertainment", "global", ["Hollywood"]);
@@ -271,19 +269,19 @@ const fetchESPN = () =>
 
 // Logistics
 const fetchLogistics = () =>
-  fetchAndParseXmlFeed("https://www.supplychaindigital.com/rss", "Supply Chain Digital", "Logistics", "global", ["SupplyChain"]); 
+  fetchAndParseXmlFeed("https://supplychaindigital.com/rss-feeds/all", "Supply Chain Digital", "Logistics", "global", ["SupplyChain"]); 
 
 // Cybersecurity
 const fetchCybernews = () =>
-  fetchAndParseXmlFeed("https://cybernews.com/feed/", "Cybernews", "Cybersecurity", "global", ["Security"]);
+  fetchAndParseXmlFeed("https://feeds.feedburner.com/cybernews/", "Technology", "Cybersecurity", "global", ["Security"]);
 
 // Healthcare
 const fetchHealthcare = () =>
-  fetchAndParseXmlFeed("https://www.healthcareitnews.com/rss.xml", "Healthcare IT News", "Healthcare", "global", ["Health"]); 
+  fetchAndParseXmlFeed("https://www.healthcareitnews.com/home/feed", "Healthcare IT News", "Healthcare", "global", ["Health"]); 
 
 // Education
 const fetchEducation = () =>
-  fetchAndParseXmlFeed("https://www.chronicle.com/section/News/6/rss", "The Chronicle of Higher Education", "Education", "us", ["USA"]);
+  fetchAndParseXmlFeed("https://www.chronicle.com/feed", "The Chronicle of Higher Education", "Education", "us", ["USA"]);
 
 // Environment
 const fetchEnvironment = () =>
@@ -291,11 +289,11 @@ const fetchEnvironment = () =>
 
 // Politics
 const fetchPolitics = () =>
-  fetchAndParseXmlFeed("https://www.politico.com/rss/politics08.xml", "Politico", "Politics", "us", ["USA"]); 
+  fetchAndParseXmlFeed("https://www.politico.com/rss/politics.xml", "Politico", "Politics", "us", ["USA"]); 
 
 // Travel
 const fetchTravel = () =>
-  fetchAndParseXmlFeed("https://www.travelandleisure.com/rss", "Travel & Leisure", "Travel", "global", ["Tourism"]); 
+  fetchAndParseXmlFeed("https://www.travelandleisure.com/feed", "Travel & Leisure", "Travel", "global", ["Tourism"]); 
 
 
 // ===== Main handler =====
@@ -319,7 +317,7 @@ exports.handler = async (event) => {
       fetchVentureBeatAI(), fetchMITTech(), fetchGoogleNewsVN(),
       fetchYahooFinance(), fetchCNBCFinance(), fetchScienceMagazine(),
       fetchNewScientist(), fetchAppleMusicMostPlayedVN(), fetchAppleMusicNewReleasesVN(),
-      fetchYouTubeTrendingVN(), fetchVariety(), fetchDeadline(),
+      fetchVariety(), fetchDeadline(),
       fetchGameKVN(), fetchZingNewsEntertainment(), fetchBBCWorld(),
       fetchESPN(), fetchLogistics(), fetchCybernews(),
       fetchHealthcare(), fetchEducation(), fetchEnvironment(),
