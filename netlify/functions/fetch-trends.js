@@ -45,11 +45,14 @@ function getSafeString(value) {
   if (typeof value === 'string') {
     strValue = value;
   }
-  else if (typeof value === 'object' && value.hasOwnProperty('#text')) {
+  else if (typeof value === 'object' && value.hasOwnProperty('#text')) { // For XML text nodes
     strValue = String(value['#text']);
   }
   else if (typeof value === 'object' && value.hasOwnProperty('href')) { // For Atom link objects
     strValue = String(value.href);
+  }
+  else if (Array.isArray(value)) { // Sometimes a field might be an array, take the first one or join
+      strValue = String(value[0]); 
   }
   else {
     strValue = String(value);
@@ -78,27 +81,32 @@ function toDateStr(d) {
 
 function toSortValue(d) {
   const dt = d ? new Date(d) : null;
-  return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0;
+  // Fallback to 0 so invalid dates sort to the end (oldest) when sorting descending
+  return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0; // <<<<<<<<<<<<<<<<< SỬA LỖI Ở ĐÂY
 }
 
 // ===== Trend Factory (Standardizes item data from various feed types) =====
 function createStandardTrend(item, sourceName, defaultCategory = "General", defaultRegion = "global", extraTags = []) {
-  const title = getSafeString(item.title || item['media:title'] || item.name) || "No Title Available"; // Added item.name for JSON feeds
-  const description = getSafeString(item.description || item.content?.['#text'] || item.summary?.['#text'] || item.content || item.artistName) || "No description available"; // Added item.artistName for Apple Music
+  // Use getSafeString for all fields to handle different XML/JSON structures and ensure string output
+  const title = getSafeString(item.title || item['media:title'] || item.name) || "No Title Available"; 
+  const description = getSafeString(item.description || item.content?.['#text'] || item.summary?.['#text'] || item.content || item.artistName) || "No description available";
   
   let link = getSafeString(item.link);
-  if (Array.isArray(item.link)) {
-      const firstLink = item.link.find(l => l.rel === 'alternate' || !l.rel);
+  if (Array.isArray(item.link)) { // Handle array of links (common in Atom)
+      const firstLink = item.link.find(l => l.rel === 'alternate' || !l.rel); // Prefer alternate or non-rel link
       if (firstLink && firstLink.href) {
           link = getSafeString(firstLink.href);
+      } else if (item.link.length > 0) { // Fallback to first link if no better match
+          link = getSafeString(item.link[0]);
       }
-  } else if (typeof item.link === 'object' && item.link.href) {
+  } else if (typeof item.link === 'object' && item.link.href) { // Handle Atom link objects { href: "..." }
       link = getSafeString(item.link.href);
   }
-  link = link || "#";
+  link = link || "#"; // Final fallback for link
 
-  const pubDate = getSafeString(item.pubDate || item.published || item.updated || item.releaseDate) || new Date().toISOString(); // Added item.releaseDate for Apple Music
+  const pubDate = getSafeString(item.pubDate || item.published || item.updated || item.releaseDate) || new Date().toISOString();
 
+  // Basic cleaning for title/description (sometimes they still contain HTML from RSS source)
   const cleanedTitle = title.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
   const cleanedDescription = description.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
 
@@ -109,7 +117,7 @@ function createStandardTrend(item, sourceName, defaultCategory = "General", defa
     description_vi: cleanedDescription,
     category: defaultCategory,
     tags: [...new Set([...extraTags, sourceName.replace(/\s/g, "") || "Unknown", defaultRegion || "global"].filter(Boolean))],
-    votes: Math.floor(Math.random() * 500) + 100,
+    votes: Math.floor(Math.random() * 1000) + 500, // <<<<<<<<<<<<<<<<< TĂNG PHẠM VI VOTES (500-1499)
     source: link,
     date: toDateStr(pubDate),
     sortKey: toSortValue(pubDate),
@@ -129,10 +137,11 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
       attributeNamePrefix: "",
       trimValues: true,
       textNodeName: "#text",
+      removeNSPrefix: true, // NEW: Remove namespace prefixes (e.g., 'media:title' -> 'title')
       isArray: (name, jpath, is  ) => {
         if (["item", "entry"].includes(name)) return true; // RSS items, Atom entries
-        if (["link", "category"].includes(name) && jpath.includes("entry")) return true; // Atom links/categories can be arrays
-        if (["rdf:li", "rdf:item"].includes(name) && jpath.includes("rdf:RDF")) return true; // For RDF feeds like Science Magazine
+        // Handle common cases where links/categories might be arrays
+        if (["link", "category"].includes(name) && (jpath.includes("entry") || jpath.includes("item"))) return true;
         return false;
       }
     });
@@ -145,20 +154,21 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
       rawItems = parsed.rss.channel.item;
     } else if (parsed?.feed?.entry) { // Atom standard
       rawItems = parsed.feed.entry;
-    } else if (parsed?.channel?.item) { // Older RSS
+    } else if (parsed?.channel?.item) { // Older RSS (e.g., some non-standard feeds)
         rawItems = parsed.channel.item;
-    } else if (parsed?.feed?.item) { // Non-standard Atom-like
+    } else if (parsed?.feed?.item) { // Non-standard Atom-like (e.g., some Feedburner)
         rawItems = parsed.feed.item;
-    } else if (parsed?.['rdf:RDF']?.item) { // For RDF feeds like Science Magazine (item directly under rdf:RDF)
-        rawItems = parsed['rdf:RDF'].item;
-    } else if (parsed?.['rdf:RDF']?.['rdf:li']) { // For RDF feeds with rdf:li
-        rawItems = parsed['rdf:RDF']['rdf:li'];
+    } else if (parsed?.RDF?.item) { // For RDF feeds (like some Science Magazine)
+        rawItems = parsed.RDF.item; // Removed 'rdf:' prefix due to removeNSPrefix
+    } else if (parsed?.RDF?.li) { // For RDF feeds with li (after removeNSPrefix)
+        rawItems = parsed.RDF.li;
     }
-    // Fallback: Check if any top-level array looks like items
+    
+    // Fallback: Check if any top-level array looks like items (heuristic)
     if (rawItems.length === 0) {
         for (const key in parsed) {
             const potentialItems = parsed[key];
-            if (Array.isArray(potentialItems) && potentialItems.length > 0 && typeof potentialItems[0] === 'object' && (potentialItems[0].title || potentialItems[0]['media:title'] || potentialItems[0].name)) {
+            if (Array.isArray(potentialItems) && potentialItems.length > 0 && typeof potentialItems[0] === 'object' && (potentialItems[0].title || potentialItems[0].name)) {
                 rawItems = potentialItems;
                 console.warn(`⚠️ ${sourceName}: Tìm thấy items ở đường dẫn không chuẩn: parsed.${key} từ ${url}.`);
                 break;
@@ -215,7 +225,7 @@ const fetchVentureBeatAI = () =>
   fetchAndParseXmlFeed("https://venturebeat.com/category/ai/feed/", "VentureBeat AI", "AI", "global", ["VentureBeat"]); 
 
 const fetchMITTech = () =>
-  fetchAndParseXmlFeed("https://www.technologyreview.com/feed/", "MIT Tech Review", "AI", "global", ["MITTechReview"]); // Changed URL to general feed, specific tag feed might be 404
+  fetchAndParseXmlFeed("https://www.technologyreview.com/feed/tag/artificial-intelligence/", "MIT Tech Review", "AI", "global", ["MITTechReview"]); // Use specific AI tag feed
 
 // Gaming
 const fetchIGNGaming = () =>
@@ -230,6 +240,10 @@ const fetchGoogleNewsVN = () =>
 
 const fetchBBCWorld = () =>
   fetchAndParseXmlFeed("http://feeds.bbci.co.uk/news/world/rss.xml", "BBC World", "News", "global", ["WorldNews"]);
+
+// Politics
+const fetchPolitics = () =>
+  fetchAndParseXmlFeed("https://www.politico.com/rss/politics.xml", "Politico", "Politics", "us", ["USA"]); 
 
 // Finance
 const fetchYahooFinance = () =>
@@ -250,9 +264,13 @@ const fetchAppleMusicMostPlayedVN = () =>
   fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json", "Apple Music Most Played VN", "Music", "vn", ["AppleMusic", "Vietnam", "MostPlayed"]);
 
 const fetchAppleMusicNewReleasesVN = () =>
-  fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/10/albums.rss", "Apple Music New Releases VN", "Music", "vn", ["AppleMusic", "Vietnam", "NewReleases"]);
+  fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/100/albums.json", "Apple Music New Releases VN", "Music", "vn", ["AppleMusic", "Vietnam", "NewReleases"]);
 
 // Media / Entertainment
+// For YouTube trending, RSSHub is generally more reliable for dynamic trends than a fixed playlist XML.
+// It also provides better structured RSS.
+const fetchYouTubeTrendingVN = () =>
+  fetchAndParseXmlFeed("https://rsshub.app/youtube/trending/region/VN", "YouTube Trending VN", "Media", "vn", ["YouTube", "Trending", "VN"]);
 
 const fetchVariety = () =>
   fetchAndParseXmlFeed("https://variety.com/feed/", "Variety", "Entertainment", "global", ["Hollywood"]);
@@ -269,15 +287,15 @@ const fetchESPN = () =>
 
 // Logistics
 const fetchLogistics = () =>
-  fetchAndParseXmlFeed("https://supplychaindigital.com/rss-feeds/all", "Supply Chain Digital", "Logistics", "global", ["SupplyChain"]); 
+  fetchAndParseXmlFeed("https://www.supplychaindigital.com/rss", "Supply Chain Digital", "Logistics", "global", ["SupplyChain"]); // Using the general RSS if specific /rss-feeds/all doesn't work well
 
 // Cybersecurity
 const fetchCybernews = () =>
-  fetchAndParseXmlFeed("https://feeds.feedburner.com/cybernews/", "Technology", "Cybersecurity", "global", ["Security"]);
+  fetchAndParseXmlFeed("https://www.cybernews.com/feed/", "Cybernews", "Cybersecurity", "global", ["Security"]); // Using the site's own feed
 
 // Healthcare
 const fetchHealthcare = () =>
-  fetchAndParseXmlFeed("https://www.healthcareitnews.com/home/feed", "Healthcare IT News", "Healthcare", "global", ["Health"]); 
+  fetchAndParseXmlFeed("https://www.medicalnewstoday.com/rss", "Medical News Today", "Healthcare", "global", ["Health"]); // Using the general site RSS feed
 
 // Education
 const fetchEducation = () =>
@@ -287,13 +305,9 @@ const fetchEducation = () =>
 const fetchEnvironment = () =>
   fetchAndParseXmlFeed("https://www.theguardian.com/environment/rss", "The Guardian Environment", "Environment", "global", ["Climate"]); 
 
-// Politics
-const fetchPolitics = () =>
-  fetchAndParseXmlFeed("https://www.politico.com/rss/politics.xml", "Politico", "Politics", "us", ["USA"]); 
-
 // Travel
 const fetchTravel = () =>
-  fetchAndParseXmlFeed("https://www.travelandleisure.com/feed", "Travel & Leisure", "Travel", "global", ["Tourism"]); 
+  fetchAndParseXmlFeed("https://www.lonelyplanet.com/news/rss", "Lonely Planet", "Travel", "global", ["Tourism"]); 
 
 
 // ===== Main handler =====
@@ -317,7 +331,7 @@ exports.handler = async (event) => {
       fetchVentureBeatAI(), fetchMITTech(), fetchGoogleNewsVN(),
       fetchYahooFinance(), fetchCNBCFinance(), fetchScienceMagazine(),
       fetchNewScientist(), fetchAppleMusicMostPlayedVN(), fetchAppleMusicNewReleasesVN(),
-      fetchVariety(), fetchDeadline(),
+      fetchYouTubeTrendingVN(), fetchVariety(), fetchDeadline(),
       fetchGameKVN(), fetchZingNewsEntertainment(), fetchBBCWorld(),
       fetchESPN(), fetchLogistics(), fetchCybernews(),
       fetchHealthcare(), fetchEducation(), fetchEnvironment(),
@@ -349,7 +363,7 @@ exports.handler = async (event) => {
     if (region && region !== "global") {
       filteredTrends = filteredTrends.filter(t => t.region && t.region.toLowerCase() === region.toLowerCase());
     }
-    if (category && category !== "All") {
+    if (category && category !== "All") { 
       filteredTrends = filteredTrends.filter(t => t.category && t.category.toLowerCase() === category.toLowerCase());
     }
     if (timeframe && timeframe !== "all") {
@@ -360,10 +374,10 @@ exports.handler = async (event) => {
         case "1m": cutoffDate.setDate(now.getDate() - 30); break;
         case "12m": cutoffDate.setFullYear(now.getFullYear() - 1); break;
       }
-      cutoffDate.setHours(0, 0, 0, 0);
+      cutoffDate.setHours(0, 0, 0, 0); // Normalize to start of day
       filteredTrends = filteredTrends.filter(t => {
         const trendDate = new Date(t.date);
-        trendDate.setHours(0, 0, 0, 0);
+        trendDate.setHours(0, 0, 0, 0); // Normalize to start of day
         return trendDate >= cutoffDate;
       });
     }
@@ -384,12 +398,13 @@ exports.handler = async (event) => {
       );
     }
 
+    // Sort by newest first (descending sortKey) and then map to final format with IDs
     filteredTrends = filteredTrends
-      .filter(Boolean)
+      .filter(Boolean) // Ensure no null/undefined items sneak through
       .sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0))
       .map((t, i) => {
-        const { sortKey, ...rest } = t;
-        return { ...rest, id: i + 1 };
+        const { sortKey, ...rest } = t; // Exclude sortKey from final output
+        return { ...rest, id: i + 1 }; // Ensure each trend has a unique ID
       });
 
     return {
