@@ -4,7 +4,7 @@ const { XMLParser } = require("fast-xml-parser");
 
 // ===== Helpers =====
 
-async function fetchWithTimeout(url, options = {}, ms = 9000) {
+async function fetchWithTimeout(url, options = {}, ms = 15000) { // Increased timeout to 15 seconds
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
@@ -25,7 +25,7 @@ async function fetchWithTimeout(url, options = {}, ms = 9000) {
     if (err.name === "AbortError") {
       throw new Error(`Request to ${url} timed out after ${ms}ms.`);
     }
-    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.name === 'FetchError') { // Catch general network errors from node-fetch
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.name === 'FetchError') {
         throw new Error(`Network error: Could not reach ${url}. Message: ${err.message}`);
     }
     throw new Error(`Processing error for ${url}: ${err.message}`);
@@ -89,13 +89,13 @@ function createStandardTrend(item, sourceName, defaultCategory = "General", defa
   const pubDate = getSafeString(item.pubDate || item.published || item.updated) || new Date().toISOString();
 
   // Basic cleaning for title/description (sometimes they still contain HTML from RSS source)
-  const cleanedTitle = title.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim(); // Reduce multiple newlines
-  const cleanedDescription = description.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
+  const cleanedTitle = decodeHtmlEntities(title).replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim(); // Decode entities and remove HTML tags
+  const cleanedDescription = decodeHtmlEntities(description).replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
 
   return {
     title_en: cleanedTitle,
     description_en: cleanedDescription,
-    title_vi: cleanedTitle, // For simplicity, use original as Vietnamese.
+    title_vi: cleanedTitle, // For simplicity, use original as Vietnamese. You can integrate a translation API here.
     description_vi: cleanedDescription,
     category: defaultCategory,
     tags: [...new Set([...extraTags, sourceName.replace(/\s/g, "") || "Unknown", defaultRegion || "global"].filter(Boolean))],
@@ -130,27 +130,29 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
 
     let rawItems = [];
 
-    // Try common RSS/Atom paths
+    // Try common RSS/Atom paths for item arrays
     if (parsed?.rss?.channel?.item) {
       rawItems = parsed.rss.channel.item;
     } else if (parsed?.feed?.entry) {
       rawItems = parsed.feed.entry;
-    } else if (parsed?.channel?.item) { // Some feeds might have <channel><item> directly under root
+    } else if (parsed?.channel?.item) { // Some feeds might have <channel><item> directly under root (e.g. older RSS)
         rawItems = parsed.channel.item;
-    } else {
-        console.warn(`⁉️ ${sourceName}: Không tìm thấy items trong cấu trúc RSS/Atom chuẩn. URL: ${url}. Cấu trúc gốc: ${JSON.stringify(Object.keys(parsed || {}))}`);
-        // Attempt to find other common item arrays (e.g., if <feed> just contains <item>)
-        if (parsed?.feed?.item) { rawItems = parsed.feed.item; }
-        else if (Array.isArray(parsed?.feed)) { // Sometimes root is an array of feeds
-            for (const f of parsed.feed) {
-                if (f.entry) rawItems.push(...f.entry);
-                else if (f.item) rawItems.push(...f.item);
+    } else if (parsed?.feed?.item) { // Some feeds might have <feed><item> (not standard but seen)
+        rawItems = parsed.feed.item;
+    }
+    else {
+        // Fallback: If no standard path works, try to find an array of objects that looks like items
+        for (const key in parsed) {
+            if (Array.isArray(parsed[key]) && parsed[key].length > 0 && typeof parsed[key][0] === 'object' && (parsed[key][0].title || parsed[key][0]['media:title'])) {
+                rawItems = parsed[key];
+                console.warn(`⚠️ ${sourceName}: Tìm thấy items ở đường dẫn không chuẩn: parsed.${key}`);
+                break;
             }
         }
     }
     
     if (rawItems.length === 0) {
-        console.error(`❌ ${sourceName}: Không thể tìm thấy bất kỳ item nào từ ${url} sau khi parse.`);
+        console.error(`❌ ${sourceName}: Không thể tìm thấy bất kỳ item nào từ ${url} sau khi parse. Cấu trúc gốc: ${JSON.stringify(Object.keys(parsed || {}))}`);
         return [];
     }
 
@@ -169,7 +171,7 @@ async function fetchJsonFeed(url, sourceName, defaultCategory, defaultRegion, ex
         const json = await res.json();
 
         let rawItems = [];
-        if (json?.feed?.results) { // Apple Music specific
+        if (json?.feed?.results) { // Apple Music specific structure
             rawItems = json.feed.results;
         } else {
             console.warn(`⁉️ ${sourceName}: Không tìm thấy results trong cấu trúc JSON mong đợi. URL: ${url}`);
