@@ -4,7 +4,6 @@ const { XMLParser } = require("fast-xml-parser");
 
 // ===== Helpers =====
 
-// Use the robust fetchWithTimeout from previous versions
 async function fetchWithTimeout(url, options = {}, ms = 9000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
@@ -13,8 +12,8 @@ async function fetchWithTimeout(url, options = {}, ms = 9000) {
       ...options,
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 (TrendsBot/1.0)", // User-Agent to mimic a browser
-        "Accept": "application/xml, text/xml, application/rss+xml, application/atom+xml, application/json, text/plain, */*", // Accept headers
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36", // Mimic a common browser
+        "Accept": "application/xml, text/xml, application/rss+xml, application/atom+xml, application/json, text/plain, */*",
         ...(options.headers || {}),
       },
     });
@@ -26,11 +25,10 @@ async function fetchWithTimeout(url, options = {}, ms = 9000) {
     if (err.name === "AbortError") {
       throw new Error(`Request to ${url} timed out after ${ms}ms.`);
     }
-    // Handle specific network errors
-    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED') {
-        throw new Error(`Network error: Could not reach ${url}. Check URL or network.`);
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED' || err.name === 'FetchError') { // Catch general network errors from node-fetch
+        throw new Error(`Network error: Could not reach ${url}. Message: ${err.message}`);
     }
-    throw new Error(`Network or processing error for ${url}: ${err.message}`);
+    throw new Error(`Processing error for ${url}: ${err.message}`);
   } finally {
     clearTimeout(timer);
   }
@@ -38,16 +36,21 @@ async function fetchWithTimeout(url, options = {}, ms = 9000) {
 
 // Function to safely get string value, handling null/undefined/objects
 function getSafeString(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
   if (typeof value === 'string') {
     return value.trim();
   }
-  if (value && typeof value === 'object' && value.hasOwnProperty('#text')) {
-    return String(value['#text']).trim(); // For complex nodes like <title><#text>...</title>
+  // Handles objects like { '#text': 'content' } often seen in parsed XML
+  if (typeof value === 'object' && value.hasOwnProperty('#text')) {
+    return String(value['#text']).trim();
   }
-  if (value && typeof value === 'object' && value.hasOwnProperty('href')) {
-    return String(value.href).trim(); // For Atom link objects
+  // Handles objects like { href: 'url' } often seen in Atom links
+  if (typeof value === 'object' && value.hasOwnProperty('href')) {
+    return String(value.href).trim();
   }
-  return String(value || "").trim(); // Fallback
+  return String(value).trim(); // Convert anything else to string
 }
 
 // ---- Date helpers ----
@@ -65,29 +68,42 @@ function toSortValue(d) {
 }
 
 // ===== Trend Factory (Enhanced to integrate with fast-xml-parser output) =====
-function createStandardTrend(item, defaultCategory = "General", defaultRegion = "global", submitter = "Unknown", extraTags = []) {
-  // Use getSafeString to extract values from parsed XML/JSON objects
+function createStandardTrend(item, sourceName, defaultCategory = "General", defaultRegion = "global", extraTags = []) {
+  // Extracting values safely
   const title = getSafeString(item.title || item['media:title']) || "No Title Available";
-  const description = getSafeString(item.description || item.content?.['#text'] || item.summary?.['#text'] || item.content) || "No description available"; // Atom often uses 'content' or 'summary'
-  const link = getSafeString(item.link) || (item.link?.[0]?.href ? getSafeString(item.link[0].href) : "#"); // Handle Atom link objects (can be array)
+  // Atom feeds often use 'summary' or 'content' for description
+  const description = getSafeString(item.description || item.content?.['#text'] || item.summary?.['#text'] || item.content) || "No description available";
+  
+  let link = getSafeString(item.link);
+  // Handle Atom link objects where link can be an array of objects
+  if (Array.isArray(item.link)) {
+      const firstLink = item.link.find(l => l.rel === 'alternate' || !l.rel); // Prefer alternate link
+      if (firstLink && firstLink.href) {
+          link = getSafeString(firstLink.href);
+      }
+  } else if (typeof item.link === 'object' && item.link.href) { // Handle single link object
+      link = getSafeString(item.link.href);
+  }
+  link = link || "#"; // Final fallback for link
+
   const pubDate = getSafeString(item.pubDate || item.published || item.updated) || new Date().toISOString();
 
   // Basic cleaning for title/description (sometimes they still contain HTML from RSS source)
-  const cleanedTitle = title.replace(/<[^>]*>?/gm, '').replace(/\n/g, ' ').trim();
-  const cleanedDescription = description.replace(/<[^>]*>?/gm, '').replace(/\n/g, ' ').trim();
+  const cleanedTitle = title.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim(); // Reduce multiple newlines
+  const cleanedDescription = description.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
 
   return {
     title_en: cleanedTitle,
     description_en: cleanedDescription,
-    title_vi: cleanedTitle, // For simplicity, use original as Vietnamese. You can integrate a translation API here.
+    title_vi: cleanedTitle, // For simplicity, use original as Vietnamese.
     description_vi: cleanedDescription,
     category: defaultCategory,
-    tags: [...new Set([...extraTags, submitter.replace(/\s/g, "") || "Unknown", defaultRegion || "global"].filter(Boolean))],
+    tags: [...new Set([...extraTags, sourceName.replace(/\s/g, "") || "Unknown", defaultRegion || "global"].filter(Boolean))],
     votes: Math.floor(Math.random() * 500) + 100, // Random votes for demo purposes
     source: link,
     date: toDateStr(pubDate),
     sortKey: toSortValue(pubDate),
-    submitter: submitter || "Unknown",
+    submitter: sourceName || "Unknown",
     region: defaultRegion || "global",
   };
 }
@@ -101,10 +117,12 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
     const parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "",
+      trimValues: true, // Trim values automatically
+      textNodeName: "#text", // Use #text for text content
       // Ensure specific tags are always arrays, even if single occurrence
       isArray: (name, jpath, is  ) => {
         if (["item", "entry"].includes(name)) return true; // RSS items, Atom entries
-        // You might need to add more specific tags here if they can be arrays
+        if (["link", "category"].includes(name) && jpath.includes("entry")) return true; // Atom links/categories can be arrays
         return false;
       }
     });
@@ -112,32 +130,31 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
 
     let rawItems = [];
 
-    // RSS structure (e.g., hnrss, theverge)
+    // Try common RSS/Atom paths
     if (parsed?.rss?.channel?.item) {
       rawItems = parsed.rss.channel.item;
-    }
-    // Atom structure (e.g., Google News, YouTube feeds)
-    else if (parsed?.feed?.entry) {
+    } else if (parsed?.feed?.entry) {
       rawItems = parsed.feed.entry;
-    } 
-    // Sometimes the feed might be nested differently or have a single item
-    else if (parsed?.feed?.item) { // Some feeds might just have <feed><item>
-        rawItems = parsed.feed.item;
+    } else if (parsed?.channel?.item) { // Some feeds might have <channel><item> directly under root
+        rawItems = parsed.channel.item;
+    } else {
+        console.warn(`⁉️ ${sourceName}: Không tìm thấy items trong cấu trúc RSS/Atom chuẩn. URL: ${url}. Cấu trúc gốc: ${JSON.stringify(Object.keys(parsed || {}))}`);
+        // Attempt to find other common item arrays (e.g., if <feed> just contains <item>)
+        if (parsed?.feed?.item) { rawItems = parsed.feed.item; }
+        else if (Array.isArray(parsed?.feed)) { // Sometimes root is an array of feeds
+            for (const f of parsed.feed) {
+                if (f.entry) rawItems.push(...f.entry);
+                else if (f.item) rawItems.push(...f.item);
+            }
+        }
     }
-    else {
-        console.warn(`⁉️ ${sourceName}: Không tìm thấy items trong cấu trúc RSS/Atom chuẩn. URL: ${url}`);
-        // Attempt to find items in other common RSS/Atom paths
-        if (parsed?.channel?.item) { rawItems = parsed.channel.item; }
-        else if (parsed?.feed) { // If it's just a <feed> root without <entry> or <item> at root level
-            console.warn(`⁉️ ${sourceName}: Feed root nhưng không có entry/item trực tiếp. Có thể cần parse sâu hơn.`);
-        }
-        if (rawItems.length === 0) {
-            console.error(`❌ ${sourceName}: Không thể tìm thấy bất kỳ item nào từ ${url}.`);
-            return [];
-        }
+    
+    if (rawItems.length === 0) {
+        console.error(`❌ ${sourceName}: Không thể tìm thấy bất kỳ item nào từ ${url} sau khi parse.`);
+        return [];
     }
 
-    return rawItems.map(item => createStandardTrend(item, defaultCategory, defaultRegion, sourceName, extraTags));
+    return rawItems.map(item => createStandardTrend(item, sourceName, defaultCategory, defaultRegion, extraTags));
 
   } catch (err) {
     console.error(`❌ Lỗi khi fetch hoặc parse XML từ ${sourceName} (${url}):`, err.message);
@@ -189,6 +206,7 @@ const fetchHackerNewsFrontpage = () =>
 const fetchTheVerge = () =>
   fetchAndParseXmlFeed("https://www.theverge.com/rss/index.xml", "The Verge", "Technology", "global", ["Tech"]);
 
+// AI
 const fetchVentureBeatAI = () =>
   fetchAndParseXmlFeed("https://venturebeat.com/category/ai/feed/", "VentureBeat AI", "AI", "global", ["VentureBeat"]); 
 
@@ -249,7 +267,7 @@ const fetchESPN = () =>
 
 // Logistics
 const fetchLogistics = () =>
-  fetchAndParseXmlFeed("https://www.supplychaindigital.com/rss", "Supply Chain Digital", "Logistics", "global", ["SupplyChain"]); // Changed source name
+  fetchAndParseXmlFeed("https://www.supplychaindigital.com/rss", "Supply Chain Digital", "Logistics", "global", ["SupplyChain"]); 
 
 // Cybersecurity
 const fetchCybernews = () =>
@@ -257,7 +275,7 @@ const fetchCybernews = () =>
 
 // Healthcare
 const fetchHealthcare = () =>
-  fetchAndParseXmlFeed("https://www.healthcareitnews.com/rss.xml", "Healthcare IT News", "Healthcare", "global", ["Health"]); // Changed source name
+  fetchAndParseXmlFeed("https://www.healthcareitnews.com/rss.xml", "Healthcare IT News", "Healthcare", "global", ["Health"]); 
 
 // Education
 const fetchEducation = () =>
@@ -265,15 +283,15 @@ const fetchEducation = () =>
 
 // Environment
 const fetchEnvironment = () =>
-  fetchAndParseXmlFeed("https://www.theguardian.com/environment/rss", "The Guardian Environment", "Environment", "global", ["Climate"]); // Changed source name
+  fetchAndParseXmlFeed("https://www.theguardian.com/environment/rss", "The Guardian Environment", "Environment", "global", ["Climate"]); 
 
 // Politics
 const fetchPolitics = () =>
-  fetchAndParseXmlFeed("https://www.politico.com/rss/politics08.xml", "Politico", "Politics", "us", ["USA"]); // Changed source name
+  fetchAndParseXmlFeed("https://www.politico.com/rss/politics08.xml", "Politico", "Politics", "us", ["USA"]); 
 
 // Travel
 const fetchTravel = () =>
-  fetchAndParseXmlFeed("https://www.travelandleisure.com/rss", "Travel & Leisure", "Travel", "global", ["Tourism"]); // Changed source name
+  fetchAndParseXmlFeed("https://www.travelandleisure.com/rss", "Travel & Leisure", "Travel", "global", ["Tourism"]); 
 
 
 // ===== Main handler =====
@@ -291,8 +309,6 @@ exports.handler = async (event) => {
 
   try {
     const { region, category, timeframe, searchTerm, hashtag } = event.queryStringParameters || {};
-
-    // console.log(`Fetching trends with filters: Region=${region}, Category=${category}, Timeframe=${timeframe}, SearchTerm=${searchTerm}, Hashtag=${hashtag}`);
 
     const sources = [
       fetchHackerNewsFrontpage(), fetchTheVerge(), fetchIGNGaming(),
@@ -321,7 +337,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ success: true, trends: [], message: "No trends found." }),
+        body: JSON.stringify({ success: true, trends: [], message: "No trends found from any source." }),
       };
     }
 
