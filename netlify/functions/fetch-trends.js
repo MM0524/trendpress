@@ -4,18 +4,7 @@ const { XMLParser } = require("fast-xml-parser");
 
 // ===== Helpers =====
 
-// Define decodeHtmlEntities globally so it's accessible everywhere
-function decodeHtmlEntities(str = "") {
-  return str
-    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, "$1")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
-}
-
-async function fetchWithTimeout(url, options = {}, ms = 15000) { // Increased timeout to 15 seconds
+async function fetchWithTimeout(url, options = {}, ms = 20000) { // Increased timeout to 20 seconds
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
@@ -23,8 +12,10 @@ async function fetchWithTimeout(url, options = {}, ms = 15000) { // Increased ti
       ...options,
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36", // Mimic a common browser
+        // More robust User-Agent to mimic a real browser
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
         "Accept": "application/xml, text/xml, application/rss+xml, application/atom+xml, application/json, text/plain, */*",
+        "Referer": new URL(url).origin, // Add Referer header
         ...(options.headers || {}),
       },
     });
@@ -54,67 +45,71 @@ function getSafeString(value) {
   if (typeof value === 'string') {
     strValue = value;
   }
-  // Handles objects like { '#text': 'content' } often seen in parsed XML
   else if (typeof value === 'object' && value.hasOwnProperty('#text')) {
     strValue = String(value['#text']);
   }
-  // Handles objects like { href: 'url' } often seen in Atom links
-  else if (typeof value === 'object' && value.hasOwnProperty('href')) {
+  else if (typeof value === 'object' && value.hasOwnProperty('href')) { // For Atom link objects
     strValue = String(value.href);
   }
-  else { // Convert anything else to string
+  else {
     strValue = String(value);
   }
-  return decodeHtmlEntities(strValue).trim(); // Now decodeHtmlEntities is defined
+  return decodeHtmlEntities(strValue).trim();
+}
+
+// ---- HTML Entity Decoder (defined globally) ----
+function decodeHtmlEntities(str = "") {
+  return str
+    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 }
 
 // ---- Date helpers ----
 function toDateStr(d) {
   const dt = d ? new Date(d) : new Date();
   return isNaN(dt.getTime())
-    ? new Date().toISOString().split("T")[0] // Fallback to current date if invalid
-    : dt.toISOString().split("T")[0]; // YYYY-MM-DD
+    ? new Date().toISOString().split("T")[0]
+    : dt.toISOString().split("T")[0];
 }
 
 function toSortValue(d) {
   const dt = d ? new Date(d) : null;
-  // Return 0 if date is invalid, so it sorts to the end (oldest) when sorting descending
   return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0;
 }
 
-// ===== Trend Factory (Enhanced to integrate with fast-xml-parser output) =====
+// ===== Trend Factory (Standardizes item data from various feed types) =====
 function createStandardTrend(item, sourceName, defaultCategory = "General", defaultRegion = "global", extraTags = []) {
-  // Extracting values safely
-  const title = getSafeString(item.title || item['media:title']) || "No Title Available";
-  // Atom feeds often use 'summary' or 'content' for description
-  const description = getSafeString(item.description || item.content?.['#text'] || item.summary?.['#text'] || item.content) || "No description available";
+  const title = getSafeString(item.title || item['media:title'] || item.name) || "No Title Available"; // Added item.name for JSON feeds
+  const description = getSafeString(item.description || item.content?.['#text'] || item.summary?.['#text'] || item.content || item.artistName) || "No description available"; // Added item.artistName for Apple Music
   
   let link = getSafeString(item.link);
-  // Handle Atom link objects where link can be an array of objects
   if (Array.isArray(item.link)) {
-      const firstLink = item.link.find(l => l.rel === 'alternate' || !l.rel); // Prefer alternate link
+      const firstLink = item.link.find(l => l.rel === 'alternate' || !l.rel);
       if (firstLink && firstLink.href) {
           link = getSafeString(firstLink.href);
       }
-  } else if (typeof item.link === 'object' && item.link.href) { // Handle single link object
+  } else if (typeof item.link === 'object' && item.link.href) {
       link = getSafeString(item.link.href);
   }
-  link = link || "#"; // Final fallback for link
+  link = link || "#";
 
-  const pubDate = getSafeString(item.pubDate || item.published || item.updated) || new Date().toISOString();
+  const pubDate = getSafeString(item.pubDate || item.published || item.updated || item.releaseDate) || new Date().toISOString(); // Added item.releaseDate for Apple Music
 
-  // Basic cleaning for title/description (already done in getSafeString and will remove HTML entities)
-  const cleanedTitle = title.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim(); // Remove HTML tags and reduce multiple newlines
+  const cleanedTitle = title.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
   const cleanedDescription = description.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
 
   return {
     title_en: cleanedTitle,
     description_en: cleanedDescription,
-    title_vi: cleanedTitle, // For simplicity, use original as Vietnamese. You can integrate a translation API here.
+    title_vi: cleanedTitle,
     description_vi: cleanedDescription,
     category: defaultCategory,
     tags: [...new Set([...extraTags, sourceName.replace(/\s/g, "") || "Unknown", defaultRegion || "global"].filter(Boolean))],
-    votes: Math.floor(Math.random() * 500) + 100, // Random votes for demo purposes
+    votes: Math.floor(Math.random() * 500) + 100,
     source: link,
     date: toDateStr(pubDate),
     sortKey: toSortValue(pubDate),
@@ -123,7 +118,7 @@ function createStandardTrend(item, sourceName, defaultCategory = "General", defa
   };
 }
 
-// ===== XML/RSS/Atom Feed Fetcher (using fetchWithTimeout) =====
+// ===== XML/RSS/Atom Feed Fetcher (robust) =====
 async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultRegion, extraTags = []) {
   try {
     const res = await fetchWithTimeout(url);
@@ -132,12 +127,12 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
     const parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "",
-      trimValues: true, // Trim values automatically
-      textNodeName: "#text", // Use #text for text content
-      // Ensure specific tags are always arrays, even if single occurrence
+      trimValues: true,
+      textNodeName: "#text",
       isArray: (name, jpath, is  ) => {
         if (["item", "entry"].includes(name)) return true; // RSS items, Atom entries
         if (["link", "category"].includes(name) && jpath.includes("entry")) return true; // Atom links/categories can be arrays
+        if (["rdf:li", "rdf:item"].includes(name) && jpath.includes("rdf:RDF")) return true; // For RDF feeds like Science Magazine
         return false;
       }
     });
@@ -145,19 +140,22 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
 
     let rawItems = [];
 
-    // Try common RSS/Atom paths for item arrays
+    // Prioritized search for items in common structures
     if (parsed?.rss?.channel?.item) {
       rawItems = parsed.rss.channel.item;
-    } else if (parsed?.feed?.entry) {
+    } else if (parsed?.feed?.entry) { // Atom standard
       rawItems = parsed.feed.entry;
-    } else if (parsed?.channel?.item) { // Some feeds might have <channel><item> directly under root (e.g. older RSS)
+    } else if (parsed?.channel?.item) { // Older RSS
         rawItems = parsed.channel.item;
-    } else if (parsed?.feed?.item) { // Some feeds might have <feed><item> (not standard but seen)
+    } else if (parsed?.feed?.item) { // Non-standard Atom-like
         rawItems = parsed.feed.item;
+    } else if (parsed?.['rdf:RDF']?.item) { // For RDF feeds like Science Magazine (item directly under rdf:RDF)
+        rawItems = parsed['rdf:RDF'].item;
+    } else if (parsed?.['rdf:RDF']?.['rdf:li']) { // For RDF feeds with rdf:li
+        rawItems = parsed['rdf:RDF']['rdf:li'];
     }
-    else {
-        // Fallback: If no standard path works, try to find an array of objects that looks like items
-        // This is a heuristic and might need tuning for very unusual feeds
+    // Fallback: Check if any top-level array looks like items
+    if (rawItems.length === 0) {
         for (const key in parsed) {
             const potentialItems = parsed[key];
             if (Array.isArray(potentialItems) && potentialItems.length > 0 && typeof potentialItems[0] === 'object' && (potentialItems[0].title || potentialItems[0]['media:title'] || potentialItems[0].name)) {
@@ -181,7 +179,7 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
   }
 }
 
-// ===== JSON Feed Fetcher (for Apple Music and potentially other JSON APIs) =====
+// ===== JSON Feed Fetcher =====
 async function fetchJsonFeed(url, sourceName, defaultCategory, defaultRegion, extraTags = []) {
     try {
         const res = await fetchWithTimeout(url);
@@ -195,20 +193,7 @@ async function fetchJsonFeed(url, sourceName, defaultCategory, defaultRegion, ex
             return [];
         }
 
-        return rawItems.map(item => ({
-            title_en: getSafeString(item.name) || "No Title Available",
-            description_en: getSafeString(item.artistName) || "No description available",
-            title_vi: getSafeString(item.name) || "No Title Available", // For simplicity
-            description_vi: getSafeString(item.artistName) || "No description available", // For simplicity
-            category: defaultCategory,
-            tags: [...new Set([...extraTags, sourceName.replace(/\s/g, "") || "Unknown", defaultRegion || "global"].filter(Boolean))],
-            votes: Math.floor(Math.random() * 500) + 100,
-            source: getSafeString(item.url) || "#",
-            date: toDateStr(getSafeString(item.releaseDate) || new Date().toISOString()),
-            sortKey: toSortValue(getSafeString(item.releaseDate) || new Date().toISOString()),
-            submitter: sourceName,
-            region: defaultRegion,
-        }));
+        return rawItems.map(item => createStandardTrend(item, sourceName, defaultCategory, defaultRegion, extraTags)); // Use createStandardTrend for JSON too
     } catch (err) {
         console.error(`❌ Lỗi khi fetch hoặc parse JSON từ ${sourceName} (${url}):`, err.message);
         return [];
@@ -230,7 +215,7 @@ const fetchVentureBeatAI = () =>
   fetchAndParseXmlFeed("https://venturebeat.com/category/ai/feed/", "VentureBeat AI", "AI", "global", ["VentureBeat"]); 
 
 const fetchMITTech = () =>
-  fetchAndParseXmlFeed("https://www.technologyreview.com/feed/tag/artificial-intelligence/", "MIT Tech Review", "AI", "global", ["MITTechReview"]); 
+  fetchAndParseXmlFeed("https://www.technologyreview.com/feed/", "MIT Tech Review", "AI", "global", ["MITTechReview"]); // Changed URL to general feed, specific tag feed might be 404
 
 // Gaming
 const fetchIGNGaming = () =>
@@ -366,10 +351,10 @@ exports.handler = async (event) => {
     if (region && region !== "global") {
       filteredTrends = filteredTrends.filter(t => t.region && t.region.toLowerCase() === region.toLowerCase());
     }
-    if (category && category !== "All") { // "All" is a frontend concept, filter if specific category is requested
+    if (category && category !== "All") {
       filteredTrends = filteredTrends.filter(t => t.category && t.category.toLowerCase() === category.toLowerCase());
     }
-    if (timeframe && timeframe !== "all") { // "all" is a frontend concept for no timeframe filter
+    if (timeframe && timeframe !== "all") {
       const now = new Date();
       let cutoffDate = new Date(now);
       switch (timeframe) {
@@ -377,10 +362,10 @@ exports.handler = async (event) => {
         case "1m": cutoffDate.setDate(now.getDate() - 30); break;
         case "12m": cutoffDate.setFullYear(now.getFullYear() - 1); break;
       }
-      cutoffDate.setHours(0, 0, 0, 0); // Normalize to start of day
+      cutoffDate.setHours(0, 0, 0, 0);
       filteredTrends = filteredTrends.filter(t => {
         const trendDate = new Date(t.date);
-        trendDate.setHours(0, 0, 0, 0); // Normalize to start of day
+        trendDate.setHours(0, 0, 0, 0);
         return trendDate >= cutoffDate;
       });
     }
@@ -391,10 +376,9 @@ exports.handler = async (event) => {
         (t.description_en && t.description_en.toLowerCase().includes(termLower)) ||
         (t.title_vi && t.title_vi.toLowerCase().includes(termLower)) ||
         (t.description_vi && t.description_vi.toLowerCase().includes(termLower)) ||
-        (t.tags && t.tags.some(tag => tag.toLowerCase().includes(termLower))) // Search terms can match tags too
+        (t.tags && t.tags.some(tag => tag.toLowerCase().includes(termLower)))
       );
     }
-    // Hashtag filtering on backend (exact match for tags)
     if (hashtag) {
       const hashtagLower = hashtag.toLowerCase();
       filteredTrends = filteredTrends.filter(t =>
@@ -402,13 +386,12 @@ exports.handler = async (event) => {
       );
     }
 
-    // Sort by newest first (descending sortKey) and then map to final format with IDs
     filteredTrends = filteredTrends
-      .filter(Boolean) // Ensure no null/undefined items sneak through
+      .filter(Boolean)
       .sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0))
       .map((t, i) => {
-        const { sortKey, ...rest } = t; // Exclude sortKey from final output
-        return { ...rest, id: i + 1 }; // Ensure each trend has a unique ID
+        const { sortKey, ...rest } = t;
+        return { ...rest, id: i + 1 };
       });
 
     return {
