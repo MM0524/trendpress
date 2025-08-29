@@ -13,7 +13,8 @@ async function fetchWithTimeout(url, options = {}, ms = 9000) {
       ...options,
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 (TrendsBot/1.0)",
+        "User-Agent": "Mozilla/5.0 (TrendsBot/1.0)", // User-Agent to mimic a browser
+        "Accept": "application/xml, text/xml, application/rss+xml, application/atom+xml, application/json, text/plain, */*", // Accept headers
         ...(options.headers || {}),
       },
     });
@@ -25,25 +26,28 @@ async function fetchWithTimeout(url, options = {}, ms = 9000) {
     if (err.name === "AbortError") {
       throw new Error(`Request to ${url} timed out after ${ms}ms.`);
     }
+    // Handle specific network errors
+    if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED') {
+        throw new Error(`Network error: Could not reach ${url}. Check URL or network.`);
+    }
     throw new Error(`Network or processing error for ${url}: ${err.message}`);
   } finally {
     clearTimeout(timer);
   }
 }
 
-
-function decodeHtmlEntities(str = "") {
-  return str
-    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, "$1")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
-}
-
+// Function to safely get string value, handling null/undefined/objects
 function getSafeString(value) {
-  return typeof value === 'string' ? value.trim() : (value?.toString().trim() || "");
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (value && typeof value === 'object' && value.hasOwnProperty('#text')) {
+    return String(value['#text']).trim(); // For complex nodes like <title><#text>...</title>
+  }
+  if (value && typeof value === 'object' && value.hasOwnProperty('href')) {
+    return String(value.href).trim(); // For Atom link objects
+  }
+  return String(value || "").trim(); // Fallback
 }
 
 // ---- Date helpers ----
@@ -62,9 +66,10 @@ function toSortValue(d) {
 
 // ===== Trend Factory (Enhanced to integrate with fast-xml-parser output) =====
 function createStandardTrend(item, defaultCategory = "General", defaultRegion = "global", submitter = "Unknown", extraTags = []) {
-  const title = getSafeString(item.title) || "No Title Available";
-  const description = getSafeString(item.description || item.content) || "No description available"; // Atom often uses 'content'
-  const link = getSafeString(item.link) || (item.link?.href ? getSafeString(item.link.href) : "#"); // Handle Atom link objects
+  // Use getSafeString to extract values from parsed XML/JSON objects
+  const title = getSafeString(item.title || item['media:title']) || "No Title Available";
+  const description = getSafeString(item.description || item.content?.['#text'] || item.summary?.['#text'] || item.content) || "No description available"; // Atom often uses 'content' or 'summary'
+  const link = getSafeString(item.link) || (item.link?.[0]?.href ? getSafeString(item.link[0].href) : "#"); // Handle Atom link objects (can be array)
   const pubDate = getSafeString(item.pubDate || item.published || item.updated) || new Date().toISOString();
 
   // Basic cleaning for title/description (sometimes they still contain HTML from RSS source)
@@ -74,7 +79,7 @@ function createStandardTrend(item, defaultCategory = "General", defaultRegion = 
   return {
     title_en: cleanedTitle,
     description_en: cleanedDescription,
-    title_vi: cleanedTitle, // For simplicity, use original as Vietnamese.
+    title_vi: cleanedTitle, // For simplicity, use original as Vietnamese. You can integrate a translation API here.
     description_vi: cleanedDescription,
     category: defaultCategory,
     tags: [...new Set([...extraTags, submitter.replace(/\s/g, "") || "Unknown", defaultRegion || "global"].filter(Boolean))],
@@ -87,8 +92,8 @@ function createStandardTrend(item, defaultCategory = "General", defaultRegion = 
   };
 }
 
-// ===== RSS/Atom Fetcher (using fetchWithTimeout) =====
-async function fetchAndParseFeed(url, sourceName, defaultCategory, defaultRegion, extraTags = []) {
+// ===== XML/RSS/Atom Feed Fetcher (using fetchWithTimeout) =====
+async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultRegion, extraTags = []) {
   try {
     const res = await fetchWithTimeout(url);
     const text = await res.text();
@@ -98,7 +103,8 @@ async function fetchAndParseFeed(url, sourceName, defaultCategory, defaultRegion
       attributeNamePrefix: "",
       // Ensure specific tags are always arrays, even if single occurrence
       isArray: (name, jpath, is  ) => {
-        if (["item", "entry"].includes(name)) return true;
+        if (["item", "entry"].includes(name)) return true; // RSS items, Atom entries
+        // You might need to add more specific tags here if they can be arrays
         return false;
       }
     });
@@ -106,37 +112,50 @@ async function fetchAndParseFeed(url, sourceName, defaultCategory, defaultRegion
 
     let rawItems = [];
 
-    // RSS structure
+    // RSS structure (e.g., hnrss, theverge)
     if (parsed?.rss?.channel?.item) {
       rawItems = parsed.rss.channel.item;
     }
-    // Atom structure
+    // Atom structure (e.g., Google News, YouTube feeds)
     else if (parsed?.feed?.entry) {
       rawItems = parsed.feed.entry;
-    } else {
-        console.warn(`⁉️ ${sourceName}: Không tìm thấy items trong cấu trúc RSS/Atom. URL: ${url}`);
-        return [];
+    } 
+    // Sometimes the feed might be nested differently or have a single item
+    else if (parsed?.feed?.item) { // Some feeds might just have <feed><item>
+        rawItems = parsed.feed.item;
+    }
+    else {
+        console.warn(`⁉️ ${sourceName}: Không tìm thấy items trong cấu trúc RSS/Atom chuẩn. URL: ${url}`);
+        // Attempt to find items in other common RSS/Atom paths
+        if (parsed?.channel?.item) { rawItems = parsed.channel.item; }
+        else if (parsed?.feed) { // If it's just a <feed> root without <entry> or <item> at root level
+            console.warn(`⁉️ ${sourceName}: Feed root nhưng không có entry/item trực tiếp. Có thể cần parse sâu hơn.`);
+        }
+        if (rawItems.length === 0) {
+            console.error(`❌ ${sourceName}: Không thể tìm thấy bất kỳ item nào từ ${url}.`);
+            return [];
+        }
     }
 
     return rawItems.map(item => createStandardTrend(item, defaultCategory, defaultRegion, sourceName, extraTags));
 
   } catch (err) {
-    console.error(`❌ Lỗi khi fetch hoặc parse ${sourceName} từ ${url}:`, err.message);
+    console.error(`❌ Lỗi khi fetch hoặc parse XML từ ${sourceName} (${url}):`, err.message);
     return [];
   }
 }
 
-// ===== JSON Feed Fetcher (for Apple Music) =====
+// ===== JSON Feed Fetcher (for Apple Music and potentially other JSON APIs) =====
 async function fetchJsonFeed(url, sourceName, defaultCategory, defaultRegion, extraTags = []) {
     try {
         const res = await fetchWithTimeout(url);
         const json = await res.json();
 
         let rawItems = [];
-        if (json?.feed?.results) {
+        if (json?.feed?.results) { // Apple Music specific
             rawItems = json.feed.results;
         } else {
-            console.warn(`⁉️ ${sourceName}: Không tìm thấy results trong cấu trúc JSON. URL: ${url}`);
+            console.warn(`⁉️ ${sourceName}: Không tìm thấy results trong cấu trúc JSON mong đợi. URL: ${url}`);
             return [];
         }
 
@@ -155,55 +174,56 @@ async function fetchJsonFeed(url, sourceName, defaultCategory, defaultRegion, ex
             region: defaultRegion,
         }));
     } catch (err) {
-        console.error(`❌ Lỗi khi fetch hoặc parse JSON từ ${sourceName} từ ${url}:`, err.message);
+        console.error(`❌ Lỗi khi fetch hoặc parse JSON từ ${sourceName} (${url}):`, err.message);
         return [];
     }
 }
 
 
-// ===== Individual fetch functions (with standardized category names) =====
+// ===== Individual fetch functions (with standardized category names and correct fetcher) =====
 
 // Technology
 const fetchHackerNewsFrontpage = () =>
-  fetchAndParseFeed("https://hnrss.org/frontpage", "Hacker News", "Technology", "global", ["HackerNews", "Tech"]);
+  fetchAndParseXmlFeed("https://hnrss.org/frontpage", "Hacker News", "Technology", "global", ["HackerNews", "Tech"]);
 
 const fetchTheVerge = () =>
-  fetchAndParseFeed("https://www.theverge.com/rss/index.xml", "The Verge", "Technology", "global", ["Tech"]);
+  fetchAndParseXmlFeed("https://www.theverge.com/rss/index.xml", "The Verge", "Technology", "global", ["Tech"]);
 
 const fetchVentureBeatAI = () =>
-  fetchAndParseFeed("https://venturebeat.com/category/ai/feed/", "VentureBeat AI", "AI", "global", ["VentureBeat"]); // AI is its own category
+  fetchAndParseXmlFeed("https://venturebeat.com/category/ai/feed/", "VentureBeat AI", "AI", "global", ["VentureBeat"]); 
 
 const fetchMITTech = () =>
-  fetchAndParseFeed("https://www.technologyreview.com/feed/tag/artificial-intelligence/", "MIT Tech Review", "AI", "global", ["MITTechReview"]); // AI is its own category
+  fetchAndParseXmlFeed("https://www.technologyreview.com/feed/tag/artificial-intelligence/", "MIT Tech Review", "AI", "global", ["MITTechReview"]); 
 
+// Gaming
 const fetchIGNGaming = () =>
-  fetchAndParseFeed("https://feeds.ign.com/ign/games-all", "IGN Gaming", "Gaming", "global", ["IGN", "Games"]);
+  fetchAndParseXmlFeed("https://feeds.ign.com/ign/games-all", "IGN Gaming", "Gaming", "global", ["IGN", "Games"]);
+
+const fetchGameKVN = () =>
+  fetchAndParseXmlFeed("https://gamek.vn/home.rss", "GameK VN", "Gaming", "vn", ["Vietnam"]);
 
 // News
 const fetchGoogleNewsVN = () =>
-  fetchAndParseFeed("https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi", "Google News VN", "News", "vn", ["GoogleNewsVN", "Vietnam"]);
+  fetchAndParseXmlFeed("https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi", "Google News VN", "News", "vn", ["GoogleNewsVN", "Vietnam"]);
 
 const fetchBBCWorld = () =>
-  fetchAndParseFeed("http://feeds.bbci.co.uk/news/world/rss.xml", "BBC World", "News", "global", ["WorldNews"]);
-
-const fetchPolitics = () =>
-  fetchAndParseFeed("https://www.politico.com/rss/politics08.xml", "Politics", "Politics", "us", ["USA"]); // Specific to US politics
+  fetchAndParseXmlFeed("http://feeds.bbci.co.uk/news/world/rss.xml", "BBC World", "News", "global", ["WorldNews"]);
 
 // Finance
 const fetchYahooFinance = () =>
-  fetchAndParseFeed("https://finance.yahoo.com/news/rss", "Yahoo Finance", "Finance", "global", ["Markets"]);
+  fetchAndParseXmlFeed("https://finance.yahoo.com/news/rss", "Yahoo Finance", "Finance", "global", ["Markets"]);
 
 const fetchCNBCFinance = () =>
-  fetchAndParseFeed("https://www.cnbc.com/id/10000664/device/rss/rss.html", "CNBC Finance", "Finance", "us", ["Markets", "USA"]);
+  fetchAndParseXmlFeed("https://www.cnbc.com/id/10000664/device/rss/rss.html", "CNBC Finance", "Finance", "us", ["Markets", "USA"]);
 
 // Science
 const fetchScienceMagazine = () =>
-  fetchAndParseFeed("https://www.sciencemag.org/rss/news_current.xml", "Science Magazine", "Science", "global", ["ScienceMag"]);
+  fetchAndParseXmlFeed("https://www.sciencemag.org/rss/news_current.xml", "Science Magazine", "Science", "global", ["ScienceMag"]);
 
 const fetchNewScientist = () =>
-  fetchAndParseFeed("https://www.newscientist.com/feed/home/", "New Scientist", "Science", "global", ["NewScientist"]);
+  fetchAndParseXmlFeed("https://www.newscientist.com/feed/home/", "New Scientist", "Science", "global", ["NewScientist"]);
 
-// Music (Using JSON fetcher for Apple Music)
+// Music
 const fetchAppleMusicMostPlayedVN = () =>
   fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json", "Apple Music Most Played VN", "Music", "vn", ["AppleMusic", "Vietnam", "MostPlayed"]);
 
@@ -212,47 +232,48 @@ const fetchAppleMusicNewReleasesVN = () =>
 
 // Media / Entertainment
 const fetchYouTubeTrendingVN = () =>
-  fetchAndParseFeed("https://rsshub.app/youtube/trending/region/VN", "YouTube Trending VN", "Media", "vn", ["YouTube", "Trending", "VN"]);
+  fetchAndParseXmlFeed("https://rsshub.app/youtube/trending/region/VN", "YouTube Trending VN", "Media", "vn", ["YouTube", "Trending", "VN"]);
 
 const fetchVariety = () =>
-  fetchAndParseFeed("https://variety.com/feed/", "Variety", "Entertainment", "global", ["Hollywood"]);
+  fetchAndParseXmlFeed("https://variety.com/feed/", "Variety", "Entertainment", "global", ["Hollywood"]);
 
 const fetchDeadline = () =>
-  fetchAndParseFeed("https://deadline.com/feed/", "Deadline", "Entertainment", "us", ["Showbiz", "Hollywood", "USA"]);
-
-const fetchGameKVN = () =>
-  fetchAndParseFeed("https://gamek.vn/home.rss", "GameK VN", "Gaming", "vn", ["Vietnam"]); // Categorized as Gaming
+  fetchAndParseXmlFeed("https://deadline.com/feed/", "Deadline", "Entertainment", "us", ["Showbiz", "Hollywood", "USA"]);
 
 const fetchZingNewsEntertainment = () =>
-  fetchAndParseFeed("https://zingnews.vn/rss/giai-tri.rss", "ZingNews Entertainment", "Entertainment", "vn", ["Vietnam"]);
+  fetchAndParseXmlFeed("https://zingnews.vn/rss/giai-tri.rss", "ZingNews Entertainment", "Entertainment", "vn", ["Vietnam"]);
 
 // Sports
 const fetchESPN = () =>
-  fetchAndParseFeed("https://www.espn.com/espn/rss/news", "ESPN", "Sports", "us", ["WorldSports", "USA"]);
+  fetchAndParseXmlFeed("https://www.espn.com/espn/rss/news", "ESPN", "Sports", "us", ["WorldSports", "USA"]);
 
 // Logistics
 const fetchLogistics = () =>
-  fetchAndParseFeed("https://www.supplychaindigital.com/rss", "Logistics", "Logistics", "global", ["SupplyChain"]);
+  fetchAndParseXmlFeed("https://www.supplychaindigital.com/rss", "Supply Chain Digital", "Logistics", "global", ["SupplyChain"]); // Changed source name
 
 // Cybersecurity
 const fetchCybernews = () =>
-  fetchAndParseFeed("https://cybernews.com/feed/", "Cybernews", "Cybersecurity", "global", ["Security"]);
+  fetchAndParseXmlFeed("https://cybernews.com/feed/", "Cybernews", "Cybersecurity", "global", ["Security"]);
 
 // Healthcare
 const fetchHealthcare = () =>
-  fetchAndParseFeed("https://www.healthcareitnews.com/rss.xml", "Healthcare IT News", "Healthcare", "global", ["Health"]);
+  fetchAndParseXmlFeed("https://www.healthcareitnews.com/rss.xml", "Healthcare IT News", "Healthcare", "global", ["Health"]); // Changed source name
 
 // Education
 const fetchEducation = () =>
-  fetchAndParseFeed("https://www.chronicle.com/section/News/6/rss", "The Chronicle of Higher Education", "Education", "us", ["USA"]);
+  fetchAndParseXmlFeed("https://www.chronicle.com/section/News/6/rss", "The Chronicle of Higher Education", "Education", "us", ["USA"]);
 
 // Environment
 const fetchEnvironment = () =>
-  fetchAndParseFeed("https://www.theguardian.com/environment/rss", "The Guardian Environment", "Environment", "global", ["Climate"]);
+  fetchAndParseXmlFeed("https://www.theguardian.com/environment/rss", "The Guardian Environment", "Environment", "global", ["Climate"]); // Changed source name
+
+// Politics
+const fetchPolitics = () =>
+  fetchAndParseXmlFeed("https://www.politico.com/rss/politics08.xml", "Politico", "Politics", "us", ["USA"]); // Changed source name
 
 // Travel
 const fetchTravel = () =>
-  fetchAndParseFeed("https://www.travelandleisure.com/rss", "Travel & Leisure", "Travel", "global", ["Tourism"]);
+  fetchAndParseXmlFeed("https://www.travelandleisure.com/rss", "Travel & Leisure", "Travel", "global", ["Tourism"]); // Changed source name
 
 
 // ===== Main handler =====
@@ -270,6 +291,8 @@ exports.handler = async (event) => {
 
   try {
     const { region, category, timeframe, searchTerm, hashtag } = event.queryStringParameters || {};
+
+    // console.log(`Fetching trends with filters: Region=${region}, Category=${category}, Timeframe=${timeframe}, SearchTerm=${searchTerm}, Hashtag=${hashtag}`);
 
     const sources = [
       fetchHackerNewsFrontpage(), fetchTheVerge(), fetchIGNGaming(),
@@ -336,11 +359,11 @@ exports.handler = async (event) => {
         (t.tags && t.tags.some(tag => tag.toLowerCase().includes(termLower))) // Search terms can match tags too
       );
     }
-    // NEW: Hashtag filtering on backend
+    // Hashtag filtering on backend (exact match for tags)
     if (hashtag) {
       const hashtagLower = hashtag.toLowerCase();
       filteredTrends = filteredTrends.filter(t =>
-        t.tags && t.tags.some(tag => tag.toLowerCase() === hashtagLower) // Exact match for hashtags
+        t.tags && t.tags.some(tag => tag.toLowerCase() === hashtagLower)
       );
     }
 
