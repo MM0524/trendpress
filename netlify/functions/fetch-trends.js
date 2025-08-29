@@ -252,6 +252,9 @@ const fetchYahooFinance = () =>
 const fetchCNBCFinance = () =>
   fetchAndParseXmlFeed("https://www.cnbc.com/id/10000664/device/rss/rss.html", "CNBC Finance", "Finance", "us", ["Markets", "USA"]);
 
+const fetchCafeF = () => 
+  fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF", "Finance", "vn");
+
 // Science
 const fetchScienceMagazine = () =>
   fetchAndParseXmlFeed("https://www.sciencemag.org/rss/news_current.xml", "Science Magazine", "Science", "global", ["ScienceMag"]);
@@ -309,6 +312,49 @@ const fetchEnvironment = () =>
 const fetchTravel = () =>
   fetchAndParseXmlFeed("https://www.lonelyplanet.com/news/rss", "Lonely Planet", "Travel", "global", ["Tourism"]); 
 
+const fetchToyNews = () =>
+  fetchAndParseXmlFeed("https://toynewsi.com/rss.php", "Toy News International", "Toys", "global", ["Toys"]);
+
+const fetchSneakerNews = () =>
+  fetchAndParseXmlFeed("https://sneakernews.com/feed/", "Sneaker News", "Sneakers", "global", ["Shoes", "Fashion"]);
+
+const fetchAllureBeauty = () =>
+  fetchAndParseXmlFeed("https://www.allure.com/feed/all", "Allure Beauty", "Beauty", "global", ["Beauty", "Cosmetics"]);
+
+//Beauty
+const fetchVogueBeauty = () =>
+  fetchAndParseXmlFeed("https://www.vogue.com/rss/beauty", "Vogue Beauty", "Beauty", "global", ["Beauty", "Cosmetics"]);
+
+const fetchElle = () => 
+  fetchAndParseXmlFeed("https://www.elle.com/rss/all.xml", "Elle", "Fashion", "global");
+
+const fetchGQ = () => 
+  fetchAndParseXmlFeed("https://www.gq.com/feed/rss", "GQ", "Fashion", "global");
+
+const fetchHypebeast = () => 
+  fetchAndParseXmlFeed("https://hypebeast.com/feed", "Hypebeast", "Fashion", "global");
+
+const fetchHighsnobiety = () => 
+  fetchAndParseXmlFeed("https://www.highsnobiety.com/feed", "Highsnobiety", "Fashion", "global");
+
+
+const fetchRefinery29 = () =>
+  fetchAndParseXmlFeed("https://www.refinery29.com/en-us/feed", "Refinery29", "Lifestyle", "global", ["Lifestyle"]);
+
+const fetchParents = () =>
+  fetchAndParseXmlFeed("https://www.parents.com/rss/", "Parents.com", "Family", "global", ["Parenting", "Family"]);
+
+const fetchAfamily = () => fetchAndParseXmlFeed("https://afamily.vn/rss/home.rss", "Afamily", "Lifestyle", "vn");
+
+// Food & Drink
+const fetchFoodWine = () => fetchAndParseXmlFeed("https://www.foodandwine.com/rss", "Food & Wine", "Food", "global");
+const fetchEater = () => fetchAndParseXmlFeed("https://www.eater.com/rss/index.xml", "Eater", "Food", "global");
+const fetchSeriousEats = () => fetchAndParseXmlFeed("https://www.seriouseats.com/rss", "Serious Eats", "Food", "global");
+
+// Cars
+const fetchCarDriver = () => fetchAndParseXmlFeed("https://www.caranddriver.com/rss/all.xml/", "Car and Driver", "Cars", "global");
+const fetchTopGear = () => fetchAndParseXmlFeed("https://www.topgear.com/feeds/all/rss.xml", "Top Gear", "Cars", "global");
+
 
 // ===== Main handler =====
 exports.handler = async (event) => {
@@ -329,13 +375,21 @@ exports.handler = async (event) => {
     const sources = [
       fetchHackerNewsFrontpage(), fetchTheVerge(), fetchIGNGaming(),
       fetchVentureBeatAI(), fetchMITTech(), fetchGoogleNewsVN(),
-      fetchYahooFinance(), fetchCNBCFinance(), fetchScienceMagazine(),
+      fetchYahooFinance(), fetchCNBCFinance(), fetchCafeF(), fetchScienceMagazine(),
       fetchNewScientist(), fetchAppleMusicMostPlayedVN(), fetchAppleMusicNewReleasesVN(),
       fetchYouTubeTrendingVN(), fetchVariety(), fetchDeadline(),
       fetchGameKVN(), fetchZingNewsEntertainment(), fetchBBCWorld(),
       fetchESPN(), fetchLogistics(), fetchCybernews(),
       fetchHealthcare(), fetchEducation(), fetchEnvironment(),
       fetchPolitics(), fetchTravel(),
+      fetchToyNews(),
+      fetchSneakerNews(),
+      fetchAllureBeauty(),
+      fetchVogueBeauty(), fetchElle(), fetchGQ(), fetchHypebeast(), fetchHighsnobiety(),
+      fetchRefinery29(), fetchAfamily(),
+      fetchParents(),
+      fetchFoodWine(), fetchEater(), fetchSeriousEats(),
+      fetchCarDriver(), fetchTopGear(),
     ];
 
     const results = await Promise.allSettled(sources);
