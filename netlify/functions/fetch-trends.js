@@ -4,6 +4,17 @@ const { XMLParser } = require("fast-xml-parser");
 
 // ===== Helpers =====
 
+// Define decodeHtmlEntities globally so it's accessible everywhere
+function decodeHtmlEntities(str = "") {
+  return str
+    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
 async function fetchWithTimeout(url, options = {}, ms = 15000) { // Increased timeout to 15 seconds
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
@@ -39,18 +50,22 @@ function getSafeString(value) {
   if (value === null || value === undefined) {
     return "";
   }
+  let strValue = "";
   if (typeof value === 'string') {
-    return value.trim();
+    strValue = value;
   }
   // Handles objects like { '#text': 'content' } often seen in parsed XML
-  if (typeof value === 'object' && value.hasOwnProperty('#text')) {
-    return String(value['#text']).trim();
+  else if (typeof value === 'object' && value.hasOwnProperty('#text')) {
+    strValue = String(value['#text']);
   }
   // Handles objects like { href: 'url' } often seen in Atom links
-  if (typeof value === 'object' && value.hasOwnProperty('href')) {
-    return String(value.href).trim();
+  else if (typeof value === 'object' && value.hasOwnProperty('href')) {
+    strValue = String(value.href);
   }
-  return String(value).trim(); // Convert anything else to string
+  else { // Convert anything else to string
+    strValue = String(value);
+  }
+  return decodeHtmlEntities(strValue).trim(); // Now decodeHtmlEntities is defined
 }
 
 // ---- Date helpers ----
@@ -88,9 +103,9 @@ function createStandardTrend(item, sourceName, defaultCategory = "General", defa
 
   const pubDate = getSafeString(item.pubDate || item.published || item.updated) || new Date().toISOString();
 
-  // Basic cleaning for title/description (sometimes they still contain HTML from RSS source)
-  const cleanedTitle = decodeHtmlEntities(title).replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim(); // Decode entities and remove HTML tags
-  const cleanedDescription = decodeHtmlEntities(description).replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
+  // Basic cleaning for title/description (already done in getSafeString and will remove HTML entities)
+  const cleanedTitle = title.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim(); // Remove HTML tags and reduce multiple newlines
+  const cleanedDescription = description.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
 
   return {
     title_en: cleanedTitle,
@@ -142,10 +157,12 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
     }
     else {
         // Fallback: If no standard path works, try to find an array of objects that looks like items
+        // This is a heuristic and might need tuning for very unusual feeds
         for (const key in parsed) {
-            if (Array.isArray(parsed[key]) && parsed[key].length > 0 && typeof parsed[key][0] === 'object' && (parsed[key][0].title || parsed[key][0]['media:title'])) {
-                rawItems = parsed[key];
-                console.warn(`⚠️ ${sourceName}: Tìm thấy items ở đường dẫn không chuẩn: parsed.${key}`);
+            const potentialItems = parsed[key];
+            if (Array.isArray(potentialItems) && potentialItems.length > 0 && typeof potentialItems[0] === 'object' && (potentialItems[0].title || potentialItems[0]['media:title'] || potentialItems[0].name)) {
+                rawItems = potentialItems;
+                console.warn(`⚠️ ${sourceName}: Tìm thấy items ở đường dẫn không chuẩn: parsed.${key} từ ${url}.`);
                 break;
             }
         }
