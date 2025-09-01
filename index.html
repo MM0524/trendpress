@@ -298,7 +298,7 @@
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section"><h4 class="footer-title">TrendPulse</h4><p class="footer-description"></p></div>
-            <div class="footer-section"><h4 class="footer-title"></h4><ul class="footer-links"><li><a href="#" id="footer-top-trends"></a></li><li><a href="#" id="footer-trending-board"></a></li><li><a href="#" id="footer-about"></a></li></ul></div>
+            <div class="footer-section"><h4 class="footer-title"></h4><ul class="footer-links"><li><a href="#" id="footer-top-trends"></a></li><li><a href="#" id="footer-trending-board"></a></li><li><a href="#" id="footer-about"></a></a></li></ul></div>
             <div class="footer-section"><h4 class="footer-title"></h4><ul class="footer-links"><li><span id="feat-ai-analysis"></span></li><li><span id="feat-trend-prediction"></span></li><li><span id="feat-leaderboards"></span></li><li><span id="feat-personal-recommendations"></span></li></ul></div>
             <div class="footer-section"><h4 class="footer-title"></h4><div class="footer-contact"><p id="contact-email"></p><p id="contact-support"></p></div></div>
         </div>
@@ -441,6 +441,8 @@
                 if (filters.timeframe && filters.timeframe !== 'all') params.append('timeframe', filters.timeframe);
                 if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
                 if (filters.hashtag) params.append('hashtag', filters.hashtag);
+                // NEW: Add a specific parameter for chart search terms if needed
+                if (filters.tbChartSearchTerm) params.append('tbChartSearchTerm', filters.tbChartSearchTerm);
                 
                 const url = `/.netlify/functions/fetch-trends?${params.toString()}`;
                 console.log("Fetching trends from:", url);
@@ -450,7 +452,7 @@
                     const errorText = await res.text();
                     throw new Error(`HTTP error! Status: ${res.status} - ${errorText}`);
                 }
-                const data = await res.json(); // Backend now returns { success: true, trends: [...] }
+                const data = await res.json();
                 if (!data.success) {
                     throw new Error(data.message || "Failed to fetch trends from backend.");
                 }
@@ -938,7 +940,6 @@
             const defaultTitle = t('No Title Available');
             const defaultDescription = t('No Description Available');
 
-            // Prioritize current language, then other language, then default
             const title_vi = trend.title_vi || trend.title_en || defaultTitle;
             const description_vi = trend.description_vi || trend.description_en || defaultDescription;
             const title_en = trend.title_en || trend.title_vi || defaultTitle;
@@ -1060,11 +1061,12 @@
                     labels.push(d.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
             } else if (timeframe === '1m') {
-                for (let i = 29; i >= 0; i -= 5) {
+                for (let i = 29; i >= 0; i -= 5) { // Approximately 6 points spread over 30 days
                     const d = new Date(now);
                     d.setDate(now.getDate() - i);
                     labels.push(d.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
+                // Ensure the "today" point is included if not already
                 if (labels.length > 0 && new Date(labels[labels.length -1]).toDateString() !== now.toDateString()) {
                     labels.push(now.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
@@ -1081,7 +1083,7 @@
         function generateSeriesForTimeframe(trend, labels, timeframe) {
             const series = new Array(labels.length).fill(0);
             const trendDate = new Date(trend.date || Date.now());
-            trendDate.setHours(0,0,0,0);
+            trendDate.setHours(0,0,0,0); // For accurate date comparison
             const peakMetric = getCombinedMetric(trend);
 
             labels.forEach((label, index) => {
@@ -1089,14 +1091,14 @@
                 if (timeframe === '7d' || timeframe === '1m') {
                     const now = new Date();
                     let datePart = new Date(now);
+                    // Calculate date based on label position for short timeframes
                     if (timeframe === '7d') {
                         datePart.setDate(now.getDate() - (labels.length - 1 - index));
                     } else if (timeframe === '1m') {
-                        const daysAgo = (labels.length - 1 - index) * (30 / labels.length);
-                        datePart.setDate(now.getDate() - daysAgo);
+                        const daysBetweenLabels = 30 / (labels.length - 1); // Approximate days between labels
+                        datePart.setDate(now.getDate() - ((labels.length - 1 - index) * daysBetweenLabels));
                     }
                     currentLabelDate = new Date(datePart.getFullYear(), datePart.getMonth(), datePart.getDate());
-
                 } else { // 12m
                     const parts = label.split('/');
                     const monthShort = parts[0];
@@ -1108,33 +1110,36 @@
                 }
                 currentLabelDate.setHours(0,0,0,0);
 
-                let diffUnit;
-                if (timeframe === '7d') diffUnit = Math.abs(currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24);
-                else if (timeframe === '1m') diffUnit = Math.abs(currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24);
-                else diffUnit = Math.abs(currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
-
+                // If the current label date is before the trend's actual start date, assume 0 interest
                 if (currentLabelDate < trendDate) {
                     series[index] = 0;
                     return;
                 }
 
-                const timeSinceTrendStart = (currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24);
-                let decayFactor = 0.05;
-                let peakMultiplier = 1;
+                // Calculate time difference in days for decay model
+                const timeDiffDays = (currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24);
+
+                let decayRate = 0.05; // Base decay rate
+                let initialPeak = 1.0; // Base peak multiplier
 
                 if (timeframe === '7d') {
-                    decayFactor = 0.2;
-                    if (timeSinceTrendStart <= 1) peakMultiplier = 1.2;
+                    decayRate = 0.5; // Faster decay for short, impactful trends
+                    initialPeak = 1.5; // Higher initial peak
                 } else if (timeframe === '1m') {
-                    decayFactor = 0.1;
-                    if (timeSinceTrendStart <= 7) peakMultiplier = 1.1;
+                    decayRate = 0.2; // Moderate decay
+                    initialPeak = 1.2;
                 } else { // 12m
-                    decayFactor = 0.05;
-                    if (timeSinceTrendStart <= 30) peakMultiplier = 1.05;
+                    decayRate = 0.05; // Slower decay for long-term trends
+                    initialPeak = 1.0;
                 }
-                
-                let value = peakMetric * peakMultiplier * Math.exp(-decayFactor * timeSinceTrendStart);
-                value = Math.max(0, value * (1 + (Math.random() - 0.5) * 0.3));
+
+                // Apply a bell-curve like model or exponential decay for interest over time
+                // The peak of interest should be some days/weeks after the trend's origin
+                const daysToPeak = (timeframe === '7d' ? 1 : (timeframe === '1m' ? 5 : 30)); // Days for a trend to reach its natural peak after its date
+                const timeFromPeak = timeDiffDays - daysToPeak; // Time elapsed since *expected peak*
+
+                let value = peakMetric * initialPeak * Math.exp(-decayRate * Math.pow(timeFromPeak, 2) / (daysToPeak * daysToPeak));
+                value = Math.max(0, value * (1 + (Math.random() - 0.5) * 0.3)); // Add some random fluctuation
 
                 series[index] = Math.round(value);
             });
@@ -1143,7 +1148,7 @@
         }
 
         async function renderTBDashboard(timeframe) {
-            let trendsForLeaderboard = [...allTrends];
+            let trendsForLeaderboard = [...allTrends]; // `allTrends` already contains data filtered by region/category/timeframe
 
             const topics = trendsForLeaderboard.filter(trendItem => trendItem.type === 'topic').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
             const queries = trendsForLeaderboard.filter(trendItem => trendItem.type === 'query').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
@@ -1184,6 +1189,7 @@
             const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All';
             const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
 
+            // Manage search chips
             if (newSearchTerm) {
                 const term = newSearchTerm.trim();
                 if (term && !user.tbSearchTerms.includes(term)) {
@@ -1208,57 +1214,80 @@
                 console.error("Missing DOM element: #tb-search-chips-container");
             }
 
-            let trendsForChart = [];
-            const tbFilters = {
+            const chartFilters = {
                 region: selectedRegion,
                 category: selectedCategory,
                 timeframe: timeframe,
             };
 
+            const labels = generateChartLabels(timeframe);
+            const datasets = [];
+            const palette = getColorPalette(user.tbSearchTerms.length > 0 ? user.tbSearchTerms.length : 5); // Ensure enough colors
+
             if (user.tbSearchTerms.length > 0) {
-                tbFilters.searchTerm = user.tbSearchTerms.join(' ');
-                allTrends = await fetchLiveTrends(tbFilters);
-                trendsForChart = [...allTrends];
-                
+                // Fetch and process each search term for comparison
+                for (let i = 0; i < user.tbSearchTerms.length; i++) {
+                    const term = user.tbSearchTerms[i];
+                    const trendsForThisTerm = await fetchLiveTrends({ ...chartFilters, searchTerm: term });
+                    if (trendsForThisTerm.length > 0) {
+                        // Take the most relevant trend for this term for the chart line
+                        const mostRelevantTrend = trendsForThisTerm.sort((a,b) => b.hotnessScore - a.hotnessScore)[0];
+                        datasets.push({
+                            label: truncateText(getLocalizedTrendText(mostRelevantTrend).title, 30),
+                            data: generateSeriesForTimeframe(mostRelevantTrend, labels, timeframe),
+                            borderColor: palette[i].stroke,
+                            tension: 0.4,
+                            fill: false,
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        });
+                    }
+                }
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('Interest Over Time');
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
             } else {
-                allTrends = await fetchLiveTrends(tbFilters);
-                trendsForChart = [...allTrends].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+                // Default view: Top 5 hot trends
+                allTrends = await fetchLiveTrends(chartFilters); // Fetch the general top trends
+                const topTrends = [...allTrends].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+                topTrends.forEach((trendItem, i) => {
+                    datasets.push({
+                        label: truncateText(getLocalizedTrendText(trendItem).title, 30),
+                        data: generateSeriesForTimeframe(trendItem, labels, timeframe),
+                        borderColor: palette[i].stroke,
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    });
+                });
                 
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t('Top 5 Hot Trends')} - ${t('Interest Over Time')}`;
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
                 renderTBDashboard(timeframe);
             }
 
-            const labels = generateChartLabels(timeframe);
-            const palette = getColorPalette(trendsForChart.length);
-            const datasets = trendsForChart.map((trendItem, idx) => ({
-                label: truncateText(getLocalizedTrendText(trendItem).title, 30),
-                data: generateSeriesForTimeframe(trendItem, labels, timeframe),
-                borderColor: palette[idx].stroke,
-                tension: 0.4,
-                fill: false,
-                pointRadius: 3,
-                pointHoverRadius: 5
-            }));
-
-            hotTrendsChart = new Chart(canvas.getContext('2d'), {
-                type: 'line',
-                data: { labels, datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 } },
-                        tooltip: { callbacks: { label: (ctx) => `${t('Engagement')}: ${formatNumber(ctx.parsed.y)}` } }
-                    },
-                    scales: {
-                        x: { ticks: { color: '#8a8da0' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
-                        y: { ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
+            // Render chart only if there are datasets
+            if (datasets.length > 0) {
+                hotTrendsChart = new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 } },
+                            tooltip: { callbacks: { label: (ctx) => `${t('Engagement')}: ${formatNumber(ctx.parsed.y)}` } }
+                        },
+                        scales: {
+                            x: { ticks: { color: '#8a8da0' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                            y: { ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
+                        }
                     }
-                }
-            });
+                });
+            } else {
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+                if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('No trends found.');
+            }
         }
         // --- End Trending Board specific functions ---
 
@@ -1287,7 +1316,7 @@
                     const analysisType = isSummary ? 'summary' : 'detailed';
                     const titleKey = isSummary ? 'AI Analysis Summary for' : 'AI Deep Dive for';
                     
-                    const { title: localizedTrendTitle } = getLocalizedTrendText(trend); // Use localized title for AI call
+                    const { title: localizedTrendTitle } = getLocalizedTrendText(trend);
                     document.getElementById('ai-insight-title').textContent = `${t(titleKey)} "${truncateText(localizedTrendTitle, 20)}"`;
                     const modalBody = document.getElementById('ai-insight-body');
                     if (!modalBody) return;
@@ -1320,7 +1349,7 @@
 
                 const analysisType = 'detailed';
                 const insightTitle = document.getElementById('ai-insight-title');
-                const { title: localizedTrendTitle } = getLocalizedTrendText(trend); // Use localized title for AI call
+                const { title: localizedTrendTitle } = getLocalizedTrendText(trend);
                 if (insightTitle) insightTitle.textContent = `${t('AI Deep Dive for')} "${truncateText(localizedTrendTitle, 20)}"`;
                 const modalBody = document.getElementById('ai-insight-body');
                 if (!modalBody) return;
@@ -1333,183 +1362,183 @@
                     if (modalBody) {
                         modalBody.classList.add('error-message');
                         modalBody.innerHTML = `<p style="text-align: center;">${t('Unable to analyze trend.')}<br><small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small></p>`;
-                    }
-                });
-            }
-        }
-
-        async function initializeApp() {
-            applyTranslations();
-            updateLanguageToggleUI();
-
-            if (DOM.mainViewContainer) DOM.mainViewContainer.classList.toggle('hidden', currentView !== 'main');
-            if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
-            if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
-
-            if (currentView === 'trendingBoard') {
-                const tbFilters = {
-                    region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
-                    category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
-                    timeframe: DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m',
-                };
-                allTrends = await fetchLiveTrends(tbFilters);
-                createHotTrendsChart();
-            } else {
-                allTrends = await fetchLiveTrends({}); 
-            }
-            
-            applyTrendOrdering();
-            populateCategoryFilters();
-            populateHashtagFilters();
-            updateAuthUI();
-            checkAIStatus();
-            updateActiveNav(currentView);
-            updateClearFilterButtonVisibility();
-
-            if (currentView !== 'trendingBoard') {
-                displayTrends();
-            }
-
-            document.getElementById('loader')?.classList.add('loader-hidden');
-        }
-
-        if (DOM.hamburgerMenu) DOM.hamburgerMenu.addEventListener('click', () => { if (DOM.mainNav) DOM.mainNav.classList.toggle('nav-active'); });
-        if (DOM.logo) DOM.logo.addEventListener('click', () => switchView('main'));
-        if (DOM.navTopTrends) DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
-        if (DOM.navForU) DOM.navForU.addEventListener('click', (e) => { e.preventDefault(); switchView('forU'); });
-        if (DOM.signInBtn) DOM.signInBtn.addEventListener('click', () => openModal('login-choice-modal'));
-        if (DOM.userEmailBtn) DOM.userEmailBtn.addEventListener('click', () => { if (DOM.userDropdown) DOM.userDropdown.classList.toggle('show'); });
-        if (DOM.dropdownSignOut) DOM.dropdownSignOut.addEventListener('click', () => {
-            user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [], tbSearchTerms: [] };
-            updateAuthUI();
-            if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
-            switchView('main');
-        });
-        if (DOM.dropdownWorkSchool) DOM.dropdownWorkSchool.addEventListener('click', () => {
-             signIn('work');
-             if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
-        });
-        if (DOM.navAbout) DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
-        if (DOM.navTrendingBoard) DOM.navTrendingBoard.addEventListener('click', (e) => { e.preventDefault(); if (user.isLoggedIn && user.accountType === 'work') { switchView('trendingBoard'); } else { openModal('premium-modal'); } });
-        document.getElementById('premium-login-btn')?.addEventListener('click', () => { closeModal('premium-modal'); openModal('login-choice-modal'); });
-        DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => {
-            closeModal(btn.closest('.modal-overlay').id);
-            const modalId = btn.closest('.modal-overlay').id;
-            if (modalId !== 'about-modal') {
-                updateActiveNav(currentView);
-            }
-        }));
-        document.getElementById('login-google-btn')?.addEventListener('click', () => signIn('personal'));
-        document.getElementById('login-work-btn')?.addEventListener('click', () => signIn('work'));
-        if (DOM.loadMoreBtn) DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
-        if (DOM.forULoadMoreBtn) DOM.forULoadMoreBtn.addEventListener('click', loadMoreTrends);
-        if (DOM.savePreferencesBtn) DOM.savePreferencesBtn.addEventListener('click', () => {
-            user.preferences = [...document.querySelectorAll('#preferences-grid input:checked')].map(cb => cb.value);
-            user.hasSetPreferences = true;
-            closeModal('preferences-modal');
-            switchView('forU');
-        });
-
-        [DOM.trendsList, DOM.forUTrendsList, document.getElementById('for-u-leaderboards')].forEach(list => {
-            if (list) list.addEventListener('click', handleInteraction);
-        });
-
-        if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.addEventListener('click', async (e) => {
-            if (e.target.matches('.filter-btn')) {
-                currentFilter.type = 'category';
-                currentFilter.value = e.target.dataset.filter;
-                currentFilter.hashtag = '';
-                if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
-
-                allTrends = await fetchLiveTrends({ category: currentFilter.value });
-                updateUIForFilter();
-            }
-        });
-        if (DOM.clearFilterBtn) DOM.clearFilterBtn.addEventListener('click', clearMainViewFilters);
-
-        const debouncedSearch = debounce(async () => {
-            currentFilter.searchTerm = DOM.searchInput ? DOM.searchInput.value : '';
-            allTrends = await fetchLiveTrends({ searchTerm: currentFilter.searchTerm });
-            displayedTrends.main = 0;
-            displayTrends();
-        }, 300);
-        if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedSearch);
-
-        if (DOM.hashtagList) DOM.hashtagList.addEventListener('click', async (e) => {
-            if (e.target.matches('.hashtag-btn')) {
-                const hashtag = e.target.dataset.hashtag;
-                if (currentFilter.hashtag === hashtag) {
-                    currentFilter.hashtag = '';
-                } else {
-                    currentFilter.hashtag = hashtag;
+                        }
+                    });
                 }
-                currentFilter.type = 'hashtag';
-                currentFilter.value = 'All';
-                if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            }
 
-                allTrends = await fetchLiveTrends({ hashtag: currentFilter.hashtag });
+            async function initializeApp() {
+                applyTranslations();
+                updateLanguageToggleUI();
+
+                if (DOM.mainViewContainer) DOM.mainViewContainer.classList.toggle('hidden', currentView !== 'main');
+                if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
+                if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
+
+                if (currentView === 'trendingBoard') {
+                    const tbFilters = {
+                        region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
+                        category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
+                        timeframe: DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m',
+                    };
+                    allTrends = await fetchLiveTrends(tbFilters); // Fetch initial trends for TB
+                    await createHotTrendsChart(); // Call createHotTrendsChart after initial trends are fetched
+                } else {
+                    allTrends = await fetchLiveTrends({}); 
+                }
+                
+                applyTrendOrdering();
+                populateCategoryFilters();
+                populateHashtagFilters();
+                updateAuthUI();
+                checkAIStatus();
+                updateActiveNav(currentView);
+                updateClearFilterButtonVisibility();
+
+                if (currentView !== 'trendingBoard') {
+                    displayTrends();
+                }
+
+                document.getElementById('loader')?.classList.add('loader-hidden');
+            }
+
+            if (DOM.hamburgerMenu) DOM.hamburgerMenu.addEventListener('click', () => { if (DOM.mainNav) DOM.mainNav.classList.toggle('nav-active'); });
+            if (DOM.logo) DOM.logo.addEventListener('click', () => switchView('main'));
+            if (DOM.navTopTrends) DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
+            if (DOM.navForU) DOM.navForU.addEventListener('click', (e) => { e.preventDefault(); switchView('forU'); });
+            if (DOM.signInBtn) DOM.signInBtn.addEventListener('click', () => openModal('login-choice-modal'));
+            if (DOM.userEmailBtn) DOM.userEmailBtn.addEventListener('click', () => { if (DOM.userDropdown) DOM.userDropdown.classList.toggle('show'); });
+            if (DOM.dropdownSignOut) DOM.dropdownSignOut.addEventListener('click', () => {
+                user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [], tbSearchTerms: [] };
+                updateAuthUI();
+                if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
+                switchView('main');
+            });
+            if (DOM.dropdownWorkSchool) DOM.dropdownWorkSchool.addEventListener('click', () => {
+                 signIn('work');
+                 if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
+            });
+            if (DOM.navAbout) DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
+            if (DOM.navTrendingBoard) DOM.navTrendingBoard.addEventListener('click', (e) => { e.preventDefault(); if (user.isLoggedIn && user.accountType === 'work') { switchView('trendingBoard'); } else { openModal('premium-modal'); } });
+            document.getElementById('premium-login-btn')?.addEventListener('click', () => { closeModal('premium-modal'); openModal('login-choice-modal'); });
+            DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => {
+                closeModal(btn.closest('.modal-overlay').id);
+                const modalId = btn.closest('.modal-overlay').id;
+                if (modalId !== 'about-modal') {
+                    updateActiveNav(currentView);
+                }
+            }));
+            document.getElementById('login-google-btn')?.addEventListener('click', () => signIn('personal'));
+            document.getElementById('login-work-btn')?.addEventListener('click', () => signIn('work'));
+            if (DOM.loadMoreBtn) DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
+            if (DOM.forULoadMoreBtn) DOM.forULoadMoreBtn.addEventListener('click', loadMoreTrends);
+            if (DOM.savePreferencesBtn) DOM.savePreferencesBtn.addEventListener('click', () => {
+                user.preferences = [...document.querySelectorAll('#preferences-grid input:checked')].map(cb => cb.value);
+                user.hasSetPreferences = true;
+                closeModal('preferences-modal');
+                switchView('forU');
+            });
+
+            [DOM.trendsList, DOM.forUTrendsList, document.getElementById('for-u-leaderboards')].forEach(list => {
+                if (list) list.addEventListener('click', handleInteraction);
+            });
+
+            if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.addEventListener('click', async (e) => {
+                if (e.target.matches('.filter-btn')) {
+                    currentFilter.type = 'category';
+                    currentFilter.value = e.target.dataset.filter;
+                    currentFilter.hashtag = '';
+                    if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
+
+                    allTrends = await fetchLiveTrends({ category: currentFilter.value });
+                    updateUIForFilter();
+                }
+            });
+            if (DOM.clearFilterBtn) DOM.clearFilterBtn.addEventListener('click', clearMainViewFilters);
+
+            const debouncedSearch = debounce(async () => {
+                currentFilter.searchTerm = DOM.searchInput ? DOM.searchInput.value : '';
+                allTrends = await fetchLiveTrends({ searchTerm: currentFilter.searchTerm });
                 displayedTrends.main = 0;
                 displayTrends();
-                updateUIForFilter();
-            }
+            }, 300);
+            if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedSearch);
+
+            if (DOM.hashtagList) DOM.hashtagList.addEventListener('click', async (e) => {
+                if (e.target.matches('.hashtag-btn')) {
+                    const hashtag = e.target.dataset.hashtag;
+                    if (currentFilter.hashtag === hashtag) {
+                        currentFilter.hashtag = '';
+                    } else {
+                        currentFilter.hashtag = hashtag;
+                    }
+                    currentFilter.type = 'hashtag';
+                    currentFilter.value = 'All';
+                    if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+
+                    allTrends = await fetchLiveTrends({ hashtag: currentFilter.hashtag });
+                    displayedTrends.main = 0;
+                    displayTrends();
+                    updateUIForFilter();
+                }
+            });
+
+            if (DOM.tbSearchInput) DOM.tbSearchInput.addEventListener('keypress', async function(e) {
+                if (e.key === 'Enter' && this.value.trim() !== '') {
+                    await createHotTrendsChart(this.value.trim());
+                    this.value = '';
+                }
+            });
+
+            if (DOM.tbCompareInput) DOM.tbCompareInput.addEventListener('keypress', async function(e) {
+                if (e.key === 'Enter' && this.value.trim() !== '') {
+                    await createHotTrendsChart(null, this.value.trim());
+                    this.value = '';
+                }
+            });
+
+            if (DOM.tbSearchChipsContainer) DOM.tbSearchChipsContainer.addEventListener('click', async function(e) {
+                if (e.target.classList.contains('tb-search-chip-remove')) {
+                    const termToRemove = e.target.dataset.term;
+                    user.tbSearchTerms = user.tbSearchTerms.filter(term => term !== termToRemove);
+                    await createHotTrendsChart();
+                }
+            });
+
+            if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
+            if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.addEventListener('change', () => createHotTrendsChart());
+            if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart());
+
+            document.addEventListener('click', (e) => {
+                if (DOM.userMenu && DOM.userDropdown && !DOM.userMenu.contains(e.target)) {
+                    DOM.userDropdown.classList.remove('show');
+                }
+                if (DOM.mainNav && DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active') && !DOM.mainNav.contains(e.target) && !DOM.hamburgerMenu.contains(e.target)) {
+                     DOM.hamburgerMenu.click();
+                }
+            });
+
+            document.getElementById('language-toggle')?.addEventListener('click', async () => {
+                currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi';
+                localStorage.setItem('lang', currentLanguage);
+                applyTranslations();
+                updateLanguageToggleUI();
+                
+                if (currentView === 'trendingBoard') {
+                    await createHotTrendsChart();
+                } else {
+                    const currentMainFilters = { 
+                        category: currentFilter.value, 
+                        searchTerm: currentFilter.searchTerm, 
+                        hashtag: currentFilter.hashtag
+                    };
+                    allTrends = await fetchLiveTrends(currentMainFilters);
+                    displayTrends();
+                }
+            });
+
+            initializeApp();
         });
-
-        if (DOM.tbSearchInput) DOM.tbSearchInput.addEventListener('keypress', async function(e) {
-            if (e.key === 'Enter' && this.value.trim() !== '') {
-                await createHotTrendsChart(this.value.trim());
-                this.value = '';
-            }
-        });
-
-        if (DOM.tbCompareInput) DOM.tbCompareInput.addEventListener('keypress', async function(e) {
-            if (e.key === 'Enter' && this.value.trim() !== '') {
-                await createHotTrendsChart(null, this.value.trim());
-                this.value = '';
-            }
-        });
-
-        if (DOM.tbSearchChipsContainer) DOM.tbSearchChipsContainer.addEventListener('click', async function(e) {
-            if (e.target.classList.contains('tb-search-chip-remove')) {
-                const termToRemove = e.target.dataset.term;
-                user.tbSearchTerms = user.tbSearchTerms.filter(term => term !== termToRemove);
-                await createHotTrendsChart();
-            }
-        });
-
-        if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
-        if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.addEventListener('change', () => createHotTrendsChart());
-        if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart());
-
-        document.addEventListener('click', (e) => {
-            if (DOM.userMenu && DOM.userDropdown && !DOM.userMenu.contains(e.target)) {
-                DOM.userDropdown.classList.remove('show');
-            }
-            if (DOM.mainNav && DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active') && !DOM.mainNav.contains(e.target) && !DOM.hamburgerMenu.contains(e.target)) {
-                 DOM.hamburgerMenu.click();
-            }
-        });
-
-        document.getElementById('language-toggle')?.addEventListener('click', async () => {
-            currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi';
-            localStorage.setItem('lang', currentLanguage);
-            applyTranslations();
-            updateLanguageToggleUI();
-            
-            if (currentView === 'trendingBoard') {
-                await createHotTrendsChart();
-            } else {
-                const currentMainFilters = { 
-                    category: currentFilter.value, 
-                    searchTerm: currentFilter.searchTerm, 
-                    hashtag: currentFilter.hashtag
-                };
-                allTrends = await fetchLiveTrends(currentMainFilters);
-                displayTrends();
-            }
-        });
-
-        initializeApp();
-    });
-</script>
+    </script>
 </body>
 </html>
