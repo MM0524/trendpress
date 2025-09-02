@@ -222,7 +222,7 @@ const fetchTheVerge = () =>
 
 // AI
 const fetchVentureBeatAI = () =>
-  fetchAndParseXmlFeed("https://venturebeat.com/category/ai/feed/", "VentureBeat AI", "AI", "global", ["VentureBeat"]); 
+  fetchAndParseXmlFeed("https://venturebeat.com/feed", "VentureBeat AI", "AI", "global", ["VentureBeat"]); 
 
 const fetchMITTech = () =>
   fetchAndParseXmlFeed("https://www.technologyreview.com/feed/tag/artificial-intelligence/", "MIT Tech Review", "AI", "global", ["MITTechReview"]); // Use specific AI tag feed
@@ -270,11 +270,6 @@ const fetchAppleMusicNewReleasesVN = () =>
   fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/100/albums.json", "Apple Music New Releases VN", "Music", "vn", ["AppleMusic", "Vietnam", "NewReleases"]);
 
 // Media / Entertainment
-// For YouTube trending, RSSHub is generally more reliable for dynamic trends than a fixed playlist XML.
-// It also provides better structured RSS.
-const fetchYouTubeTrendingVN = () =>
-  fetchAndParseXmlFeed("https://rsshub.app/youtube/trending/region/VN", "YouTube Trending VN", "Media", "vn", ["YouTube", "Trending", "VN"]);
-
 const fetchVariety = () =>
   fetchAndParseXmlFeed("https://variety.com/feed/", "Variety", "Entertainment", "global", ["Hollywood"]);
 
@@ -294,7 +289,7 @@ const fetchLogistics = () =>
 
 // Cybersecurity
 const fetchCybernews = () =>
-  fetchAndParseXmlFeed("https://www.cybernews.com/feed/", "Cybernews", "Cybersecurity", "global", ["Security"]); // Using the site's own feed
+  fetchAndParseXmlFeed("https://cybernews.com/feed/", "Cybernews", "Cybersecurity", "global", ["Security"]); // Using the site's own feed
 
 // Healthcare
 const fetchHealthcare = () =>
@@ -328,6 +323,8 @@ const fetchVogueBeauty = () =>
 const fetchElle = () => 
   fetchAndParseXmlFeed("https://www.elle.com/rss/all.xml", "Elle", "Fashion", "global");
 
+function fetchElleVN = () => fetchAndParseXmlFeed("https://www.elle.vn/feed", "ELLE Vietnam Fashion", "Fashion", "vn"); }
+
 const fetchGQ = () => 
   fetchAndParseXmlFeed("https://www.gq.com/feed/rss", "GQ", "Fashion", "global");
 
@@ -355,6 +352,10 @@ const fetchSeriousEats = () => fetchAndParseXmlFeed("https://www.seriouseats.com
 const fetchCarDriver = () => fetchAndParseXmlFeed("https://www.caranddriver.com/rss/all.xml/", "Car and Driver", "Cars", "global");
 const fetchTopGear = () => fetchAndParseXmlFeed("https://www.topgear.com/feeds/all/rss.xml", "Top Gear", "Cars", "global");
 
+//Archaeology
+const fetchArchaeologyMagazine = () => fetchAndParseXmlFeed("https://www.archaeology.org/rss.xml", "Archaeology Magazine", "Archaeology", "global", ["History", "Archaeology"]);
+const fetchHeritageDaily = () => fetchAndParseXmlFeed("https://www.heritagedaily.com/category/archaeology/feed", "Heritage Daily Archaeology", "Archaeology", "global", ["History", "Archaeology"]);
+const fetchSmithsonianArchaeology = () => fetchAndParseXmlFeed("https://www.smithsonianmag.com/rss/archaeology/", "Smithsonian Archaeology", "Archaeology", "global", ["History", "Archaeology"]);
 
 // ===== Main handler =====
 exports.handler = async (event) => {
@@ -385,11 +386,12 @@ exports.handler = async (event) => {
       fetchToyNews(),
       fetchSneakerNews(),
       fetchAllureBeauty(),
-      fetchVogueBeauty(), fetchElle(), fetchGQ(), fetchHypebeast(), fetchHighsnobiety(),
+      fetchVogueBeauty(), fetchElle(), fetchElleVN(), fetchGQ(), fetchHypebeast(), fetchHighsnobiety(),
       fetchRefinery29(), fetchAfamily(),
       fetchParents(),
       fetchFoodWine(), fetchEater(), fetchSeriousEats(),
       fetchCarDriver(), fetchTopGear(),
+      fetchArchaeologyMagazine(), fetchHeritageDaily(), fetchSmithsonianArchaeology(),
     ];
 
     const results = await Promise.allSettled(sources);
