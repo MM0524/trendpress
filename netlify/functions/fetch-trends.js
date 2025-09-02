@@ -323,7 +323,7 @@ const fetchVogueBeauty = () =>
 const fetchElle = () => 
   fetchAndParseXmlFeed("https://www.elle.com/rss/all.xml", "Elle", "Fashion", "global");
 
-function fetchElleVN = () => fetchAndParseXmlFeed("https://www.elle.vn/feed", "ELLE Vietnam Fashion", "Fashion", "vn"); }
+const fetchElleVN = () => fetchAndParseXmlFeed("https://www.elle.vn/feed", "ELLE Vietnam Fashion", "Fashion", "vn"); }
 
 const fetchGQ = () => 
   fetchAndParseXmlFeed("https://www.gq.com/feed/rss", "GQ", "Fashion", "global");
