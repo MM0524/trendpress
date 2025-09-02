@@ -82,7 +82,7 @@ function toDateStr(d) {
 function toSortValue(d) {
   const dt = d ? new Date(d) : null;
   // Fallback to 0 so invalid dates sort to the end (oldest) when sorting descending
-  return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0; // <<<<<<<<<<<<<<<<< SỬA LỖI Ở ĐÂY
+  return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0; 
 }
 
 // ===== Trend Factory (Standardizes item data from various feed types) =====
@@ -110,6 +110,10 @@ function createStandardTrend(item, sourceName, defaultCategory = "General", defa
   const cleanedTitle = title.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
   const cleanedDescription = description.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
 
+  // CẬP NHẬT: Tạo metrics ngẫu nhiên với phạm vi rộng hơn
+  const baseVotes = Math.floor(Math.random() * 2000) + 1000; // Phạm vi votes (1000-2999)
+  const baseMultiplier = (Math.random() * 1.5) + 0.5; // (0.5 - 2.0)
+
   return {
     title_en: cleanedTitle,
     description_en: cleanedDescription,
@@ -117,7 +121,11 @@ function createStandardTrend(item, sourceName, defaultCategory = "General", defa
     description_vi: cleanedDescription,
     category: defaultCategory,
     tags: [...new Set([...extraTags, sourceName.replace(/\s/g, "") || "Unknown", defaultRegion || "global"].filter(Boolean))],
-    votes: Math.floor(Math.random() * 1000) + 500, // <<<<<<<<<<<<<<<<< TĂNG PHẠM VI VOTES (500-1499)
+    votes: baseVotes,
+    // CẬP NHẬT: Thêm các metric khác dựa trên votes
+    views: Math.floor(baseVotes * (baseMultiplier * (Math.random() * 10 + 15))), // ~15-25x votes
+    interactions: Math.floor(baseVotes * (baseMultiplier * (Math.random() * 3 + 4))), // ~4-7x votes
+    searches: Math.floor(baseVotes * (baseMultiplier * (Math.random() * 1 + 1.5))), // ~1.5-2.5x votes
     source: link,
     date: toDateStr(pubDate),
     sortKey: toSortValue(pubDate),
@@ -203,7 +211,8 @@ async function fetchJsonFeed(url, sourceName, defaultCategory, defaultRegion, ex
             return [];
         }
 
-        return rawItems.map(item => createStandardTrend(item, sourceName, defaultCategory, defaultRegion, extraTags)); // Use createStandardTrend for JSON too
+        // CẬP NHẬT: Đảm bảo JSON feed cũng sử dụng createStandardTrend để có metrics nhất quán
+        return rawItems.map(item => createStandardTrend(item, sourceName, defaultCategory, defaultRegion, extraTags));
     } catch (err) {
         console.error(`❌ Lỗi khi fetch hoặc parse JSON từ ${sourceName} (${url}):`, err.message);
         return [];
@@ -253,7 +262,7 @@ const fetchCNBCFinance = () =>
   fetchAndParseXmlFeed("https://www.cnbc.com/id/10000664/device/rss/rss.html", "CNBC Finance", "Finance", "us", ["Markets", "USA"]);
 
 const fetchCafeF = () => 
-  fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF", "Finance", "vn");
+  fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF", "Finance", "vn", ["Vietnam"]);
 
 // Science
 const fetchScienceMagazine = () =>
@@ -270,6 +279,9 @@ const fetchAppleMusicNewReleasesVN = () =>
   fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/new-releases/100/albums.json", "Apple Music New Releases VN", "Music", "vn", ["AppleMusic", "Vietnam", "NewReleases"]);
 
 // Media / Entertainment
+const fetchYouTubeTrendingVN = () =>
+  fetchAndParseXmlFeed("https://rsshub.app/youtube/trending/region/VN", "YouTube Trending VN", "Media", "vn", ["YouTube", "Trending", "VN"]);
+  
 const fetchVariety = () =>
   fetchAndParseXmlFeed("https://variety.com/feed/", "Variety", "Entertainment", "global", ["Hollywood"]);
 
@@ -379,6 +391,7 @@ exports.handler = async (event) => {
       fetchVentureBeatAI(), fetchMITTech(), fetchGoogleNewsVN(),
       fetchYahooFinance(), fetchCNBCFinance(), fetchCafeF(), fetchScienceMagazine(),
       fetchNewScientist(), fetchAppleMusicMostPlayedVN(), fetchAppleMusicNewReleasesVN(),
+      fetchYouTubeTrendingVN(), // Đã sửa hàm gọi
       fetchVariety(), fetchDeadline(),
       fetchGameKVN(), fetchZingNewsEntertainment(), fetchBBCWorld(),
       fetchESPN(), fetchLogistics(), fetchCybernews(),
