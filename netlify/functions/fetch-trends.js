@@ -379,7 +379,7 @@ exports.handler = async (event) => {
       fetchVentureBeatAI(), fetchMITTech(), fetchGoogleNewsVN(),
       fetchYahooFinance(), fetchCNBCFinance(), fetchCafeF(), fetchScienceMagazine(),
       fetchNewScientist(), fetchAppleMusicMostPlayedVN(), fetchAppleMusicNewReleasesVN(),
-      fetchYouTubeTrendingVN(), fetchVariety(), fetchDeadline(),
+      fetchVariety(), fetchDeadline(),
       fetchGameKVN(), fetchZingNewsEntertainment(), fetchBBCWorld(),
       fetchESPN(), fetchLogistics(), fetchCybernews(),
       fetchHealthcare(), fetchEducation(), fetchEnvironment(),
