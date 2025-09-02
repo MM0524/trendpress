@@ -14,8 +14,8 @@
             --bg-color: #0F1021; --surface-color: #191a2e; --primary-color: #A100FF;
             --primary-light: #b540ff; --text-color: #e3e8f0; --text-muted-color: #8a8da0;
             --border-color: #2d2e49; --header-height: 65px;
-            --success-color: #4CAF50; /* Màu xanh lá cho thành công */
-            --danger-color: #f44336;   /* Màu đỏ cho lỗi/nguy hiểm */
+            --success-color: #4CAF50; 
+            --danger-color: #f44336;  
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
@@ -53,7 +53,6 @@
         .trending-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
         .trending-title-group { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 600; }
         .filter-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
-        .filter-btn { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; transition: all 0.3s ease; }
         .filter-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
         .trend-card { background-color: var(--bg-color); padding: 1.5rem; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem; transition: transform 0.3s ease, box-shadow 0.3s ease; animation: slideInUp 0.5s ease-out forwards; opacity: 0; }
         .trend-card.animated { opacity: 1; } /* Class for animating cards */
@@ -149,6 +148,20 @@
         #tb-chart-container { margin-top: 2rem; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; }
         /* CẬP NHẬT: Giới hạn chiều cao biểu đồ */
         #tb-chart-container canvas { width: 100%; max-height: 350px; }
+        /* NEW CHART CONTAINER STYLE */
+        #user-trends-chart-container {
+            margin-top: 2rem;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        #user-trends-chart-container canvas {
+            width: 100%;
+            max-height: 350px;
+        }
+
+
         .footer { background-color: var(--surface-color); border-top: 1px solid var(--border-color); padding: 3rem 0 1rem 0; }
         .footer-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
         .footer-title { color: var(--primary-light); font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
@@ -283,6 +296,11 @@
             <h4 id="tb-chart-title"></h4>
             <canvas id="hot-trends-chart"></canvas>
         </div>
+        <!-- NEW: Container for User's Favorite Categories Chart -->
+        <div id="user-trends-chart-container" class="hidden">
+            <h4 id="user-trends-chart-title"></h4>
+            <canvas id="user-trends-chart"></canvas>
+        </div>
     </section>
 
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
@@ -315,6 +333,7 @@
         let currentView = localStorage.getItem('currentView') || 'main';
         let hotTrendsChart = null;
         let analysisChart = null;
+        let userTrendsChart = null; // NEW: Chart for user's favorite categories
         let allTrends = []; // This will now hold trends fetched from the Netlify Function
         let categories = [];
         let currentLanguage = localStorage.getItem('lang') || 'vi';
@@ -345,11 +364,11 @@
                 'Vietnam': 'Việt Nam', 'United States': 'Hoa Kỳ', 'Global': 'Toàn cầu',
                 'Last 12 months': '12 tháng qua', 'Last 30 days': '30 ngày qua', 'Last 7 days': '7 ngày qua',
                 'Rising': 'Đột phá', 'No trends found.': 'Không tìm thấy xu hướng nào.',
-                'No Title Available': 'Không có tiêu đề', // NEW: Fallback for missing title
-                'No Description Available': 'Không có mô tả', // NEW: Fallback for missing description
-                // NEW: Category translations
-                'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị', // Add other categories you might have
-                'General': 'Chung' // NEW: Default category translation
+                'No Title Available': 'Không có tiêu đề',
+                'No Description Available': 'Không có mô tả',
+                'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị',
+                'General': 'Chung',
+                'Your Favorite Trends - Interest Over Time': 'Xu hướng yêu thích của bạn - Mức độ quan tâm theo thời gian' // NEW
             },
             en: {
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
@@ -368,9 +387,9 @@
                 'Rising': 'Rising', 'No trends found.': 'No trends found.',
                 'No Title Available': 'No Title Available',
                 'No Description Available': 'No Description Available',
-                // NEW: Category translations
                 'Technology': 'Technology', 'Fashion': 'Fashion', 'Gaming': 'Gaming', 'Finance': 'Finance', 'Health': 'Health', 'Travel': 'Travel', 'Food': 'Food', 'AI': 'AI', 'News': 'News', 'Science': 'Science', 'Music': 'Music', 'Media': 'Media', 'Entertainment': 'Entertainment', 'Sports': 'Sports', 'Logistics': 'Logistics', 'Cybersecurity': 'Cybersecurity', 'Healthcare': 'Healthcare', 'Education': 'Education', 'Environment': 'Environment', 'Politics': 'Politics', 'Marketing': 'Marketing',
-                'General': 'General'
+                'General': 'General',
+                'Your Favorite Trends - Interest Over Time': 'Your Favorite Trends - Interest Over Time' // NEW
             }
         };
 
@@ -402,6 +421,7 @@
             { selector: '#tb-search-input', attr: 'placeholder', key: 'Add search term' },
             { selector: '#tb-compare-input', attr: 'placeholder', key: '+ Compare' },
             { selector: '#search-input', attr: 'placeholder', key: 'Search by keyword...' },
+            { selector: '#user-trends-chart-title', key: 'Your Favorite Trends - Interest Over Time' } // NEW: Chart title
         ];
 
         const DOM = {
@@ -426,6 +446,8 @@
             tbTopicListHeader: document.getElementById('tb-topic-list-header'),
             tbQueryListHeader: document.getElementById('tb-query-list-header'),
             tbChartTitle: document.getElementById('tb-chart-title'),
+            userTrendsChartContainer: document.getElementById('user-trends-chart-container'), // NEW
+            userTrendsChartTitle: document.getElementById('user-trends-chart-title'), // NEW
         };
 
         function t(key) { return (translations[currentLanguage] && translations[currentLanguage][key]) || key; }
@@ -441,7 +463,6 @@
                 if (filters.timeframe && filters.timeframe !== 'all') params.append('timeframe', filters.timeframe);
                 if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
                 if (filters.hashtag) params.append('hashtag', filters.hashtag);
-                // NEW: Add a specific parameter for chart search terms if needed
                 if (filters.tbChartSearchTerm) params.append('tbChartSearchTerm', filters.tbChartSearchTerm);
                 
                 const url = `/.netlify/functions/fetch-trends?${params.toString()}`;
@@ -1177,6 +1198,77 @@
             }
         }
 
+        // NEW: Function to render User's Favorite Categories Chart
+        async function renderUserTrendsChart(timeframe) {
+            const chartContainer = DOM.userTrendsChartContainer;
+            const chartTitleEl = DOM.userTrendsChartTitle;
+            const canvas = document.getElementById('user-trends-chart');
+
+            if (!chartContainer || !chartTitleEl || !canvas) {
+                console.error("User trends chart elements not found.");
+                return;
+            }
+
+            if (!user.isLoggedIn || user.accountType !== 'work' || (user.preferences.length === 0 && user.followedTrends.length === 0)) {
+                chartContainer.classList.add('hidden');
+                return;
+            }
+
+            if (userTrendsChart) userTrendsChart.destroy();
+
+            // Filter trends based on user preferences and followed trends
+            let userRelevantTrends = allTrends.filter(trendItem =>
+                user.followedTrends.includes(trendItem.id) ||
+                (user.preferences.length > 0 && user.preferences.includes(trendItem.category))
+            );
+
+            // Remove duplicates (if a trend is both followed and in preferred category)
+            userRelevantTrends = Array.from(new Set(userRelevantTrends.map(t => t.id)))
+                .map(id => allTrends.find(t => t.id === id))
+                .filter(Boolean)
+                .sort((a, b) => b.hotnessScore - a.hotnessScore); // Sort by hotness
+
+            const trendsToChart = userRelevantTrends.slice(0, 5); // Take top 5 for the chart
+
+            if (trendsToChart.length === 0) {
+                chartContainer.classList.add('hidden');
+                return;
+            }
+
+            chartContainer.classList.remove('hidden');
+            chartTitleEl.textContent = t('Your Favorite Trends - Interest Over Time');
+
+            const labels = generateChartLabels(timeframe);
+            const palette = getColorPalette(trendsToChart.length); // Get colors for these trends
+
+            const datasets = trendsToChart.map((trendItem, idx) => ({
+                label: truncateText(getLocalizedTrendText(trendItem).title, 30),
+                data: generateSeriesForTimeframe(trendItem, labels, timeframe),
+                borderColor: palette[idx].stroke,
+                tension: 0.4,
+                fill: false,
+                pointRadius: 3,
+                pointHoverRadius: 5
+            }));
+
+            userTrendsChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 } },
+                        tooltip: { callbacks: { label: (ctx) => `${t('Engagement')}: ${formatNumber(ctx.parsed.y)}` } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#8a8da0' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                        y: { ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
+                    }
+                }
+            });
+        }
+
         async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             if (!canvas) {
@@ -1222,15 +1314,13 @@
 
             const labels = generateChartLabels(timeframe);
             const datasets = [];
-            const palette = getColorPalette(user.tbSearchTerms.length > 0 ? user.tbSearchTerms.length : 5); // Ensure enough colors
+            const palette = getColorPalette(user.tbSearchTerms.length > 0 ? user.tbSearchTerms.length : 5);
 
             if (user.tbSearchTerms.length > 0) {
-                // Fetch and process each search term for comparison
                 for (let i = 0; i < user.tbSearchTerms.length; i++) {
                     const term = user.tbSearchTerms[i];
                     const trendsForThisTerm = await fetchLiveTrends({ ...chartFilters, searchTerm: term });
                     if (trendsForThisTerm.length > 0) {
-                        // Take the most relevant trend for this term for the chart line
                         const mostRelevantTrend = trendsForThisTerm.sort((a,b) => b.hotnessScore - a.hotnessScore)[0];
                         datasets.push({
                             label: truncateText(getLocalizedTrendText(mostRelevantTrend).title, 30),
@@ -1246,8 +1336,7 @@
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('Interest Over Time');
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
             } else {
-                // Default view: Top 5 hot trends
-                allTrends = await fetchLiveTrends(chartFilters); // Fetch the general top trends
+                allTrends = await fetchLiveTrends(chartFilters);
                 const topTrends = [...allTrends].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
                 topTrends.forEach((trendItem, i) => {
                     datasets.push({
@@ -1266,7 +1355,6 @@
                 renderTBDashboard(timeframe);
             }
 
-            // Render chart only if there are datasets
             if (datasets.length > 0) {
                 hotTrendsChart = new Chart(canvas.getContext('2d'), {
                     type: 'line',
@@ -1285,9 +1373,12 @@
                     }
                 });
             } else {
-                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('No trends found.');
             }
+
+            // NEW: Render the user's favorite trends chart after the main chart
+            renderUserTrendsChart(timeframe);
         }
         // --- End Trending Board specific functions ---
 
@@ -1381,7 +1472,7 @@
                         category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
                         timeframe: DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m',
                     };
-                    allTrends = await fetchLiveTrends(tbFilters); // Fetch initial trends for TB
+                    allTrends = await fetchLiveTrends(tbFilters);
                     await createHotTrendsChart(); // Call createHotTrendsChart after initial trends are fetched
                 } else {
                     allTrends = await fetchLiveTrends({}); 
