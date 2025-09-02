@@ -14,8 +14,8 @@
             --bg-color: #0F1021; --surface-color: #191a2e; --primary-color: #A100FF;
             --primary-light: #b540ff; --text-color: #e3e8f0; --text-muted-color: #8a8da0;
             --border-color: #2d2e49; --header-height: 65px;
-            --success-color: #4CAF50; 
-            --danger-color: #f44336;  
+            --success-color: #4CAF50; /* Màu xanh lá cho thành công */
+            --danger-color: #f44336;   /* Màu đỏ cho lỗi/nguy hiểm */
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
@@ -516,21 +516,22 @@
             } catch (error) { console.error("Secure analysis request failed:", error); throw error; }
         }
 
+        // UPDATED: preprocessTrends on frontend is simpler now, as backend provides metrics
         function preprocessTrends(trends) {
             if (!trends || trends.length === 0) return [];
             trends.forEach((trendItem, i) => {
                 trendItem.id = trendItem.id || i;
-                trendItem.views = (trendItem.votes || 0) * (Math.random() * 50 + 10);
-                trendItem.interactions = (trendItem.votes || 0) * (Math.random() * 5 + 1);
-                trendItem.searches = (trendItem.votes || 0) * (Math.random() * 2 + 0.5);
+                // No longer generating random views, interactions, searches here
+                // Assumed to be provided by backend from now on.
+                // If backend does NOT provide these, you might re-enable fallback generation here.
                 trendItem.type = trendItem.type || (i % 3 === 0 ? 'topic' : 'query');
             });
 
             const maxValues = {
-                views: Math.max(1, ...trends.map(trendItem => trendItem.views)),
-                interactions: Math.max(1, ...trends.map(trendItem => trendItem.interactions)),
-                searches: Math.max(1, ...trends.map(trendItem => trendItem.searches)),
-                votes: Math.max(1, ...trends.map(trendItem => trendItem.votes)),
+                views: Math.max(1, ...trends.map(trendItem => trendItem.views || 0)),
+                interactions: Math.max(1, ...trends.map(trendItem => trendItem.interactions || 0)),
+                searches: Math.max(1, ...trends.map(trendItem => trendItem.searches || 0)),
+                votes: Math.max(1, ...trends.map(trendItem => trendItem.votes || 0)),
             };
             
             trends.forEach(trendItem => { trendItem.hotnessScore = calculateHotnessScore(trendItem, maxValues); });
@@ -955,7 +956,10 @@
             });
         }
 
-        function getCombinedMetric(trend) { return (trend.views || 0) + (trend.interactions || 0) + (trend.searches || 0); }
+        function getCombinedMetric(trend) { 
+            // Use the metrics provided by backend
+            return (trend.views || 0) + (trend.interactions || 0) + (trend.searches || 0); 
+        }
 
         function getLocalizedTrendText(trend) {
             const defaultTitle = t('No Title Available');
@@ -1076,7 +1080,7 @@
             const now = new Date();
             const labels = [];
             if (timeframe === '7d') {
-                for (let i = 6; i >= 0; i--) {
+                for (let i = 6; i >= 0; i--) { // Last 7 days including today
                     const d = new Date(now);
                     d.setDate(now.getDate() - i);
                     labels.push(d.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
@@ -1087,7 +1091,6 @@
                     d.setDate(now.getDate() - i);
                     labels.push(d.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
-                // Ensure the "today" point is included if not already
                 if (labels.length > 0 && new Date(labels[labels.length -1]).toDateString() !== now.toDateString()) {
                     labels.push(now.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }));
                 }
@@ -1101,26 +1104,29 @@
             return labels;
         }
 
+        // UPDATED: generateSeriesForTimeframe to create more dynamic interest curves
         function generateSeriesForTimeframe(trend, labels, timeframe) {
             const series = new Array(labels.length).fill(0);
             const trendDate = new Date(trend.date || Date.now());
-            trendDate.setHours(0,0,0,0); // For accurate date comparison
-            const peakMetric = getCombinedMetric(trend);
+            trendDate.setHours(0,0,0,0);
+            const peakMetric = getCombinedMetric(trend); // Total engagement metric
+
+            const now = new Date();
+            now.setHours(0,0,0,0);
 
             labels.forEach((label, index) => {
                 let currentLabelDate;
+                // Reconstruct currentLabelDate from label, ensuring only date part for comparison
                 if (timeframe === '7d' || timeframe === '1m') {
-                    const now = new Date();
                     let datePart = new Date(now);
-                    // Calculate date based on label position for short timeframes
                     if (timeframe === '7d') {
                         datePart.setDate(now.getDate() - (labels.length - 1 - index));
                     } else if (timeframe === '1m') {
-                        const daysBetweenLabels = 30 / (labels.length - 1); // Approximate days between labels
-                        datePart.setDate(now.getDate() - ((labels.length - 1 - index) * daysBetweenLabels));
+                        const daysBetweenLabels = (labels.length > 1) ? 30 / (labels.length - 1) : 0;
+                        datePart.setDate(now.getDate() - Math.round((labels.length - 1 - index) * daysBetweenLabels));
                     }
                     currentLabelDate = new Date(datePart.getFullYear(), datePart.getMonth(), datePart.getDate());
-                } else { // 12m
+                } else { // '12m'
                     const parts = label.split('/');
                     const monthShort = parts[0];
                     const yearShort = parts[1];
@@ -1131,38 +1137,42 @@
                 }
                 currentLabelDate.setHours(0,0,0,0);
 
-                // If the current label date is before the trend's actual start date, assume 0 interest
+                // If currentLabelDate is before the trend's actual start date, interest is 0
                 if (currentLabelDate < trendDate) {
                     series[index] = 0;
                     return;
                 }
 
-                // Calculate time difference in days for decay model
-                const timeDiffDays = (currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24);
+                // Calculate time difference in days from the trend's start date
+                const timeDiffDaysFromTrendStart = (currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24);
 
-                let decayRate = 0.05; // Base decay rate
-                let initialPeak = 1.0; // Base peak multiplier
+                let decayRate = 0.03; // Slower base decay
+                let peakShiftDays = 3; // How many days after trendDate the activity is expected to peak
 
                 if (timeframe === '7d') {
-                    decayRate = 0.5; // Faster decay for short, impactful trends
-                    initialPeak = 1.5; // Higher initial peak
+                    decayRate = 0.8; // Very fast decay for short-term visibility
+                    peakShiftDays = 1; // Peaks very quickly
                 } else if (timeframe === '1m') {
-                    decayRate = 0.2; // Moderate decay
-                    initialPeak = 1.2;
+                    decayRate = 0.3; // Moderate decay
+                    peakShiftDays = 3; // Peaks a few days after start
                 } else { // 12m
-                    decayRate = 0.05; // Slower decay for long-term trends
-                    initialPeak = 1.0;
+                    decayRate = 0.05; // Very slow decay for long-term trends
+                    peakShiftDays = 10; // Peaks around 10 days after start
                 }
 
-                // Apply a bell-curve like model or exponential decay for interest over time
-                // The peak of interest should be some days/weeks after the trend's origin
-                const daysToPeak = (timeframe === '7d' ? 1 : (timeframe === '1m' ? 5 : 30)); // Days for a trend to reach its natural peak after its date
-                const timeFromPeak = timeDiffDays - daysToPeak; // Time elapsed since *expected peak*
+                // Model interest as a function of time relative to its peak, using a Gaussian-like curve
+                const timeRelativeToPeak = timeDiffDaysFromTrendStart - peakShiftDays;
+                
+                // Use hotnessScore to scale the peak of the interest curve
+                const hotnessScale = 1 + (trend.hotnessScore || 0) * 5; // Scale hotness, adjust multiplier as needed
+                
+                // Gaussian-like function: high peak, then decay
+                let rawValue = peakMetric * hotnessScale * Math.exp(-decayRate * Math.pow(timeRelativeToPeak, 2) / (peakShiftDays * peakShiftDays));
+                
+                // Add some random noise
+                rawValue = rawValue * (1 + (Math.random() - 0.5) * 0.2); // +/- 10% noise
 
-                let value = peakMetric * initialPeak * Math.exp(-decayRate * Math.pow(timeFromPeak, 2) / (daysToPeak * daysToPeak));
-                value = Math.max(0, value * (1 + (Math.random() - 0.5) * 0.3)); // Add some random fluctuation
-
-                series[index] = Math.round(value);
+                series[index] = Math.max(0, Math.round(rawValue));
             });
 
             return series;
@@ -1216,19 +1226,19 @@
 
             if (userTrendsChart) userTrendsChart.destroy();
 
-            // Filter trends based on user preferences and followed trends
+            // Lấy các trends mà người dùng quan tâm (preferences & followed)
             let userRelevantTrends = allTrends.filter(trendItem =>
                 user.followedTrends.includes(trendItem.id) ||
                 (user.preferences.length > 0 && user.preferences.includes(trendItem.category))
             );
 
-            // Remove duplicates (if a trend is both followed and in preferred category)
+            // Xóa trùng lặp và sắp xếp theo hotnessScore
             userRelevantTrends = Array.from(new Set(userRelevantTrends.map(t => t.id)))
                 .map(id => allTrends.find(t => t.id === id))
                 .filter(Boolean)
-                .sort((a, b) => b.hotnessScore - a.hotnessScore); // Sort by hotness
+                .sort((a, b) => b.hotnessScore - a.hotnessScore);
 
-            const trendsToChart = userRelevantTrends.slice(0, 5); // Take top 5 for the chart
+            const trendsToChart = userRelevantTrends.slice(0, 5); // Lấy top 5 cho biểu đồ
 
             if (trendsToChart.length === 0) {
                 chartContainer.classList.add('hidden');
@@ -1239,7 +1249,7 @@
             chartTitleEl.textContent = t('Your Favorite Trends - Interest Over Time');
 
             const labels = generateChartLabels(timeframe);
-            const palette = getColorPalette(trendsToChart.length); // Get colors for these trends
+            const palette = getColorPalette(trendsToChart.length);
 
             const datasets = trendsToChart.map((trendItem, idx) => ({
                 label: truncateText(getLocalizedTrendText(trendItem).title, 30),
@@ -1250,6 +1260,12 @@
                 pointRadius: 3,
                 pointHoverRadius: 5
             }));
+
+            // Nếu không có dữ liệu để vẽ, ẩn biểu đồ
+            if (datasets.length === 0 || datasets.every(dataset => dataset.data.every(val => val === 0))) {
+                chartContainer.classList.add('hidden');
+                return;
+            }
 
             userTrendsChart = new Chart(canvas.getContext('2d'), {
                 type: 'line',
@@ -1336,7 +1352,8 @@
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('Interest Over Time');
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
             } else {
-                allTrends = await fetchLiveTrends(chartFilters);
+                // Fetch the general top trends if no search terms
+                allTrends = await fetchLiveTrends(chartFilters); 
                 const topTrends = [...allTrends].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
                 topTrends.forEach((trendItem, i) => {
                     datasets.push({
@@ -1355,6 +1372,7 @@
                 renderTBDashboard(timeframe);
             }
 
+            // Render chart only if there are datasets
             if (datasets.length > 0) {
                 hotTrendsChart = new Chart(canvas.getContext('2d'), {
                     type: 'line',
