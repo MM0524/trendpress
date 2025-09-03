@@ -102,9 +102,27 @@
         .ai-status-indicator.offline { border-color: var(--danger-color); color: var(--danger-color); }
         .trend-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
         .trend-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
-        .tag { padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 500; }
+        .tag { 
+            padding: 0.25rem 0.75rem; 
+            border-radius: 999px; 
+            font-size: 0.8rem; 
+            font-weight: 500; 
+            transition: all 0.2s ease; /* Thêm transition */
+        }
         .tag.category { background-color: var(--primary-color); color: white; }
-        .tag.hashtag { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); cursor: pointer; }
+        .tag.hashtag { 
+            background-color: var(--surface-color); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-muted-color); 
+            cursor: pointer; 
+        }
+        .tag.hashtag:hover { /* Hiệu ứng hover cho hashtag */
+            background-color: var(--border-color);
+            border-color: var(--primary-light);
+            color: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
         .trend-actions { display: flex; align-items: center; gap: 1rem; }
         .btn-follow { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); }
         .btn-follow.followed { background-color: var(--primary-color); color: white; }
@@ -126,8 +144,27 @@
         #hashtag-filter { margin-top: 1rem; }
         #hashtag-filter h4 { color: var(--text-muted-color); font-size: 0.9rem; margin-bottom: 1rem; }
         #hashtag-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-        .hashtag-btn { background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-muted-color); padding: 0.25rem 0.75rem; border-radius: 20px; cursor: pointer; transition: all 0.2s ease; }
-        .hashtag-btn:hover, .hashtag-btn.active { border-color: var(--primary-color); color: var(--primary-light); }
+        .hashtag-btn { 
+            background-color: var(--bg-color); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-muted-color); 
+            padding: 0.25rem 0.75rem; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+        }
+        .hashtag-btn:hover { /* Hiệu ứng hover cho hashtag buttons trong filter */
+            border-color: var(--primary-light); 
+            color: var(--primary-light); 
+            background-color: var(--surface-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .hashtag-btn.active { 
+            border-color: var(--primary-color); 
+            color: var(--primary-light); 
+            background-color: var(--surface-color);
+        }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 16, 33, 0.85); backdrop-filter: blur(5px); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .modal-overlay.show { opacity: 1; visibility: visible; }
         .modal-content { background-color: var(--surface-color); padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; text-align: center; position: relative; border: 1px solid var(--border-color); transform: scale(0.95) translateY(10px); transition: transform 0.3s ease, opacity 0.3s ease; opacity: 0; }
@@ -395,7 +432,7 @@
                 'No Title Available': 'Không có tiêu đề',
                 'No Description Available': 'Không có mô tả',
                 'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị',
-                'General': 'Chung', 'Toys': 'Đồ chơi', 'Sneakers': 'Giày thể thao', 'Beauty': 'Làm đẹp', 'Lifestyle': 'Phong cách sống', 'Family': 'Gia đình', 'Cars': 'Ô tô', 'Archaeology': 'Khảo cổ học', // NEW category translations
+                'General': 'Chung', 'Toys': 'Đồ chơi', 'Sneakers': 'Giày thể thao', 'Beauty': 'Làm đẹp', 'Lifestyle': 'Phong cách sống', 'Family': 'Gia đình', 'Cars': 'Ô tô', 'Archaeology': 'Khảo cổ học',
                 'Your Favorite Trends - Interest Over Time': 'Xu hướng yêu thích của bạn - Mức độ quan tâm theo thời gian'
             },
             en: {
@@ -474,8 +511,8 @@
             tbTopicListHeader: document.getElementById('tb-topic-list-header'),
             tbQueryListHeader: document.getElementById('tb-query-list-header'),
             tbChartTitle: document.getElementById('tb-chart-title'),
-            userTrendsChartContainer: document.getElementById('user-trends-chart-container'), // NEW
-            userTrendsChartTitle: document.getElementById('user-trends-chart-title'), // NEW
+            userTrendsChartContainer: document.getElementById('user-trends-chart-container'),
+            userTrendsChartTitle: document.getElementById('user-trends-chart-title'),
         };
 
         function t(key) { return (translations[currentLanguage] && translations[currentLanguage][key]) || key; }
