@@ -1,6 +1,7 @@
 // File: netlify/functions/fetch-trends.js
 const fetch = require("node-fetch");
 const { XMLParser } = require("fast-xml-parser");
+const crypto = require('crypto'); // Import crypto for hashing
 
 // ===== Helpers =====
 
@@ -87,7 +88,6 @@ function toSortValue(d) {
 
 // ===== Trend Factory (Standardizes item data from various feed types) =====
 function createStandardTrend(item, sourceName, defaultCategory = "General", defaultRegion = "global", extraTags = []) {
-  // Use getSafeString for all fields to handle different XML/JSON structures and ensure string output
   const title = getSafeString(item.title || item['media:title'] || item.name) || "No Title Available"; 
   const description = getSafeString(item.description || item.content?.['#text'] || item.summary?.['#text'] || item.content || item.artistName) || "No description available";
   
@@ -110,11 +110,16 @@ function createStandardTrend(item, sourceName, defaultCategory = "General", defa
   const cleanedTitle = title.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
   const cleanedDescription = description.replace(/<[^>]*>?/gm, '').replace(/\n{2,}/g, '\n').trim();
 
-  // CẬP NHẬT: Tạo metrics ngẫu nhiên với phạm vi rộng hơn
   const baseVotes = Math.floor(Math.random() * 2000) + 1000; // Phạm vi votes (1000-2999)
   const baseMultiplier = (Math.random() * 1.5) + 0.5; // (0.5 - 2.0)
 
+  // NEW: Create a stable ID using a hash of the source URL + title
+  // This ensures ID is consistent across fetches and unique for each real trend
+  const stableId = crypto.createHash('md5').update(`${link}-${cleanedTitle}`).digest('hex');
+
+
   return {
+    id: stableId, // <<<<<<<<<<<<<<<<< ID ỔN ĐỊNH TỪ HASH
     title_en: cleanedTitle,
     description_en: cleanedDescription,
     title_vi: cleanedTitle,
@@ -122,7 +127,6 @@ function createStandardTrend(item, sourceName, defaultCategory = "General", defa
     category: defaultCategory,
     tags: [...new Set([...extraTags, sourceName.replace(/\s/g, "") || "Unknown", defaultRegion || "global"].filter(Boolean))],
     votes: baseVotes,
-    // CẬP NHẬT: Thêm các metric khác dựa trên votes
     views: Math.floor(baseVotes * (baseMultiplier * (Math.random() * 10 + 15))), // ~15-25x votes
     interactions: Math.floor(baseVotes * (baseMultiplier * (Math.random() * 3 + 4))), // ~4-7x votes
     searches: Math.floor(baseVotes * (baseMultiplier * (Math.random() * 1 + 1.5))), // ~1.5-2.5x votes
@@ -297,7 +301,7 @@ const fetchESPN = () =>
 
 // Logistics
 const fetchLogistics = () =>
-  fetchAndParseXmlFeed("https://www.supplychaindigital.com/rss", "Supply Chain Digital", "Logistics", "global", ["SupplyChain"]); // Using the general RSS if specific /rss-feeds/all doesn't work well
+  fetchAndParseXmlFeed("https://www.supplychaindigital.com/rss", "Supply Chain Digital", "Logistics", "global", ["SupplyChain"]); 
 
 // Cybersecurity
 const fetchCybernews = () =>
@@ -391,7 +395,7 @@ exports.handler = async (event) => {
       fetchVentureBeatAI(), fetchMITTech(), fetchGoogleNewsVN(),
       fetchYahooFinance(), fetchCNBCFinance(), fetchCafeF(), fetchScienceMagazine(),
       fetchNewScientist(), fetchAppleMusicMostPlayedVN(), fetchAppleMusicNewReleasesVN(),
-      fetchYouTubeTrendingVN(), // Đã sửa hàm gọi
+      fetchYouTubeTrendingVN(), 
       fetchVariety(), fetchDeadline(),
       fetchGameKVN(), fetchZingNewsEntertainment(), fetchBBCWorld(),
       fetchESPN(), fetchLogistics(), fetchCybernews(),
@@ -418,6 +422,16 @@ exports.handler = async (event) => {
         console.warn("A source failed:", r.reason?.message || r.reason);
       }
     }
+
+    // Đảm bảo id là duy nhất và loại bỏ các trend trùng lặp dựa trên id
+    const uniqueTrendsMap = new Map();
+    for (const trend of allFetchedTrends) {
+        if (trend.id) {
+            uniqueTrendsMap.set(trend.id, trend);
+        }
+    }
+    allFetchedTrends = Array.from(uniqueTrendsMap.values());
+
 
     if (allFetchedTrends.length === 0) {
       return {
@@ -471,11 +485,7 @@ exports.handler = async (event) => {
     // Sort by newest first (descending sortKey) and then map to final format with IDs
     filteredTrends = filteredTrends
       .filter(Boolean) // Ensure no null/undefined items sneak through
-      .sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0))
-      .map((t, i) => {
-        const { sortKey, ...rest } = t; // Exclude sortKey from final output
-        return { ...rest, id: i + 1 }; // Ensure each trend has a unique ID
-      });
+      .sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0)); // No longer mapping to assign i+1 as ID
 
     return {
       statusCode: 200,
