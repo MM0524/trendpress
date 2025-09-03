@@ -399,9 +399,10 @@
         let hotTrendsChart = null;
         let analysisChart = null;
         let userTrendsChart = null;
-        let allTrends = []; // This will now hold trends fetched for the *current main/TB view* after filtering
-        let masterTrendsList = []; // NEW: Cache for *all* trends fetched from backend (e.g., 12m, global, all categories)
+        let allTrends = []; // This will now hold trends fetched for the *current view* after filtering
+        let masterTrendsList = []; // Cache for *all* trends fetched from backend (e.g., 12m, global, all categories)
         let categories = []; // Categories derived from masterTrendsList
+        let regions = []; // NEW: Regions derived from masterTrendsList
         let currentLanguage = localStorage.getItem('lang') || 'vi';
 
         // Helper for debouncing function calls
@@ -434,7 +435,8 @@
                 'No Description Available': 'Không có mô tả',
                 'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị',
                 'General': 'Chung', 'Toys': 'Đồ chơi', 'Sneakers': 'Giày thể thao', 'Beauty': 'Làm đẹp', 'Lifestyle': 'Phong cách sống', 'Family': 'Gia đình', 'Cars': 'Ô tô', 'Archaeology': 'Khảo cổ học', 
-                'Your Favorite Trends - Interest Over Time': 'Xu hướng yêu thích của bạn - Mức độ quan tâm theo thời gian'
+                'Your Favorite Trends - Interest Over Time': 'Xu hướng yêu thích của bạn - Mức độ quan tâm theo thời gian',
+                'United Kingdom': 'Vương quốc Anh', 'India': 'Ấn Độ', 'Japan': 'Nhật Bản', 'Germany': 'Đức', 'France': 'Pháp', 'Canada': 'Canada', 'Australia': 'Úc', // NEW Region Translations
             },
             en: {
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
@@ -455,7 +457,8 @@
                 'No Description Available': 'No Description Available',
                 'Technology': 'Technology', 'Fashion': 'Fashion', 'Gaming': 'Gaming', 'Finance': 'Finance', 'Health': 'Health', 'Travel': 'Travel', 'Food': 'Food', 'AI': 'AI', 'News': 'News', 'Science': 'Science', 'Music': 'Music', 'Media': 'Media', 'Entertainment': 'Entertainment', 'Sports': 'Sports', 'Logistics': 'Logistics', 'Cybersecurity': 'Cybersecurity', 'Healthcare': 'Healthcare', 'Education': 'Education', 'Environment': 'Environment', 'Politics': 'Politics', 'Marketing': 'Marketing',
                 'General': 'General', 'Toys': 'Toys', 'Sneakers': 'Sneakers', 'Beauty': 'Beauty', 'Lifestyle': 'Lifestyle', 'Family': 'Family', 'Cars': 'Cars', 'Archaeology': 'Archaeology',
-                'Your Favorite Trends - Interest Over Time': 'Your Favorite Trends - Interest Over Time'
+                'Your Favorite Trends - Interest Over Time': 'Your Favorite Trends - Interest Over Time',
+                'United Kingdom': 'United Kingdom', 'India': 'India', 'Japan': 'Japan', 'Germany': 'Germany', 'France': 'France', 'Canada': 'Canada', 'Australia': 'Australia',
             }
         };
 
@@ -644,14 +647,12 @@
             if (DOM.tbTopicListHeader && DOM.tbTopicListHeader.children[0]) DOM.tbTopicListHeader.children[0].textContent = t('Trending Topics');
             if (DOM.tbQueryListHeader && DOM.tbQueryListHeader.children[0]) DOM.tbQueryListHeader.children[0].textContent = t('Trending Queries');
 
+            // Regions are now populated dynamically, this section only sets default value if needed
             if (DOM.tbRegionFilter) {
-                const currentRegion = DOM.tbRegionFilter.value;
-                DOM.tbRegionFilter.innerHTML = `
-                    <option value="global">${t('Global')}</option>
-                    <option value="vn">${t('Vietnam')}</option>
-                    <option value="us">${t('United States')}</option>
-                `;
-                DOM.tbRegionFilter.value = currentRegion;
+                // Ensure default "Global" option is always there and selected if no prior choice
+                const currentRegion = DOM.tbRegionFilter.value || 'global';
+                populateRegionsFilter(); // Re-populate regions with translations
+                DOM.tbRegionFilter.value = currentRegion; // Re-select the previously chosen region
             }
 
             if (DOM.tbTimeframeFilter) {
@@ -664,7 +665,7 @@
                 DOM.tbTimeframeFilter.value = currentTimeframe;
             }
 
-            populateCategoryFilters();
+            populateCategoryFilters(); // This is called in initializeApp
         }
 
         function updateLanguageToggleUI() {
@@ -884,8 +885,28 @@
             }
         }
 
+        // NEW: Function to populate the Regions filter dropdown dynamically
+        function populateRegionsFilter() {
+            // Collect all unique regions from the master list
+            const uniqueRegions = [...new Set(masterTrendsList.map(trendItem => trendItem.region))].filter(Boolean).sort();
+            
+            if (DOM.tbRegionFilter) {
+                const currentRegion = DOM.tbRegionFilter.value; // Keep current selection
+                let optionsHtml = `<option value="global">${t('Global')}</option>`;
+                uniqueRegions.forEach(regionCode => {
+                    // Only add if it's not 'global' (already added)
+                    if (regionCode !== 'global') {
+                        optionsHtml += `<option value="${regionCode}">${t(regionCode.toUpperCase()) || regionCode}</option>`; // Attempt to translate, fallback to code
+                    }
+                });
+                DOM.tbRegionFilter.innerHTML = optionsHtml;
+                DOM.tbRegionFilter.value = currentRegion; // Restore previous selection, or 'global' if not found
+            }
+        }
+
+
         function populateCategoryFilters() {
-            categories = [...new Set(masterTrendsList.map(trendItem => trendItem.category))].sort();
+            categories = [...new Set(masterTrendsList.map(trendItem => trendItem.category))].sort(); // Use master list for categories
             const allOptionText = t('All Categories');
             if (DOM.filterButtonsContainer) {
                 DOM.filterButtonsContainer.innerHTML = [`<button class="filter-btn ${currentFilter.value === 'All' ? 'active' : ''}" data-filter="All">${allOptionText}</button>`, ...categories.map(category => `<button class="filter-btn ${category === currentFilter.value ? 'active' : ''}" data-filter="${category}">${t(category)}</button>`)].join('');
@@ -925,7 +946,7 @@
         }
 
         function populateHashtagFilters() {
-            const hashtagCounts = masterTrendsList.reduce((acc, trendItem) => {
+            const hashtagCounts = masterTrendsList.reduce((acc, trendItem) => { // Use master list
                 (trendItem.tags || []).forEach(tag => { if (tag) acc[tag] = (acc[tag] || 0) + 1; });
                 return acc;
             }, {});
@@ -941,7 +962,7 @@
             container.innerHTML = '';
 
             if (user.isLoggedIn && user.followedTrends.length > 0) {
-                const followedTrendsData = masterTrendsList.filter(trendItem => user.followedTrends.includes(trendItem.id));
+                const followedTrendsData = masterTrendsList.filter(trendItem => user.followedTrends.includes(trendItem.id)); // Use master list
                 if (followedTrendsData.length > 0) {
                     const leaderboardDiv = document.createElement('div');
                     leaderboardDiv.className = 'leaderboard-widget';
@@ -953,7 +974,7 @@
 
             const uniqueCategoriesToShow = Array.from(new Set(categoriesToShow)).sort();
             uniqueCategoriesToShow.forEach(category => {
-                const trendsInCategory = masterTrendsList.filter(trendItem => trendItem.category === category);
+                const trendsInCategory = masterTrendsList.filter(trendItem => trendItem.category === category); // Use master list
                 if (trendsInCategory.length === 0) return;
                 const sortedTrends = [...trendsInCategory].sort((a, b) => b.hotnessScore - a.hotnessScore);
                 const topTrends = sortedTrends.slice(0, 3);
@@ -1395,14 +1416,23 @@
             const palette = getColorPalette(user.tbSearchTerms.length > 0 ? user.tbSearchTerms.length : 5);
 
             if (user.tbSearchTerms.length > 0) {
+                // Fetch data for each specific search term and combine into datasets
                 const allFetchedTrendsForSearch = [];
                 for (let i = 0; i < user.tbSearchTerms.length; i++) {
                     const term = user.tbSearchTerms[i];
-                    const trendsForThisTerm = await fetchLiveTrends({ ...chartFilters, searchTerm: term });
+                    // Fetch from masterTrendsList instead of calling backend again if possible, 
+                    // then filter by search term locally
+                    const trendsForThisTerm = masterTrendsList.filter(trend => 
+                        isTrendRelevantForTimeframe(trend, timeframe) && // Apply timeframe filter
+                        (chartFilters.region === 'global' || trend.region === chartFilters.region) &&
+                        (chartFilters.category === 'All' || trend.category === chartFilters.category) &&
+                        (getLocalizedTrendText(trend).title.toLowerCase().includes(term.toLowerCase()) || 
+                         (trend.tags && trend.tags.some(tag => tag.toLowerCase().includes(term.toLowerCase()))))
+                    );
                     allFetchedTrendsForSearch.push(...trendsForThisTerm);
                 }
 
-                allTrends = preprocessTrends(allFetchedTrendsForSearch);
+                allTrends = preprocessTrends(allFetchedTrendsForSearch); // Update `allTrends` with search-filtered data
 
                 for (let i = 0; i < user.tbSearchTerms.length; i++) {
                     const term = user.tbSearchTerms[i];
@@ -1424,7 +1454,16 @@
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('Interest Over Time');
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
             } else {
-                allTrends = await fetchLiveTrends(chartFilters); 
+                // Default view: Top 5 hot trends based on current filters. 
+                // allTrends is already set by switchView or previous createHotTrendsChart call.
+                // We just need to filter it by region/category/timeframe from master list
+                allTrends = masterTrendsList.filter(trend =>
+                    (selectedRegion === 'global' || trend.region === selectedRegion) &&
+                    (selectedCategory === 'All' || trend.category === selectedCategory) &&
+                    isTrendRelevantForTimeframe(trend, timeframe)
+                );
+                allTrends = preprocessTrends(allTrends); // Re-process to ensure hotnessScore is current on this filtered set
+
                 const topTrends = [...allTrends].sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
                 topTrends.forEach((trendItem, i) => {
                     datasets.push({
@@ -1465,7 +1504,7 @@
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('No trends found.');
             }
 
-            // NEW: Render the user's favorite trends chart after the main chart
+            // Always render the user's favorite trends chart after the main chart
             renderUserTrendsChart(timeframe);
         }
         // --- End Trending Board specific functions ---
@@ -1551,7 +1590,9 @@
                 
                 applyTrendOrdering(); // Order the master list based on 'seen' status
 
-                // Populate categories based on the full master list
+                // Populate filters based on the full master list
+                regions = [...new Set(masterTrendsList.map(trendItem => trendItem.region))].filter(Boolean).sort(); // Get unique regions
+                populateRegionsFilter(); // NEW
                 categories = [...new Set(masterTrendsList.map(trendItem => trendItem.category))].sort();
                 populateCategoryFilters();
                 populateHashtagFilters();
@@ -1707,10 +1748,13 @@
                 updateLanguageToggleUI();
                 
                 // When language changes, refetch master list to ensure category names are updated
-                masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }, true); // Force refetch
-                applyTrendOrdering(); // Re-order after refetching
-
-                categories = [...new Set(masterTrendsList.map(trendItem => trendItem.category))].sort();
+                // The master list (all trends) is already fetched in initializeApp with 12m, global, All.
+                // We just need to re-apply translations and populate filters based on it.
+                // No need to call fetchLiveTrends(..., true) again for masterTrendsList itself,
+                // as its contents don't change with language. Only the *display* changes.
+                
+                // Re-populate filters to get updated translations
+                populateRegionsFilter(); // NEW: Re-populate regions
                 populateCategoryFilters();
                 populateHashtagFilters();
 
