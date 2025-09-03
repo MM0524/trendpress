@@ -237,8 +237,14 @@ const fetchTheVerge = () =>
 const fetchVentureBeatAI = () =>
   fetchAndParseXmlFeed("https://venturebeat.com/feed", "VentureBeat AI", "AI", "global", ["VentureBeat"]); 
 
-const fetchMITTech = () =>
-  fetchAndParseXmlFeed("https://www.technologyreview.com/feed/tag/artificial-intelligence/", "MIT Tech Review", "AI", "global", ["MITTechReview"]); // Use specific AI tag feed
+const fetchWired = () =>
+  fetchAndParseXmlFeed("https://www.wired.com/feed/rss", "Wired", "Technology", "us", ["Tech", "Innovation"]);
+
+const fetchTechCrunch = () =>
+  fetchAndParseXmlFeed("https://techcrunch.com/feed/", "TechCrunch", "Technology", "us", ["Startups", "Tech"]);
+
+const fetchNatureAI = () =>
+  fetchAndParseXmlFeed("https://www.nature.com/subjects/machine-learning/rss", "Nature AI", "AI", "global", ["AI", "Research"]);
 
 // Gaming
 const fetchIGNGaming = () =>
@@ -374,6 +380,125 @@ const fetchArchaeologyMagazine = () => fetchAndParseXmlFeed("https://www.archaeo
 const fetchHeritageDaily = () => fetchAndParseXmlFeed("https://www.heritagedaily.com/category/archaeology/feed", "Heritage Daily Archaeology", "Archaeology", "global", ["History", "Archaeology"]);
 const fetchSmithsonianArchaeology = () => fetchAndParseXmlFeed("https://www.smithsonianmag.com/rss/archaeology/", "Smithsonian Archaeology", "Archaeology", "global", ["History", "Archaeology"]);
 
+// === International Gaming ===
+const fetchKotaku = () =>
+  fetchAndParseXmlFeed("https://kotaku.com/rss", "Kotaku", "Gaming", "us", ["Games"]);
+
+const fetchPCGamer = () =>
+  fetchAndParseXmlFeed("https://www.pcgamer.com/rss/", "PC Gamer", "Gaming", "global", ["PCGames"]);
+
+// === International Finance ===
+const fetchBloomberg = () =>
+  fetchAndParseXmlFeed("https://www.bloomberg.com/feed/podcast/etf-report.xml", "Bloomberg", "Finance", "global", ["Markets"]);
+
+const fetchFinancialTimes = () =>
+  fetchAndParseXmlFeed("https://www.ft.com/?format=rss", "Financial Times", "Finance", "uk", ["Finance", "Markets"]);
+
+// === International Science ===
+const fetchNature = () =>
+  fetchAndParseXmlFeed("https://www.nature.com/nature.rss", "Nature", "Science", "global", ["Research"]);
+
+const fetchNationalGeographic = () =>
+  fetchAndParseXmlFeed("https://www.nationalgeographic.com/content/natgeo/en_us/rss/index.rss", "National Geographic", "Science", "global", ["Wildlife", "Planet"]);
+
+// === International Music ===
+const fetchBillboard = () =>
+  fetchAndParseXmlFeed("https://www.billboard.com/feed/", "Billboard", "Music", "us", ["Charts", "Music"]);
+
+const fetchPitchfork = () =>
+  fetchAndParseXmlFeed("https://pitchfork.com/feed/feed-news/rss", "Pitchfork", "Music", "us", ["IndieMusic"]);
+
+// === International Entertainment ===
+const fetchHollywoodReporter = () =>
+  fetchAndParseXmlFeed("https://www.hollywoodreporter.com/t/feed/", "Hollywood Reporter", "Entertainment", "us", ["Hollywood"]);
+
+const fetchRollingStone = () =>
+  fetchAndParseXmlFeed("https://www.rollingstone.com/music/music-news/feed/", "Rolling Stone", "Entertainment", "us", ["Music", "Culture"]);
+
+// === International Sports ===
+const fetchSkySports = () =>
+  fetchAndParseXmlFeed("https://www.skysports.com/rss/12040", "Sky Sports", "Sports", "uk", ["Sports"]);
+
+const fetchFifa = () =>
+  fetchAndParseXmlFeed("https://www.fifa.com/rss-feeds/news", "FIFA", "Sports", "global", ["Football", "Soccer"]);
+
+// === International Logistics / Business ===
+const fetchWSJ = () =>
+  fetchAndParseXmlFeed("https://feeds.a.dj.com/rss/RSSWorldNews.xml", "Wall Street Journal", "Logistics", "us", ["WSJ", "Business"]);
+
+const fetchReutersBusiness = () =>
+  fetchAndParseXmlFeed("https://feeds.reuters.com/reuters/businessNews", "Reuters Business", "Logistics", "global", ["Business"]);
+
+// === International Cybersecurity ===
+const fetchKrebsSecurity = () =>
+  fetchAndParseXmlFeed("https://krebsonsecurity.com/feed/", "Krebs on Security", "Cybersecurity", "us", ["Security"]);
+
+const fetchDarkReading = () =>
+  fetchAndParseXmlFeed("https://www.darkreading.com/rss.xml", "Dark Reading", "Cybersecurity", "us", ["Security"]);
+
+// === International Healthcare ===
+const fetchWHO = () =>
+  fetchAndParseXmlFeed("https://www.who.int/feeds/entity/mediacentre/news/en/rss.xml", "WHO", "Healthcare", "global", ["Health"]);
+
+const fetchHealthline = () =>
+  fetchAndParseXmlFeed("https://www.healthline.com/rss", "Healthline", "Healthcare", "us", ["Wellness"]);
+
+// === International Education ===
+const fetchEdWeek = () =>
+  fetchAndParseXmlFeed("https://feeds.feedburner.com/EducationWeekNews", "Education Week", "Education", "us", ["Education"]);
+
+const fetchTimesHigherEducation = () =>
+  fetchAndParseXmlFeed("https://www.timeshighereducation.com/rss", "Times Higher Education", "Education", "uk", ["University"]);
+
+// === International Environment ===
+const fetchUNEnvironment = () =>
+  fetchAndParseXmlFeed("https://www.unep.org/rss.xml", "UN Environment", "Environment", "global", ["Climate"]);
+
+const fetchNatGeoEnvironment = () =>
+  fetchAndParseXmlFeed("https://www.nationalgeographic.com/environment/rss", "NatGeo Environment", "Environment", "global", ["Climate", "Nature"]);
+
+// === International Travel ===
+const fetchCNTraveler = () =>
+  fetchAndParseXmlFeed("https://www.cntraveler.com/feed/rss", "Condé Nast Traveler", "Travel", "us", ["Travel"]);
+
+const fetchTravelWeekly = () =>
+  fetchAndParseXmlFeed("https://www.travelweekly.com/rss/top-headlines", "Travel Weekly", "Travel", "us", ["Tourism"]);
+
+// === International Toys ===
+const fetchToyWorldMag = () =>
+  fetchAndParseXmlFeed("https://toyworldmag.co.uk/feed/", "Toy World Magazine", "Toys", "uk", ["Toys"]);
+
+const fetchKidscreen = () =>
+  fetchAndParseXmlFeed("https://kidscreen.com/feed/", "Kidscreen", "Toys", "global", ["Kids", "Entertainment"]);
+
+// === International Fashion / Beauty ===
+const fetchCosmopolitan = () =>
+  fetchAndParseXmlFeed("https://www.cosmopolitan.com/rss/all.xml/", "Cosmopolitan", "Beauty", "us", ["Beauty", "Lifestyle"]);
+
+const fetchHarperBazaar = () =>
+  fetchAndParseXmlFeed("https://www.harpersbazaar.com/rss/all.xml", "Harper's Bazaar", "Fashion", "us", ["Fashion", "Beauty"]);
+
+// === International Food ===
+const fetchBonAppetit = () =>
+  fetchAndParseXmlFeed("https://www.bonappetit.com/feed/rss", "Bon Appétit", "Food", "us", ["Cooking"]);
+
+const fetchSaveur = () =>
+  fetchAndParseXmlFeed("https://www.saveur.com/feed/", "Saveur", "Food", "us", ["Cuisine"]);
+
+// === International Cars ===
+const fetchMotorTrend = () =>
+  fetchAndParseXmlFeed("https://www.motortrend.com/feed/", "MotorTrend", "Cars", "us", ["Cars"]);
+
+const fetchAutoExpress = () =>
+  fetchAndParseXmlFeed("https://www.autoexpress.co.uk/rss", "Auto Express", "Cars", "uk", ["Cars"]);
+
+// === International Archaeology ===
+const fetchAncientOrigins = () =>
+  fetchAndParseXmlFeed("https://www.ancient-origins.net/rss.xml", "Ancient Origins", "Archaeology", "global", ["History", "Archaeology"]);
+
+const fetchPastHorizons = () =>
+  fetchAndParseXmlFeed("http://www.pasthorizonspr.com/index.php/feed", "Past Horizons", "Archaeology", "global", ["History", "Archaeology"]);
+
 // ===== Main handler =====
 exports.handler = async (event) => {
   const headers = {
@@ -391,26 +516,130 @@ exports.handler = async (event) => {
     const { region, category, timeframe, searchTerm, hashtag } = event.queryStringParameters || {};
 
     const sources = [
-      fetchHackerNewsFrontpage(), fetchTheVerge(), fetchIGNGaming(),
-      fetchVentureBeatAI(), fetchMITTech(), fetchGoogleNewsVN(),
-      fetchYahooFinance(), fetchCNBCFinance(), fetchCafeF(), fetchScienceMagazine(),
-      fetchNewScientist(), fetchAppleMusicMostPlayedVN(), fetchAppleMusicNewReleasesVN(),
-      fetchYouTubeTrendingVN(), 
-      fetchVariety(), fetchDeadline(),
-      fetchGameKVN(), fetchZingNewsEntertainment(), fetchBBCWorld(),
-      fetchESPN(), fetchLogistics(), fetchCybernews(),
-      fetchHealthcare(), fetchEducation(), fetchEnvironment(),
-      fetchPolitics(), fetchTravel(),
-      fetchToyNews(),
-      fetchSneakerNews(),
-      fetchAllureBeauty(),
-      fetchVogueBeauty(), fetchElle(), fetchElleVN(), fetchGQ(), fetchHypebeast(), fetchHighsnobiety(),
-      fetchRefinery29(), fetchAfamily(),
-      fetchParents(),
-      fetchFoodWine(), fetchEater(), fetchSeriousEats(),
-      fetchCarDriver(), fetchTopGear(),
-      fetchArchaeologyMagazine(), fetchHeritageDaily(), fetchSmithsonianArchaeology(),
-    ];
+  // === Technology & AI ===
+  fetchHackerNewsFrontpage(),
+  fetchTheVerge(),
+  fetchVentureBeatAI(),
+  fetchWired(),
+  fetchTechCrunch(),
+  fetchNatureAI(),
+
+  // === Gaming ===
+  fetchIGNGaming(),
+  fetchGameKVN(),
+  fetchKotaku(),
+  fetchPCGamer(),
+
+  // === News / Politics ===
+  fetchGoogleNewsVN(),
+  fetchBBCWorld(),
+  fetchPolitics(),
+
+  // === Finance ===
+  fetchYahooFinance(),
+  fetchCNBCFinance(),
+  fetchCafeF(),
+  fetchBloomberg(),
+  fetchFinancialTimes(),
+
+  // === Science ===
+  fetchScienceMagazine(),
+  fetchNewScientist(),
+  fetchNature(),
+  fetchNationalGeographic(),
+
+  // === Music ===
+  fetchAppleMusicMostPlayedVN(),
+  fetchAppleMusicNewReleasesVN(),
+  fetchBillboard(),
+  fetchPitchfork(),
+
+  // === Media / Entertainment ===
+  fetchYouTubeTrendingVN(),
+  fetchVariety(),
+  fetchDeadline(),
+  fetchZingNewsEntertainment(),
+  fetchHollywoodReporter(),
+  fetchRollingStone(),
+
+  // === Sports ===
+  fetchESPN(),
+  fetchSkySports(),
+  fetchFifa(),
+
+  // === Logistics / Business ===
+  fetchLogistics(),
+  fetchWSJ(),
+  fetchReutersBusiness(),
+
+  // === Cybersecurity ===
+  fetchCybernews(),
+  fetchKrebsSecurity(),
+  fetchDarkReading(),
+
+  // === Healthcare ===
+  fetchHealthcare(),
+  fetchWHO(),
+  fetchHealthline(),
+
+  // === Education ===
+  fetchEducation(),
+  fetchEdWeek(),
+  fetchTimesHigherEducation(),
+
+  // === Environment ===
+  fetchEnvironment(),
+  fetchUNEnvironment(),
+  fetchNatGeoEnvironment(),
+
+  // === Travel ===
+  fetchTravel(),
+  fetchCNTraveler(),
+  fetchTravelWeekly(),
+
+  // === Toys ===
+  fetchToyNews(),
+  fetchToyWorldMag(),
+  fetchKidscreen(),
+
+  // === Fashion / Beauty ===
+  fetchSneakerNews(),
+  fetchAllureBeauty(),
+  fetchVogueBeauty(),
+  fetchElle(),
+  fetchElleVN(),
+  fetchGQ(),
+  fetchHypebeast(),
+  fetchHighsnobiety(),
+  fetchRefinery29(),
+  fetchCosmopolitan(),
+  fetchHarperBazaar(),
+
+  // === Lifestyle / Family ===
+  fetchAfamily(),
+  fetchParents(),
+
+  // === Food & Drink ===
+  fetchFoodWine(),
+  fetchEater(),
+  fetchSeriousEats(),
+  fetchBonAppetit(),
+  fetchSaveur(),
+
+  // === Cars ===
+  fetchCarDriver(),
+  fetchTopGear(),
+  fetchMotorTrend(),
+  fetchAutoExpress(),
+
+  // === Archaeology ===
+  fetchArchaeologyMagazine(),
+  fetchHeritageDaily(),
+  fetchSmithsonianArchaeology(),
+  fetchAncientOrigins(),
+  fetchPastHorizons(),
+];
+
 
     const results = await Promise.allSettled(sources);
 
