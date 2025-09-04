@@ -203,7 +203,9 @@
         .tb-filter-select { background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; }
         /* NEW: Styles for trend status filter */
         #tb-status-filter-container {
-            /* Giữ nguyên style đã có */
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
         #tb-status-select, #tb-custom-timeframe-select {
             background-color: var(--bg-color);
@@ -453,7 +455,7 @@
                 'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google',
                 'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại',
                 'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': '🔍 Phân tích',
-                'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium',
+                'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium',
                 'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.',
                 'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Top 5 Hot Trends': 'Top 5 Xu Hướng Nóng Nhất', 'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi', 'Category Leaderboards': 'Bảng xếp hạng danh mục', 'About TrendPulse': 'Giới thiệu TrendPulse',
                 "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": 'Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề xu hướng để có thông tin chi tiết từ AI.',
@@ -939,9 +941,7 @@
         function populateRegionsFilter() {
             const currentRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
             
-            const dynamicRegions = [...new Set(masterTrendsList.map(trendItem => trendItem.region))]
-                .filter(Boolean)
-                .sort();
+            const dynamicRegions = [...new Set(masterTrendsList.map(trendItem => trendItem.region))].filter(Boolean).sort();
             
             if (DOM.tbRegionFilter) {
                 let optionsHtml = `<option value="global">${t('Global')}</option>`;
@@ -1248,7 +1248,6 @@
                 default:
                     return true;
             }
-            // For historical filters, ensure trendDate is greater than or equal to cutoffDate
             trendDate.setHours(0,0,0,0);
             cutoffDate.setHours(0,0,0,0);
             return trendDate >= cutoffDate;
@@ -1357,30 +1356,35 @@
                 let currentLabelDate;
                 if (timeframe.includes('h')) { // Hourly timeframes
                     let datePart = new Date(now); 
-                    const hoursOffset = (labels.length - 1 - index) * (timeframe === '1h' ? 10 : (timeframe === '6h' ? 60 : 240)) / 60;
-                    datePart.setHours(now.getHours() - hoursOffset);
-                    currentLabelDate = new Date(datePart.getFullYear(), datePart.getMonth(), datePart.getDate(), datePart.getHours());
-                } else if (timeframe.includes('d') || timeframe.includes('m') || timeframe.includes('y')) { // Day/Month/Year timeframes
+                    // Calculate currentLabelDate based on index relative to 'now'
+                    const offsetMinutes = (labels.length - 1 - index) * (timeframe === '1h' ? 10 : (timeframe === '6h' ? 60 : 240));
+                    datePart.setMinutes(now.getMinutes() - offsetMinutes);
+                    currentLabelDate = new Date(datePart.getFullYear(), datePart.getMonth(), datePart.getDate(), datePart.getHours(), datePart.getMinutes());
+                } else { // Day/Month/Year timeframes
                     let datePart = new Date(now);
                     let daysOffset;
-                    if (timeframe === '3d') daysOffset = (labels.length - 1 - index);
-                    else if (timeframe === '7d') daysOffset = (labels.length - 1 - index);
-                    else if (timeframe === '1m') daysOffset = Math.round((labels.length - 1 - index) * (30 / (labels.length - 1)));
-                    else if (timeframe === '3m') daysOffset = Math.round((labels.length - 1 - index) * (90 / (labels.length - 1)));
-                    else if (timeframe === '12m') {
+                    if (timeframe.startsWith('next')) {
+                        daysOffset = index; // For 'next' timeframes, index is days into future
+                        datePart.setDate(now.getDate() + daysOffset);
+                    } else if (timeframe === '3d') {
+                        daysOffset = (labels.length - 1 - index);
+                        datePart.setDate(now.getDate() - daysOffset);
+                    } else if (timeframe === '7d') {
+                        daysOffset = (labels.length - 1 - index);
+                        datePart.setDate(now.getDate() - daysOffset);
+                    } else if (timeframe === '1m') {
+                        daysOffset = Math.round((labels.length - 1 - index) * (30 / (labels.length - 1)));
+                        datePart.setDate(now.getDate() - daysOffset);
+                    } else if (timeframe === '3m') {
+                        daysOffset = Math.round((labels.length - 1 - index) * (90 / (labels.length - 1)));
+                        datePart.setDate(now.getDate() - daysOffset);
+                    } else if (timeframe === '12m') {
                         const monthsOffset = (labels.length - 1 - index);
                         datePart.setMonth(now.getMonth() - monthsOffset);
-                    } else if (timeframe.startsWith('next')) { // Predictive timeframes
-                        daysOffset = index; // Days from today into the future
-                        datePart.setDate(now.getDate() + daysOffset);
                     }
-                    
-                    if (daysOffset !== undefined) datePart.setDate(now.getDate() - daysOffset);
                     currentLabelDate = new Date(datePart.getFullYear(), datePart.getMonth(), datePart.getDate());
-                } else {
-                    currentLabelDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                 }
-                currentLabelDate.setHours(0,0,0,0);
+                currentLabelDate.setHours(0,0,0,0); // Normalize to start of day for non-hourly
 
                 const isPredictive = timeframe.startsWith('next');
 
@@ -1389,28 +1393,38 @@
                     return;
                 }
 
-                const timeDiffDaysFromTrendStart = (currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24);
+                // Days difference relative to the trend's *actual* start date or 'now' for predictive
+                let timeDiffRelevantDays;
+                if (isPredictive) {
+                    timeDiffRelevantDays = (currentLabelDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24); // Days into future from 'now'
+                } else {
+                    timeDiffRelevantDays = (currentLabelDate.getTime() - trendDate.getTime()) / (1000 * 60 * 60 * 24); // Days from trend's pubDate
+                }
 
-                let decayRate = 0.03;
-                let peakShiftDays = 3; 
                 let rawValue = 0;
+                let hotnessMultiplier = 1 + (trend.hotnessScore || 0) * 5; // Scale hotness more significantly
 
                 if (isPredictive) {
-                    const daysIntoFuture = (currentLabelDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-                    const initialHotness = peakMetric * (1 + (trend.hotnessScore || 0) * 0.5); 
+                    // For predictive, model strong growth from current hotness
+                    const initialProjectionBase = peakMetric * (1 + (trend.hotnessScore || 0) * 0.5); // Base current estimated hotness
+                    const growthFactor = 0.8; // Faster growth
+                    const peakPredictionDay = (timeframe === 'next3d' ? 1 : (timeframe === 'next5d' ? 2 : 3)); // Peak around day 1-3
                     
-                    const growthFactor = 0.5;
-                    const decayAfterPeak = 0.1;
-                    const maxGrowthDays = 5;
-                    
-                    if (daysIntoFuture <= maxGrowthDays) {
-                        rawValue = initialHotness * (1 + (growthFactor * daysIntoFuture / maxGrowthDays));
+                    if (timeDiffRelevantDays <= peakPredictionDay) {
+                        rawValue = initialProjectionBase * (1 + growthFactor * (timeDiffRelevantDays / peakPredictionDay));
                     } else {
-                        rawValue = initialHotness * (1 + growthFactor) * Math.exp(-decayAfterPeak * (daysIntoFuture - maxGrowthDays));
+                        // Gentle decline or plateau after peak
+                        rawValue = initialProjectionBase * (1 + growthFactor) * Math.exp(-0.1 * (timeDiffRelevantDays - peakPredictionDay));
                     }
-                    series[index] = Math.max(Math.round(peakMetric * 0.1), Math.round(rawValue));
+                    // Add significant noise for prediction uncertainty
+                    rawValue *= (1 + (Math.random() - 0.5) * 0.4); // +/- 20% noise for prediction
 
-                } else { 
+                    series[index] = Math.max(Math.round(peakMetric * 0.2), Math.round(rawValue)); // Ensure minimal base value
+
+                } else { // Historical data generation
+                    let decayRate = 0.05;
+                    let peakShiftDays = 3; 
+
                     if (timeframe === '7d' || timeframe === '3d' || timeframe.includes('h')) {
                         decayRate = 0.8; 
                         peakShiftDays = 1; 
@@ -1422,9 +1436,8 @@
                         peakShiftDays = 10; 
                     }
                     
-                    const timeRelativeToPeak = timeDiffDaysFromTrendStart - peakShiftDays;
-                    const hotnessScale = 1 + (trend.hotnessScore || 0) * 5;
-                    rawValue = peakMetric * hotnessScale * Math.exp(-decayRate * Math.pow(timeRelativeToPeak, 2) / (peakShiftDays * peakShiftDays));
+                    const timeRelativeToPeak = timeDiffRelevantDays - peakShiftDays;
+                    rawValue = peakMetric * hotnessMultiplier * Math.exp(-decayRate * Math.pow(timeRelativeToPeak, 2) / (peakShiftDays * peakShiftDays));
                     rawValue = rawValue * (1 + (Math.random() - 0.5) * 0.2);
                     series[index] = Math.max(0, Math.round(rawValue));
                 }
@@ -1527,11 +1540,7 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { position: 'bottom', labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 } },
-                        tooltip: { callbacks: { label: (ctx) => `${t('Engagement')}: ${formatNumber(ctx.parsed.y)}` } },
-                        animation: {
-                            duration: 1000,
-                            easing: 'easeOutQuart'
-                        }
+                        tooltip: { callbacks: { label: (ctx) => `${t('Engagement')}: ${formatNumber(ctx.parsed.y)}` } }
                     },
                     scales: {
                         x: { ticks: { color: '#8a8da0' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
@@ -1582,12 +1591,12 @@
             const chartFilters = {
                 region: selectedRegion,
                 category: selectedCategory,
-                timeframe: timeframe, // Main timeframe filter
-                trendStatus: status,
-                customTimeframe: customTimeframe
+                timeframe: timeframe,
+                trendStatus: status, // NEW
+                customTimeframe: customTimeframe // NEW
             };
 
-            const labels = generateChartLabels(customTimeframe); // Sử dụng customTimeframe cho nhãn biểu đồ
+            const labels = generateChartLabels(customTimeframe);
             const datasets = [];
             const palette = getColorPalette(Math.max(user.tbSearchTerms.length, 5));
 
@@ -1616,26 +1625,37 @@
                         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                     break;
                 case 'outdated':
-                    // Trends lỗi thời: có hotness thấp nhất và ra đời cách đây > N ngày (N tùy chỉnh)
-                    // Hoặc đơn giản: những trend cũ nhất trong customTimeframe với hotness thấp
+                    // NEW LOGIC FOR OUTDATED:
+                    // Find trends that were relevant in the past (e.g., more than 7 days old)
+                    // and have a relatively low hotnessScore now.
                     trendsToConsiderForStatus = [...baseTrendsForFiltering]
                         .filter(trend => {
                             const trendDate = new Date(trend.date);
                             trendDate.setHours(0,0,0,0);
-                            const cutoffDateForOutdated = new Date(now);
-                            cutoffDateForOutdated.setDate(now.getDate() - 3); // Example: considered outdated if older than 3 days
-                            return isTrendRelevantForTimeframe(trend, customTimeframe) && trendDate < cutoffDateForOutdated;
+                            const referenceDate = new Date(now);
+                            // Adjust referenceDate based on customTimeframe for a more dynamic "outdated"
+                            if (customTimeframe === '1h') referenceDate.setHours(now.getHours() - 1);
+                            else if (customTimeframe === '6h') referenceDate.setHours(now.getHours() - 6);
+                            else if (customTimeframe === '24h') referenceDate.setHours(now.getHours() - 24);
+                            else if (customTimeframe === '3d') referenceDate.setDate(now.getDate() - 3);
+                            else if (customTimeframe === '1m') referenceDate.setDate(now.getDate() - 14); // 2 weeks old
+                            else referenceDate.setDate(now.getDate() - 7); // Default 7 days old
+                            
+                            // A trend is outdated if its peak date is before referenceDate, 
+                            // AND its current hotness is relatively low.
+                            // Assuming 'trendDate' is the actual publication date
+                            return trendDate < referenceDate && isTrendRelevantForTimeframe(trend, customTimeframe);
                         })
-                        .sort((a,b) => a.hotnessScore - b.hotnessScore); // Sắp xếp từ ít hot nhất
+                        .sort((a,b) => a.hotnessScore - b.hotnessScore); // Sort by lowest hotness first to find "outdated"
                     break;
                 case 'predictive':
                     // Chọn top 5 trend hot nhất/mới nhất làm cơ sở cho dự đoán
-                    trendsToConsiderForStatus = [...baseTrendsForFiltering]
-                        .filter(trend => isTrendRelevantForTimeframe(trend, '7d')) // Trends that are hot/new in last 7 days
+                    trendsToConsiderForStatus = [...filteredBaseTrends]
+                        .filter(trend => isTrendRelevantForTimeframe(trend, '7d')) // Lấy những trend hot trong 7 ngày gần nhất làm cơ sở
                         .sort((a, b) => b.hotnessScore - a.hotnessScore);
                     break;
                 default:
-                    trendsToConsiderForStatus = [...baseTrendsForFiltering].sort((a, b) => b.hotnessScore - a.hotnessScore);
+                    trendsToConsiderForStatus = [...filteredBaseTrends].sort((a, b) => b.hotnessScore - a.hotnessScore);
             }
 
 
@@ -1726,6 +1746,7 @@
         }
         // --- End Trending Board specific functions ---
 
+        // NEW: Populate custom timeframe options based on selected status
         function populateCustomTimeframeOptions(status) {
             const customTimeframeSelect = DOM.tbCustomTimeframeSelect;
             if (!customTimeframeSelect) return;
@@ -1846,7 +1867,7 @@
 
                 if (DOM.mainViewContainer) DOM.mainViewContainer.classList.toggle('hidden', currentView !== 'main');
                 if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
-                if (DOM.trendingBoardViewContainer) DOM.trendingBoardViewContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
+                if (DOM.trendingBoardContainer) DOM.trendingBoardContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
 
                 masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }); 
                 
@@ -1991,12 +2012,12 @@
             if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart());
             if (DOM.tbStatusSelect) DOM.tbStatusSelect.addEventListener('change', () => {
                 currentTrendStatus.status = DOM.tbStatusSelect.value;
-                populateCustomTimeframeOptions(currentTrendStatus.status); // Update custom timeframe options
-                createHotTrendsChart(); // Re-render chart based on new status
+                populateCustomTimeframeOptions(currentTrendStatus.status);
+                createHotTrendsChart();
             });
             if (DOM.tbCustomTimeframeSelect) DOM.tbCustomTimeframeSelect.addEventListener('change', () => {
                 currentTrendStatus.customTimeframe = DOM.tbCustomTimeframeSelect.value;
-                createHotTrendsChart(); // Re-render chart based on new custom timeframe
+                createHotTrendsChart();
             });
 
             document.addEventListener('click', (e) => {
@@ -2014,10 +2035,10 @@
                 applyTranslations();
                 updateLanguageToggleUI();
                 
-                masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }, true); // Force refetch for master list
+                masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }, true);
                 applyTrendOrdering();
 
-                populateRegionsFilter(); 
+                populateRegionsFilter();
                 categories = [...new Set(masterTrendsList.map(trendItem => trendItem.category))].sort();
                 populateCategoryFilters();
                 populateHashtagFilters();
