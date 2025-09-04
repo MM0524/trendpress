@@ -531,11 +531,7 @@
             { selector: '#tb-search-input', attr: 'placeholder', key: 'Add search term' },
             { selector: '#tb-compare-input', attr: 'placeholder', key: '+ Compare' },
             { selector: '#search-input', attr: 'placeholder', key: 'Search by keyword...' },
-            { selector: '#user-trends-chart-title', key: 'Your Favorite Trends - Interest Over Time' },
-            { selector: '#tb-status-select option[value="hottest"]', key: 'Hottest' },
-            { selector: '#tb-status-select option[value="latest"]', key: 'Latest' },
-            { selector: '#tb-status-select option[value="outdated"]', key: 'Outdated' },
-            { selector: '#tb-status-select option[value="predictive"]', key: 'Predictive' }
+            { selector: '#user-trends-chart-title', key: 'Your Favorite Trends - Interest Over Time' }
         ];
 
         const DOM = {
@@ -546,7 +542,7 @@
             navTopTrends: document.getElementById('nav-top-trends'), navTrendingBoard: document.getElementById('nav-trending-board'),
             navForU: document.getElementById('nav-for-u'), navAbout: document.getElementById('nav-about'),
             modalCloses: document.querySelectorAll('.modal-close'), mainViewContainer: document.getElementById('main-view-container'),
-            forUViewContainer: document.getElementById('for-u-view-container'), trendingBoardViewContainer: document.getElementById('trending-board-view-container'),
+            forUViewContainer: document.getElementById('for-u-view-container'), trendingBoardContainer: document.getElementById('trending-board-view-container'),
             trendsList: document.getElementById('trends-list'), forUTrendsList: document.getElementById('for-u-trends-list'),
             loadMoreBtn: document.getElementById('load-more-btn'), forULoadMoreBtn: document.getElementById('for-u-load-more-btn'),
             filterButtonsContainer: document.getElementById('filter-buttons'), clearFilterBtn: document.getElementById('clear-filter-btn'),
@@ -563,7 +559,7 @@
             userTrendsChartContainer: document.getElementById('user-trends-chart-container'),
             userTrendsChartTitle: document.getElementById('user-trends-chart-title'),
             tbStatusSelect: document.getElementById('tb-status-select'),
-            tbCustomTimeframeSelect: document.getElementById('tb-custom-timeframe-select'), // Đây là select chung cho thời gian
+            tbCustomTimeframeSelect: document.getElementById('tb-custom-timeframe-select'),
         };
 
         function t(key) { return (translations[currentLanguage] && translations[currentLanguage][key]) || key; }
@@ -584,12 +580,11 @@
                 const params = new URLSearchParams();
                 if (filters.region && filters.region !== 'global') params.append('region', filters.region);
                 if (filters.category && filters.category !== 'All') params.append('category', filters.category);
-                // NEW: Pass customTimeframe as 'timeframe' parameter to backend
-                params.append('timeframe', filters.customTimeframe || '12m'); // Use customTimeframe for backend filtering
+                params.append('timeframe', filters.customTimeframe || filters.timeframe || '12m'); // Use customTimeframe if available, else standard timeframe
                 if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
                 if (filters.hashtag) params.append('hashtag', filters.hashtag);
-                if (filters.trendStatus) params.append('trendStatus', filters.trendStatus); // May not be used directly by backend, but for completeness
-
+                if (filters.trendStatus) params.append('trendStatus', filters.trendStatus);
+                
                 const url = `/.netlify/functions/fetch-trends?${params.toString()}`;
                 console.log("Fetching trends from:", url);
 
@@ -695,8 +690,7 @@
             populateRegionsFilter(); 
             if (DOM.tbRegionFilter) DOM.tbRegionFilter.value = currentRegion; 
 
-            // CẬP NHẬT: Không còn populate tbTimeframeFilter ở đây
-            // populateCustomTimeframeOptions sẽ đảm nhận việc tạo tất cả các tùy chọn thời gian
+            // Cập nhật: populateCustomTimeframeOptions sẽ đảm nhận việc tạo tất cả các tùy chọn thời gian
             const currentStatus = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
             if (DOM.tbStatusSelect) {
                 DOM.tbStatusSelect.innerHTML = `
@@ -869,17 +863,15 @@
                 if (DOM.trendingBoardContainer) DOM.trendingBoardContainer.classList.remove('hidden');
                 // Reset TB filters and search terms when entering TB view
                 if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.value = 'All';
-                // Cập nhật: Không còn reset tbTimeframeFilter ở đây
                 if (DOM.tbRegionFilter) DOM.tbRegionFilter.value = 'global';
                 user.tbSearchTerms = [];
                 if (DOM.tbSearchInput) DOM.tbSearchInput.value = '';
                 if (DOM.tbCompareInput) DOM.tbCompareInput.value = '';
                 
-                // Reset trend status filter to default
                 if(DOM.tbStatusSelect) DOM.tbStatusSelect.value = 'hottest';
                 currentTrendStatus.status = 'hottest';
-                currentTrendStatus.customTimeframe = '7d'; // Set default for hottest
-                populateCustomTimeframeOptions(currentTrendStatus.status); // Update custom timeframe options
+                currentTrendStatus.customTimeframe = '7d';
+                populateCustomTimeframeOptions(currentTrendStatus.status);
 
                 await createHotTrendsChart();
             }
@@ -1279,7 +1271,7 @@
                 case '3d': 
                     for (let i = 2; i >= 0; i--) { 
                         const d = new Date(now);
-                        d.setDate(now.getDate() - i);
+                        d.setDate(now.getDate() + i - 2); // Start from 2 days ago, up to today
                         labels.push(d.toLocaleDateString(currentLanguage, dayOptions));
                     }
                     break;
@@ -1312,21 +1304,21 @@
                     }
                     break;
                 case 'next3d': 
-                    for (let i = 0; i <= 3; i++) {
+                    for (let i = 0; i <= 3; i++) { // From today (0) to next 3 days
                         const d = new Date(now);
                         d.setDate(now.getDate() + i);
                         labels.push(d.toLocaleDateString(currentLanguage, dayOptions));
                     }
                     break;
                 case 'next5d': 
-                    for (let i = 0; i <= 5; i++) {
+                    for (let i = 0; i <= 5; i++) { // From today (0) to next 5 days
                         const d = new Date(now);
                         d.setDate(now.getDate() + i);
                         labels.push(d.toLocaleDateString(currentLanguage, dayOptions));
                     }
                     break;
                 case 'next7d': 
-                    for (let i = 0; i <= 7; i++) {
+                    for (let i = 0; i <= 7; i++) { // From today (0) to next 7 days
                         const d = new Date(now);
                         d.setDate(now.getDate() + i);
                         labels.push(d.toLocaleDateString(currentLanguage, dayOptions));
@@ -1403,14 +1395,14 @@
                     
                     const growthFactor = 0.8;
                     const decayAfterPeak = 0.1;
-                    const maxGrowthDays = 5;
+                    const maxGrowthDays = 2; // Dự đoán đạt đỉnh trong 2 ngày đầu
                     
                     if (daysIntoFuture <= maxGrowthDays) {
                         rawValue = initialHotness * (1 + (growthFactor * daysIntoFuture / maxGrowthDays));
                     } else {
                         rawValue = initialHotness * (1 + growthFactor) * Math.exp(-decayAfterPeak * (daysIntoFuture - maxGrowthDays));
                     }
-                    rawValue *= (1 + (Math.random() - 0.5) * 0.4);
+                    rawValue *= (1 + (Math.random() - 0.5) * 0.2); // Giảm nhiễu ngẫu nhiên một chút
 
                     series[index] = Math.max(Math.round(peakMetric * 0.2), Math.round(rawValue));
 
@@ -1580,17 +1572,11 @@
                 console.error("Missing DOM element: #tb-search-chips-container");
             }
 
-            const chartFilters = {
-                region: selectedRegion,
-                category: selectedCategory,
-                timeframe: customTimeframe, // Main timeframe filter is now customTimeframe
-                trendStatus: status, 
-                customTimeframe: customTimeframe
-            };
-
             const labels = generateChartLabels(customTimeframe);
             const datasets = [];
             const palette = getColorPalette(Math.max(user.tbSearchTerms.length, 5));
+
+            let trendsToDraw = [];
 
             // Lọc trends từ masterTrendsList dựa trên các bộ lọc Region, Category chính
             let filteredBaseTrends = masterTrendsList.filter(trend =>
@@ -1598,71 +1584,39 @@
                 (selectedCategory === 'All' || trend.category === selectedCategory)
             );
 
-            // Apply trend status filtering on filteredBaseTrends
-            let trendsToConsiderForStatus = [];
-            const now = new Date();
-            now.setHours(0,0,0,0);
-
-            switch(status) {
-                case 'hottest':
-                    trendsToConsiderForStatus = [...filteredBaseTrends]
-                        .filter(trend => isTrendRelevantForTimeframe(trend, customTimeframe)) // Filter by customTimeframe
-                        .sort((a, b) => b.hotnessScore - a.hotnessScore);
-                    break;
-                case 'latest':
-                    trendsToConsiderForStatus = [...filteredBaseTrends]
-                        .filter(trend => isTrendRelevantForTimeframe(trend, customTimeframe)) // Filter by customTimeframe
-                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                    break;
-                case 'outdated':
-                    trendsToConsiderForStatus = [...filteredBaseTrends]
-                        .filter(trend => {
-                            const trendDate = new Date(trend.date);
-                            trendDate.setHours(0,0,0,0);
-                            const cutoffForOutdated = new Date(now);
-                            // Define "outdated" as older than 3 days ago, and still within the customTimeframe
-                            if (customTimeframe === '1h') cutoffForOutdated.setHours(now.getHours() - 1);
-                            else if (customTimeframe === '6h') cutoffForOutdated.setHours(now.getHours() - 6);
-                            else if (customTimeframe === '24h') cutoffForOutdated.setHours(now.getHours() - 24);
-                            else if (customTimeframe === '3d') cutoffForOutdated.setDate(now.getDate() - 3);
-                            else if (customTimeframe === '1m') cutoffForOutdated.setDate(now.getDate() - 14); // 2 weeks old for 1m timeframe
-                            else cutoffForOutdated.setDate(now.getDate() - 7); // Default 7 days old for other long timeframes
-
-                            return trendDate < cutoffForOutdated && isTrendRelevantForTimeframe(trend, customTimeframe);
-                        })
-                        .sort((a,b) => a.hotnessScore - b.hotnessScore); // Sort by lowest hotness first
-                    break;
-                case 'predictive':
-                    trendsToConsiderForStatus = [...filteredBaseTrends]
-                        .filter(trend => isTrendRelevantForTimeframe(trend, '7d')) // Take trends that were relevant in the *last 7 days* for prediction
-                        .sort((a, b) => b.hotnessScore - a.hotnessScore);
-                    break;
-                default:
-                    trendsToConsiderForStatus = [...filteredBaseTrends].sort((a, b) => b.hotnessScore - a.hotnessScore);
-            }
-
-
+            // Bước 1: Áp dụng Status và customTimeframe để tìm ra các trend hợp lệ
             if (user.tbSearchTerms.length > 0) {
-                const trendsForSearchTerms = [];
+                // If searching, first filter by search terms, then apply status/timeframe on results
+                let trendsMatchingSearch = [];
                 for (const term of user.tbSearchTerms) {
-                    const matchedTrends = trendsToConsiderForStatus.filter(trend => 
+                    const matched = filteredBaseTrends.filter(trend =>
                         getLocalizedTrendText(trend).title.toLowerCase().includes(term.toLowerCase()) || 
                         (trend.tags && trend.tags.some(tag => tag.toLowerCase().includes(term.toLowerCase())))
                     );
-                    trendsForSearchTerms.push(...matchedTrends);
+                    trendsMatchingSearch.push(...matched);
                 }
-                allTrends = preprocessTrends(Array.from(new Set(trendsForSearchTerms.map(t => t.id))).map(id => trendsToConsiderForStatus.find(t => t.id === id)));
+                // Ensure uniqueness
+                trendsMatchingSearch = Array.from(new Set(trendsMatchingSearch.map(t => t.id))).map(id => filteredBaseTrends.find(t => t.id === id));
+                
+                // Now apply status/customTimeframe filtering to these search results
+                trendsToDraw = trendsMatchingSearch.filter(trend => isTrendRelevantForTimeframe(trend, customTimeframe));
 
+                // If predictive, take top relevant from filtered for status
+                if (status === 'predictive') {
+                    trendsToDraw = trendsToDraw.sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, user.tbSearchTerms.length); // Take top N for prediction
+                } else {
+                    trendsToDraw = trendsToDraw.sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, user.tbSearchTerms.length); // For historical, also show up to N
+                }
+
+                // For search terms, each term gets its own line
                 for (let i = 0; i < user.tbSearchTerms.length; i++) {
                     const term = user.tbSearchTerms[i];
-                    const mostRelevantTrend = allTrends.filter(t => 
-                        getLocalizedTrendText(t).title.toLowerCase().includes(term.toLowerCase())
-                    ).sort((a,b) => b.hotnessScore - a.hotnessScore)[0];
-
-                    if (mostRelevantTrend) {
+                    // Find the most relevant trend *for this specific term* within trendsToDraw
+                    const mostRelevantTrendForTerm = trendsToDraw.filter(t => getLocalizedTrendText(t).title.toLowerCase().includes(term.toLowerCase())).sort((a,b) => b.hotnessScore - a.hotnessScore)[0];
+                    if (mostRelevantTrendForTerm) {
                         datasets.push({
-                            label: truncateText(getLocalizedTrendText(mostRelevantTrend).title, 30),
-                            data: generateSeriesForTimeframe(mostRelevantTrend, labels, customTimeframe),
+                            label: truncateText(getLocalizedTrendText(mostRelevantTrendForTerm).title, 30),
+                            data: generateSeriesForTimeframe(mostRelevantTrendForTerm, labels, customTimeframe),
                             borderColor: palette[i].stroke,
                             tension: 0.4,
                             fill: false,
@@ -1674,11 +1628,50 @@
 
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t(status)} - ${t('Interest Over Time')}`; 
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
-            } else {
-                allTrends = preprocessTrends([...trendsToConsiderForStatus]); 
-                const topTrends = allTrends.slice(0, 5); 
 
-                topTrends.forEach((trendItem, i) => {
+            } else {
+                // Không có search terms, áp dụng Status Filtering trực tiếp lên filteredBaseTrends
+                switch(status) {
+                    case 'hottest':
+                        trendsToDraw = [...filteredBaseTrends]
+                            .filter(trend => isTrendRelevantForTimeframe(trend, customTimeframe))
+                            .sort((a, b) => b.hotnessScore - a.hotnessScore);
+                        break;
+                    case 'latest':
+                        trendsToDraw = [...filteredBaseTrends]
+                            .filter(trend => isTrendRelevantForTimeframe(trend, customTimeframe))
+                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                        break;
+                    case 'outdated':
+                        trendsToDraw = [...filteredBaseTrends]
+                            .filter(trend => {
+                                const trendDate = new Date(trend.date);
+                                trendDate.setHours(0,0,0,0);
+                                const cutoffForOutdated = new Date(now);
+                                if (customTimeframe === '1h') cutoffForOutdated.setHours(now.getHours() - 1);
+                                else if (customTimeframe === '6h') cutoffForOutdated.setHours(now.getHours() - 6);
+                                else if (customTimeframe === '24h') cutoffForOutdated.setHours(now.getHours() - 24);
+                                else if (customTimeframe === '3d') cutoffForOutdated.setDate(now.getDate() - 3);
+                                else if (customTimeframe === '1m') cutoffForOutdated.setDate(now.getDate() - 14); 
+                                else cutoffForOutdated.setDate(now.getDate() - 7); 
+                                return trendDate < cutoffForOutdated && isTrendRelevantForTimeframe(trend, customTimeframe);
+                            })
+                            .sort((a,b) => a.hotnessScore - b.hotnessScore);
+                        break;
+                    case 'predictive':
+                        trendsToDraw = [...filteredBaseTrends]
+                            .filter(trend => isTrendRelevantForTimeframe(trend, '7d'))
+                            .sort((a, b) => b.hotnessScore - a.hotnessScore);
+                        break;
+                    default:
+                        trendsToDraw = [...filteredBaseTrends].sort((a, b) => b.hotnessScore - a.hotnessScore);
+                }
+                
+                // Set allTrends to the result of status filtering (used by renderTBDashboard)
+                allTrends = preprocessTrends([...trendsToDraw]); 
+                const topTrendsForChart = allTrends.slice(0, 5); 
+
+                topTrendsForChart.forEach((trendItem, i) => {
                     datasets.push({
                         label: truncateText(getLocalizedTrendText(trendItem).title, 30),
                         data: generateSeriesForTimeframe(trendItem, labels, customTimeframe),
@@ -1692,7 +1685,7 @@
                 
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t(status)} - ${t('Interest Over Time')}`; 
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
-                renderTBDashboard(customTimeframe); // Sử dụng customTimeframe cho leaderboards
+                renderTBDashboard(customTimeframe); // Pass customTimeframe to leaderboards
             }
 
             if (datasets.length > 0) {
@@ -1760,7 +1753,6 @@
                     defaultSelection = 'next7d';
                     break;
                 default:
-                    // Should not happen, but fallback
                     options = [{ value: '7d', textKey: 'Last 7 days' }];
                     defaultSelection = '7d';
             }
@@ -1769,7 +1761,7 @@
             ).join('');
             
             customTimeframeSelect.value = currentTrendStatus.customTimeframe;
-            if (!customTimeframeSelect.value) { 
+            if (!customTimeframeSelect.value || !options.some(opt => opt.value === customTimeframeSelect.value)) { 
                 customTimeframeSelect.value = defaultSelection;
             }
             currentTrendStatus.customTimeframe = customTimeframeSelect.value;
@@ -1866,17 +1858,16 @@
                 updateClearFilterButtonVisibility();
 
                 if (currentView === 'trendingBoard') {
-                    const tbFilters = {
-                        region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
-                        category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
-                        timeframe: DOM.tbTimeframeFilter ? DOM.tbTimeframeFilter.value : '12m', // This is no longer used directly as primary timeframe
-                    };
                     // `allTrends` initially contains all trends from masterTrendsList filtered by region/category.
                     // The status/customTimeframe filtering happens directly in createHotTrendsChart.
+                    const initialTbFilters = {
+                        region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
+                        category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
+                        // timeframe (old) is no longer directly used as main filter for allTrends
+                    };
                     allTrends = masterTrendsList.filter(trend => 
-                        (tbFilters.region === 'global' || trend.region === tbFilters.region) &&
-                        (tbFilters.category === 'All' || trend.category === tbFilters.category)
-                        // No timeframe filter here, as it's part of status filtering
+                        (initialTbFilters.region === 'global' || trend.region === initialTbFilters.region) &&
+                        (initialTbFilters.category === 'All' || trend.category === initialTbFilters.category)
                     );
                     
                     currentTrendStatus.status = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
@@ -1992,8 +1983,6 @@
 
             if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
             if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart());
-            // Loại bỏ event listener cho tbTimeframeFilter vì nó đã được gộp vào tbCustomTimeframeSelect
-            // if (DOM.tbTimeframeFilter) DOM.tbTimeframeFilter.addEventListener('change', () => createHotTrendsChart()); 
             
             if (DOM.tbStatusSelect) DOM.tbStatusSelect.addEventListener('change', () => {
                 currentTrendStatus.status = DOM.tbStatusSelect.value;
