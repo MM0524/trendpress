@@ -756,9 +756,14 @@
             };
             
             trends.forEach((trendItem, i) => {
-                trendItem.id = trendItem.id || `temp-id-${i}`;
-                trendItem.type = trendItem.type || (i % 3 === 0 ? 'topic' : 'query');
+                // IMPORTANT: Ensure trendItem.id comes from the backend and is stable.
+                // Do NOT overwrite it here or generate temp IDs if the backend is providing them.
+                // If the backend truly fails to provide an ID, it's a critical data integrity issue.
+                // For now, let's assume trendItem.id is always present from the backend.
+                
                 trendItem.hotnessScore = calculateHotnessScore(trendItem, maxValues);
+                // Ensure type is present (backend might not always send it)
+                trendItem.type = trendItem.type || (i % 3 === 0 ? 'topic' : 'query');
             });
             return trends;
         }
@@ -1654,6 +1659,7 @@
                 if (topics.length === 0) {
                     tbTopicList.innerHTML = `<p class="modal-body" style="text-align: center;">${t('No trends found.')}</p>`;
                 } else {
+                    // Đảm bảo data-trend-id nằm trên LI để dễ dàng bắt sự kiện click
                     tbTopicList.innerHTML = `<ol>${topics.map((trendItem, i) => `<li data-trend-id="${trendItem.id}"><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(trendItem).title}</span><span class="growth">${t('Rising')}</span></li>`).join('')}</ol>`;
                 }
             } else {
@@ -1664,6 +1670,7 @@
                 if (queries.length === 0) {
                     tbQueryList.innerHTML = `<p class="modal-body" style="text-align: center;">${t('No trends found.')}</p>`;
                 } else {
+                    // Đảm bảo data-trend-id nằm trên LI để dễ dàng bắt sự kiện click
                     tbQueryList.innerHTML = `<ol>${queries.map((trendItem, i) => `<li data-trend-id="${trendItem.id}"><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(trendItem).title}</span><span class="growth">+${Math.floor(Math.random() * 4000)}%</span></li>`).join('')}</ol>`;
                 }
             } else {
@@ -1957,10 +1964,6 @@
                         { value: 'next7d', textKey: 'Next 7 days' }
                     ];
                     defaultSelection = 'next7d';
-                    break;
-                default:
-                    options = [{ value: '7d', textKey: 'Last 7 days' }];
-                    defaultSelection = '7d';
             }
             customTimeframeSelect.innerHTML = options.map(opt => 
                 `<option value="${opt.value}">${t(opt.textKey)}</option>`
@@ -1975,65 +1978,91 @@
 
 
         function handleInteraction(e) {
+            console.log("handleInteraction triggered by:", e.target);
+            e.preventDefault(); // Ngăn chặn hành vi mặc định của trình duyệt (ví dụ: điều hướng)
+            
             const targetElement = e.target;
             const trendCard = targetElement.closest('.trend-card');
-            const leaderboardItem = targetElement.closest('.leaderboard-widget li');
             
-            let trendId = trendCard?.dataset.trendId || leaderboardItem?.dataset.trendId; 
-            let trend = masterTrendsList.find(trendItem => trendItem.id === trendId);
+            // Xử lý việc tìm kiếm li của leaderboard một cách linh hoạt hơn
+            let leaderboardItem = null;
+            if (targetElement.closest('#tb-topic-list li')) { // Cụ thể cho Trending Board Topics
+                leaderboardItem = targetElement.closest('#tb-topic-list li');
+            } else if (targetElement.closest('#tb-query-list li')) { // Cụ thể cho Trending Board Queries
+                leaderboardItem = targetElement.closest('#tb-query-list li');
+            } else if (targetElement.closest('#for-u-leaderboards li')) { // Cho For U leaderboards (có thể có class .leaderboard-widget hoặc không)
+                 leaderboardItem = targetElement.closest('#for-u-leaderboards li');
+            }
             
-            if (trend) {
-                if (targetElement.closest('.btn-follow')) {
-                    if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
-                    
-                    const isFollowed = user.followedTrends.includes(trend.id);
-                    user.followedTrends = isFollowed ? user.followedTrends.filter(id => id !== trend.id) : [...user.followedTrends, trend.id];
-                    
-                    // Update main view card if it exists
-                    const renderedCard = document.querySelector(`.trend-card[data-trend-id="${trend.id}"]`);
-                    if(renderedCard) {
-                        const followBtn = renderedCard.querySelector('.btn-follow');
-                        followBtn.classList.toggle('followed', !isFollowed);
-                        followBtn.textContent = !isFollowed ? t('Following') : t('❤️ Follow');
-                    }
-                    
-                    // Update trend overview modal if it's open
-                    if (DOM.trendOverviewModal && DOM.trendOverviewModal.classList.contains('show')) {
-                        const modalFollowBtn = DOM.trendOverviewModal.querySelector(`.btn-follow[data-trend-id="${trend.id}"]`);
-                        if (modalFollowBtn) {
-                            modalFollowBtn.classList.toggle('followed', !isFollowed);
-                            modalFollowBtn.textContent = !isFollowed ? t('Following') : t('❤️ Follow');
-                        }
-                    }
-
-                    if (currentView === 'forU') { 
-                        generateCategoryLeaderboards('for-u-leaderboards', user.preferences); 
-                    }
-                    if (currentView === 'trendingBoard') {
-                        createHotTrendsChart(); // Re-render chart to reflect followed trends
-                    }
-                } else if (targetElement.closest('.analyze-trend-btn') || targetElement.closest('.trend-title')) {
-                    // This block now only handles clicks from the main view's trend cards
-                    // or from the NEW trend overview modal.
-                    const isSummary = !!targetElement.closest('.analyze-trend-btn');
-                    openAIInsightModal(trend, isSummary ? 'summary' : 'detailed');
-                } else if (leaderboardItem) { // NEW: Handle clicks on leaderboard items
-                    // When a leaderboard item itself is clicked, open the full trend overview modal
-                    openTrendOverviewModal(trend);
-                } else if (targetElement.matches('.tag.hashtag')) {
-                    currentFilter.type = 'hashtag';
-                    currentFilter.value = 'All';
-                    currentFilter.hashtag = targetElement.dataset.tag;
-                    currentFilter.searchTerm = '';
-                    switchView('main');
-                }
-            } else if (targetElement.matches('.tag.hashtag')) {
-                // This covers hashtags clicked outside a specific trend card context (e.g., popular tags panel)
+            let trendId = null;
+            if (trendCard) { // Nếu click vào một trend card (Main View)
+                trendId = trendCard.dataset.trendId;
+                console.log("Clicked trendCard. Trend ID:", trendId);
+            } else if (leaderboardItem) { // Nếu click vào một mục trong leaderboard (Trending Board hoặc For U)
+                trendId = leaderboardItem.dataset.trendId;
+                console.log("Clicked leaderboardItem. Trend ID:", trendId);
+            } else if (targetElement.matches('.tag.hashtag')) { // Nếu click vào một hashtag button (ngoài ngữ cảnh modal/card)
                 currentFilter.type = 'hashtag';
                 currentFilter.value = 'All';
                 currentFilter.hashtag = targetElement.dataset.tag;
                 currentFilter.searchTerm = '';
                 switchView('main');
+                return; 
+            }
+
+            if (!trendId) {
+                console.log("No relevant trendId found for this click.");
+                return;
+            }
+
+            const trend = masterTrendsList.find(trendItem => trendItem.id === trendId);
+            if (!trend) {
+                console.error("Trend data not found in masterTrendsList for ID:", trendId);
+                return;
+            }
+            console.log("Found trend:", trend);
+
+            // Xác định hành động cụ thể dựa trên phần tử con được nhấp
+            if (targetElement.closest('.btn-follow')) {
+                console.log("Follow button clicked");
+                if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
+                
+                const isFollowed = user.followedTrends.includes(trend.id);
+                user.followedTrends = isFollowed ? user.followedTrends.filter(id => id !== trend.id) : [...user.followedTrends, trend.id];
+                
+                // Cập nhật UI cho tất cả các phần tử liên quan
+                const renderedCard = document.querySelector(`.trend-card[data-trend-id="${trend.id}"]`);
+                if(renderedCard) {
+                    const followBtn = renderedCard.querySelector('.btn-follow');
+                    if (followBtn) {
+                        followBtn.classList.toggle('followed', !isFollowed);
+                        followBtn.textContent = !isFollowed ? t('Following') : t('❤️ Follow');
+                    }
+                }
+                if (DOM.trendOverviewModal && DOM.trendOverviewModal.classList.contains('show')) {
+                    const modalFollowBtn = DOM.trendOverviewModal.querySelector(`.btn-follow[data-trend-id="${trend.id}"]`);
+                    if (modalFollowBtn) {
+                        modalFollowBtn.classList.toggle('followed', !isFollowed);
+                        modalFollowBtn.textContent = !isFollowed ? t('Following') : t('❤️ Follow');
+                    }
+                }
+                // Render lại leaderboards/charts nếu cần để phản ánh trạng thái theo dõi
+                if (currentView === 'forU') { 
+                    generateCategoryLeaderboards('for-u-leaderboards', user.preferences); 
+                }
+                if (currentView === 'trendingBoard') {
+                    createHotTrendsChart(); 
+                }
+
+            } else if (targetElement.closest('.analyze-trend-btn')) {
+                console.log("Analyze button clicked");
+                openAIInsightModal(trend, 'summary');
+            } else if (targetElement.closest('.trend-title')) { 
+                console.log("Trend title clicked (from main card or overview modal)");
+                openAIInsightModal(trend, 'detailed');
+            } else { // Click chung vào một mục leaderboard hoặc nền trend card (mở modal tổng quan)
+                console.log("Generic click on leaderboard item or trend card background. Opening overview modal.");
+                openTrendOverviewModal(trend);
             }
         }
 
@@ -2123,6 +2152,7 @@
             });
 
             // Gắn event listener cho các danh sách trends (Main, For U, Leaderboards TB)
+            // Đã cập nhật để bao gồm các id cụ thể cho các bảng Trending Board
             [
                 DOM.trendsList, 
                 DOM.forUTrendsList, 
