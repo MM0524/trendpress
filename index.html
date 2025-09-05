@@ -133,6 +133,19 @@
         .leaderboard-widget ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
         .leaderboard-widget li { background-color: var(--bg-color); padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background-color 0.2s ease; cursor: pointer; }
         .leaderboard-widget li:hover { background-color: var(--border-color); }
+
+        /* NEW: Hover effects for the Trending Board lists */
+        .tb-leaderboard-list li {
+            transition: all 0.2s ease-in-out; /* Làm mượt hiệu ứng chuyển đổi */
+            cursor: pointer; /* Đảm bảo con trỏ chuột thay đổi để báo hiệu có thể click */
+        }
+
+        .tb-leaderboard-list li:hover {
+            background-color: var(--border-color); /* Thay đổi màu nền khi hover */
+            transform: translateY(-2px); /* Nâng nhẹ mục lên trên */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Thêm bóng đổ nhẹ */
+        }
+
         .view-source-btn, .btn-follow { display: none; }
         body.work-account-view .btn-follow, body.work-account-view .view-source-btn { display: inline-flex; }
         .dropdown { display: none; position: absolute; top: 110%; right: 0; background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; min-width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 10; }
@@ -1984,15 +1997,8 @@
             const targetElement = e.target;
             const trendCard = targetElement.closest('.trend-card');
             
-            // Xử lý việc tìm kiếm li của leaderboard một cách linh hoạt hơn
-            let leaderboardItem = null;
-            if (targetElement.closest('#tb-topic-list li')) { // Cụ thể cho Trending Board Topics
-                leaderboardItem = targetElement.closest('#tb-topic-list li');
-            } else if (targetElement.closest('#tb-query-list li')) { // Cụ thể cho Trending Board Queries
-                leaderboardItem = targetElement.closest('#tb-query-list li');
-            } else if (targetElement.closest('#for-u-leaderboards li')) { // Cho For U leaderboards (có thể có class .leaderboard-widget hoặc không)
-                 leaderboardItem = targetElement.closest('#for-u-leaderboards li');
-            }
+            // Cập nhật: Selector linh hoạt hơn để bắt các mục <li> trong bất kỳ leaderboard nào
+            let leaderboardItem = targetElement.closest('.tb-leaderboard-list li, .leaderboard-widget li');
             
             let trendId = null;
             if (trendCard) { // Nếu click vào một trend card (Main View)
