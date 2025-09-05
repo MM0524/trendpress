@@ -47,7 +47,7 @@
         .analyze-trend-btn { margin-right: 0.5rem; }
         .main-container { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; padding: 2rem; width: 100%; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
         .for-u-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; width: 100%; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
-        .trending-board-container { padding: 2rem; width: 100%; max-width: 1200px; margin: auto; animation: slideInUp 0.6s ease-out; }
+        .trending-board-container { padding: 2rem; width: 100%; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
         .demo-banner { grid-column: 1 / -1; background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         .trending-container, .for-u-content, .leaderboard-panel, #search-filter-panel { background-color: var(--surface-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
         .trending-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
@@ -267,6 +267,29 @@
             max-height: 350px;
         }
 
+        /* NEW: Style for the Trend Overview Modal */
+        #trend-overview-modal .modal-content {
+            max-width: 600px; /* Adjust max width as needed */
+            width: 90%;
+            text-align: left;
+            padding: 1.5rem; /* Match trend-card padding */
+        }
+
+        /* Make sure inner elements match trend-card styles */
+        #trend-overview-modal #trend-overview-body .trend-card-header {
+            margin-bottom: 0.5rem; /* Adjust if needed */
+        }
+        #trend-overview-modal #trend-overview-body .trend-description {
+            margin-bottom: 1rem;
+        }
+        #trend-overview-modal #trend-overview-body .trend-tags {
+            margin-bottom: 1rem;
+        }
+        #trend-overview-modal #trend-overview-body .trend-footer {
+            border-top: 1px solid var(--border-color); /* Add a separator if desired */
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
 
         .footer { background-color: var(--surface-color); border-top: 1px solid var(--border-color); padding: 3rem 0 1rem 0; }
         .footer-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
@@ -440,6 +463,18 @@
         <button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span id="login-work-text"></span></button>
     </div></div></div>
     <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
+    
+    <!-- NEW: Trend Overview Modal -->
+    <div class="modal-overlay" id="trend-overview-modal">
+        <div class="modal-content" id="trend-overview-content">
+            <button class="modal-close" data-close="trend-overview-modal">&times;</button>
+            <div id="trend-overview-body">
+                <!-- Trend Card content will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+    <!-- End NEW Trend Overview Modal -->
+
     <div class="modal-overlay" id="about-modal"><div class="modal-content"><button class="modal-close" data-close="about-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p></div></div>
     
     <footer class="footer">
@@ -623,6 +658,10 @@
             mainRegionFilter: document.getElementById('main-region-filter'),
             mainTimeframeFilter: document.getElementById('main-timeframe-filter'),
             mainSourceFilter: document.getElementById('main-source-filter'),
+
+            // NEW: Trend Overview Modal elements
+            trendOverviewModal: document.getElementById('trend-overview-modal'),
+            trendOverviewBody: document.getElementById('trend-overview-body'),
         };
 
         function t(key) { return (translations[currentLanguage] && translations[currentLanguage][key]) || key; }
@@ -775,35 +814,47 @@
             document.getElementById('language-toggle').textContent = currentLanguage === 'vi' ? 'VN' : 'EN';
         }
 
-        function createTrendCard(trend, delay = 0) {
-            if (!trend || (!trend.title_en && !trend.title_vi)) { console.error("Invalid trend data passed to createTrendCard: Missing title", trend); return document.createElement('div'); }
-            const trendCard = document.createElement('div');
-            trendCard.className = 'trend-card';
-            trendCard.dataset.trendId = trend.id;
-
+        // NEW: Function to generate the inner HTML of a trend card
+        function createTrendCardContent(trend) {
+            if (!trend || (!trend.title_en && !trend.title_vi)) { 
+                console.error("Invalid trend data for card content: Missing title", trend); 
+                return ''; 
+            }
             const { title: localizedTitle, description: localizedDesc } = getLocalizedTrendText(trend);
             const isFollowed = user.followedTrends.includes(trend.id);
 
-            trendCard.innerHTML = `
+            // Using DOMPurify directly for any user-generated content for extra safety
+            const cleanTitle = DOMPurify.sanitize(localizedTitle, { USE_PROFILES: { html: true } });
+            const cleanDescription = DOMPurify.sanitize(localizedDesc, { USE_PROFILES: { html: true } });
+
+            return `
                 <div class="trend-card-header">
-                    <h3 class="trend-title">${localizedTitle}</h3>
+                    <h3 class="trend-title" data-trend-id="${trend.id}">${cleanTitle}</h3>
                     <div class="trend-meta">
-                        <span class="trend-meta-submitter">by ${trend.submitter || 'Anon'}</span>
+                        <span class="trend-meta-submitter">by ${DOMPurify.sanitize(trend.submitter || 'Anon')}</span>
                         <span class="trend-meta-date">on ${new Date(trend.date).toLocaleDateString(currentLanguage)}</span>
                     </div>
                 </div>
-                <p class="trend-description">${localizedDesc}</p>
+                <p class="trend-description">${cleanDescription}</p>
                 <div class="trend-footer">
                     <div class="trend-tags">
                         <span class="tag category">${t(trend.category)}</span>
-                        ${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${tag}">#${tag}</span>`).join('')}
+                        ${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${DOMPurify.sanitize(tag)}">#${DOMPurify.sanitize(tag)}</span>`).join('')}
                     </div>
                     <div class="trend-actions">
-                        <a href="${trend.source}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a>
-                        <button class="btn btn-outline analyze-trend-btn">${t('🔍 Analyze')}</button>
-                        <button class="btn btn-follow ${isFollowed ? 'followed' : ''}">${isFollowed ? t('Following') : t('❤️ Follow')}</button>
+                        <a href="${DOMPurify.sanitize(trend.source || '#')}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a>
+                        <button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}">${t('🔍 Analyze')}</button>
+                        <button class="btn btn-follow ${isFollowed ? 'followed' : ''}" data-trend-id="${trend.id}">${isFollowed ? t('Following') : t('❤️ Follow')}</button>
                     </div>
                 </div>`;
+        }
+
+        // MODIFY: Update createTrendCard to use createTrendCardContent
+        function createTrendCard(trend, delay = 0) {
+            const trendCard = document.createElement('div');
+            trendCard.className = 'trend-card';
+            trendCard.dataset.trendId = trend.id;
+            trendCard.innerHTML = createTrendCardContent(trend);
             
             setTimeout(() => trendCard.classList.add('animated'), delay);
             return trendCard;
@@ -1309,6 +1360,52 @@
             else if (activeView === 'about') { if (DOM.navAbout) DOM.navAbout.classList.add('active-link'); }
         }
 
+        // NEW: Function to open the AI Insight modal
+        async function openAIInsightModal(trend, analysisType) {
+            if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
+            
+            const isSummary = (analysisType === 'summary');
+            const titleKey = isSummary ? 'AI Analysis Summary for' : 'AI Deep Dive for';
+            
+            const { title: localizedTrendTitle } = getLocalizedTrendText(trend);
+            document.getElementById('ai-insight-title').textContent = `${t(titleKey)} "${truncateText(localizedTrendTitle, 20)}"`;
+            const modalBody = document.getElementById('ai-insight-body');
+            if (!modalBody) return;
+            
+            modalBody.classList.remove('error-message');
+            modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align:center; margin-top:1rem;">${t('Analyzing trend...')}</p>`;
+            openModal('ai-insight-modal');
+            closeModal('trend-overview-modal'); // Close the overview modal if it's open
+
+            try {
+                const data = await analyzeTrendSecurely(trend, analysisType);
+                if (isSummary) { renderSummaryAnalysis(data); }
+                else { renderDetailedAnalysis(data); }
+            } catch (err) {
+                if (modalBody) {
+                    modalBody.classList.add('error-message');
+                    modalBody.innerHTML = `<p style="text-align: center;">${t('Unable to analyze trend.')}<br><small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small></p>`;
+                }
+            }
+        }
+
+        // NEW: Function to open the trend overview modal
+        function openTrendOverviewModal(trend) {
+            if (!trend) {
+                console.error("No trend data provided for overview modal.");
+                return;
+            }
+            if (!user.isLoggedIn || user.accountType !== 'work') {
+                return openModal('premium-modal');
+            }
+
+            DOM.trendOverviewBody.innerHTML = createTrendCardContent(trend);
+            openModal('trend-overview-modal');
+            
+            DOM.trendOverviewBody.dataset.currentTrendId = trend.id; // Store current trend ID for easy access
+        }
+
+
         // --- Trending Board specific functions ---
 
         function isTrendRelevantForTimeframe(trend, timeframe) {
@@ -1558,7 +1655,7 @@
                 if (topics.length === 0) {
                     tbTopicList.innerHTML = `<p class="modal-body" style="text-align: center;">${t('No trends found.')}</p>`;
                 } else {
-                    tbTopicList.innerHTML = `<ol>${topics.map((trendItem, i) => `<li><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(trendItem).title}</span><span class="growth">${t('Rising')}</span></li>`).join('')}</ol>`;
+                    tbTopicList.innerHTML = `<ol>${topics.map((trendItem, i) => `<li data-trend-id="${trendItem.id}"><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(trendItem).title}</span><span class="growth">${t('Rising')}</span></li>`).join('')}</ol>`;
                 }
             } else {
                 console.error("Missing DOM element: #tb-topic-list");
@@ -1568,7 +1665,7 @@
                 if (queries.length === 0) {
                     tbQueryList.innerHTML = `<p class="modal-body" style="text-align: center;">${t('No trends found.')}</p>`;
                 } else {
-                    tbQueryList.innerHTML = `<ol>${queries.map((trendItem, i) => `<li><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(trendItem).title}</span><span class="growth">+${Math.floor(Math.random() * 4000)}%</span></li>`).join('')}</ol>`;
+                    tbQueryList.innerHTML = `<ol>${queries.map((trendItem, i) => `<li data-trend-id="${trendItem.id}"><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(trendItem).title}</span><span class="growth">+${Math.floor(Math.random() * 4000)}%</span></li>`).join('')}</ol>`;
                 }
             } else {
                 console.error("Missing DOM element: #tb-query-list");
@@ -1893,6 +1990,7 @@
                     const isFollowed = user.followedTrends.includes(trend.id);
                     user.followedTrends = isFollowed ? user.followedTrends.filter(id => id !== trend.id) : [...user.followedTrends, trend.id];
                     
+                    // Update main view card if it exists
                     const renderedCard = document.querySelector(`.trend-card[data-trend-id="${trend.id}"]`);
                     if(renderedCard) {
                         const followBtn = renderedCard.querySelector('.btn-follow');
@@ -1900,34 +1998,28 @@
                         followBtn.textContent = !isFollowed ? t('Following') : t('❤️ Follow');
                     }
                     
+                    // Update trend overview modal if it's open
+                    if (DOM.trendOverviewModal && DOM.trendOverviewModal.classList.contains('show')) {
+                        const modalFollowBtn = DOM.trendOverviewModal.querySelector(`.btn-follow[data-trend-id="${trend.id}"]`);
+                        if (modalFollowBtn) {
+                            modalFollowBtn.classList.toggle('followed', !isFollowed);
+                            modalFollowBtn.textContent = !isFollowed ? t('Following') : t('❤️ Follow');
+                        }
+                    }
+
                     if (currentView === 'forU') { 
                         generateCategoryLeaderboards('for-u-leaderboards', user.preferences); 
                     }
                     if (currentView === 'trendingBoard') {
-                        createHotTrendsChart();
+                        createHotTrendsChart(); // Re-render chart to reflect followed trends
                     }
-                } else if (targetElement.closest('.analyze-trend-btn') || targetElement.closest('.trend-title') || leaderboardItem) {
-                    if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
+                } else if (targetElement.closest('.analyze-trend-btn') || targetElement.closest('.trend-title')) {
+                    // This block now only handles clicks from the main view's trend cards
+                    // or from the NEW trend overview modal.
                     const isSummary = !!targetElement.closest('.analyze-trend-btn');
-                    const analysisType = isSummary ? 'summary' : 'detailed';
-                    const titleKey = isSummary ? 'AI Analysis Summary for' : 'AI Deep Dive for';
-                    
-                    const { title: localizedTrendTitle } = getLocalizedTrendText(trend);
-                    document.getElementById('ai-insight-title').textContent = `${t(titleKey)} "${truncateText(localizedTrendTitle, 20)}"`;
-                    const modalBody = document.getElementById('ai-insight-body');
-                    if (!modalBody) return;
-                    modalBody.classList.remove('error-message');
-                    modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align:center; margin-top:1rem;">${t('Analyzing trend...')}</p>`;
-                    openModal('ai-insight-modal');
-                    analyzeTrendSecurely(trend, analysisType).then(data => {
-                        if (isSummary) { renderSummaryAnalysis(data); }
-                        else { renderDetailedAnalysis(data); }
-                    }).catch(err => {
-                        if (modalBody) {
-                            modalBody.classList.add('error-message');
-                            modalBody.innerHTML = `<p style="text-align: center;">${t('Unable to analyze trend.')}<br><small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small></p>`;
-                        }
-                    });
+                    openAIInsightModal(trend, isSummary ? 'summary' : 'detailed');
+                } else if (leaderboardItem) { // NEW: Handle clicks on leaderboard items
+                    openTrendOverviewModal(trend);
                 } else if (targetElement.matches('.tag.hashtag')) {
                     currentFilter.type = 'hashtag';
                     currentFilter.value = 'All';
@@ -1936,6 +2028,7 @@
                     switchView('main');
                 }
             } else if (targetElement.matches('.tag.hashtag')) {
+                // This covers hashtags clicked outside a specific trend card context (e.g., popular tags panel)
                 currentFilter.type = 'hashtag';
                 currentFilter.value = 'All';
                 currentFilter.hashtag = targetElement.dataset.tag;
@@ -2029,7 +2122,13 @@
                 switchView('forU');
             });
 
-            [DOM.trendsList, DOM.forUTrendsList, document.getElementById('for-u-leaderboards')].forEach(list => {
+            [
+                DOM.trendsList, 
+                DOM.forUTrendsList, 
+                document.getElementById('for-u-leaderboards'),
+                document.getElementById('tb-topic-list'), // NEW
+                document.getElementById('tb-query-list')  // NEW
+            ].forEach(list => {
                 if (list) list.addEventListener('click', handleInteraction);
             });
 
@@ -2124,6 +2223,33 @@
                 }
                 if (DOM.mainNav && DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active') && !DOM.mainNav.contains(e.target) && !DOM.hamburgerMenu.contains(e.target)) {
                      DOM.hamburgerMenu.click();
+                }
+            });
+
+            // NEW: Event listener for the new trend overview modal's content
+            if (DOM.trendOverviewBody) DOM.trendOverviewBody.addEventListener('click', (e) => {
+                const targetElement = e.target;
+                const trendId = DOM.trendOverviewBody.dataset.currentTrendId; // Get the trend ID stored when modal opened
+                const trend = masterTrendsList.find(t => t.id === trendId);
+
+                if (!trend) {
+                    console.error("Could not find trend data for interaction within overview modal.");
+                    return;
+                }
+
+                if (targetElement.closest('.analyze-trend-btn')) {
+                    openAIInsightModal(trend, 'summary');
+                } else if (targetElement.closest('.trend-title')) {
+                    openAIInsightModal(trend, 'detailed');
+                } else if (targetElement.closest('.btn-follow')) {
+                    handleInteraction(e); // Let the main handler manage follow state and UI updates
+                } else if (targetElement.matches('.tag.hashtag')) {
+                    currentFilter.type = 'hashtag';
+                    currentFilter.value = 'All';
+                    currentFilter.hashtag = targetElement.dataset.tag;
+                    currentFilter.searchTerm = '';
+                    switchView('main');
+                    closeModal('trend-overview-modal'); // Close the overview modal when applying hashtag filter
                 }
             });
 
