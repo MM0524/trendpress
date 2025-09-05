@@ -202,13 +202,13 @@
         /* Cập nhật các bộ lọc để có giao diện gọn gàng hơn */
         .tb-filters { 
             display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
             gap: 1rem; 
             margin-bottom: 1rem; 
         }
 
         /* Đảm bảo các select boxes vẫn trông đẹp */
-        .tb-filter-select, #tb-status-select, #tb-custom-timeframe-select {
+        .tb-filter-select, #tb-status-select, #tb-custom-timeframe-select, #main-region-filter, #main-timeframe-filter, #main-source-filter {
             background-color: var(--bg-color); 
             border: 1px solid var(--border-color); 
             color: var(--text-color); 
@@ -222,6 +222,18 @@
             background-position-y: center;
             cursor: pointer;
         }
+
+        /* NEW: Styles for main view additional filters */
+        #main-view-additional-filters {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem; /* Giảm khoảng cách giữa các bộ lọc */
+        }
+        #main-view-additional-filters h4 {
+            margin-bottom: 0.25rem; /* Giảm khoảng cách với select bên dưới */
+        }
+
 
         @media (max-width: 768px) {
             .tb-filters {
@@ -325,18 +337,18 @@
                 <div id="hashtag-list"></div>
             </div>
             <!-- NEW: Filters for main view (Region, Timeframe, Source) -->
-            <div id="main-view-additional-filters" style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
-                <h4 style="color: var(--text-muted-color); font-size: 0.9rem; margin-bottom: 0.5rem;" id="main-filter-title-region"></h4>
+            <div id="main-view-additional-filters" style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                <h4 style="color: var(--text-muted-color); font-size: 0.9rem; margin-bottom: 0.25rem;" id="main-filter-title-region"></h4>
                 <select id="main-region-filter" class="tb-filter-select">
                     <!-- Populated by JS -->
                 </select>
 
-                <h4 style="color: var(--text-muted-color); font-size: 0.9rem; margin-bottom: 0.5rem;" id="main-filter-title-timeframe"></h4>
+                <h4 style="color: var(--text-muted-color); font-size: 0.9rem; margin-bottom: 0.25rem;" id="main-filter-title-timeframe"></h4>
                 <select id="main-timeframe-filter" class="tb-filter-select">
                     <!-- Populated by JS -->
                 </select>
 
-                <h4 style="color: var(--text-muted-color); font-size: 0.9rem; margin-bottom: 0.5rem;" id="main-filter-title-source"></h4>
+                <h4 style="color: var(--text-muted-color); font-size: 0.9rem; margin-bottom: 0.25rem;" id="main-filter-title-source"></h4>
                 <select id="main-source-filter" class="tb-filter-select">
                     <!-- Populated by JS -->
                 </select>
@@ -450,9 +462,9 @@
             value: 'All', 
             searchTerm: '', 
             hashtag: '',
-            region: 'global', // NEW: Default region filter for main view
-            timeframe: '12m', // NEW: Default timeframe filter for main view
-            source: 'All'    // NEW: Default source filter for main view
+            region: 'global', // Default region filter for main view
+            timeframe: '12m', // Default timeframe filter for main view
+            source: 'All'    // Default source filter for main view
         };
         let currentView = localStorage.getItem('currentView') || 'main';
         let hotTrendsChart = null;
@@ -462,7 +474,7 @@
         let masterTrendsList = [];
         let categories = []; 
         let regions = [];
-        let sources = []; // NEW: Sources derived from masterTrendsList
+        let sources = [];
         let currentLanguage = localStorage.getItem('lang') || 'vi';
 
         let currentTrendStatus = {
@@ -505,7 +517,7 @@
                 'Hottest': 'Hot nhất', 'Latest': 'Mới nhất', 'Outdated': 'Lỗi thời', 'Predictive': 'Dự đoán',
                 'Last 1 hour': '1 giờ qua', 'Last 6 hours': '6 giờ qua', 'Last 24 hours': '24 giờ qua', 'Last 3 days': '3 ngày qua', 'Last 7 days': '7 ngày qua', 'Last 30 days': '30 ngày qua', 'Last 90 days': '90 ngày qua', 'Last 1 year': '1 năm qua',
                 'Next 3 days': '3 ngày tới', 'Next 5 days': '5 ngày tới', 'Next 7 days': '7 ngày tới',
-                'Region': 'Khu vực', 'Timeframe': 'Khung thời gian', 'Source': 'Nguồn' // NEW: Main Filter titles
+                'Region': 'Khu vực', 'Timeframe': 'Khung thời gian', 'Source': 'Nguồn', 'All Sources': 'Tất cả nguồn' // NEW: Main Filter titles
             },
             en: {
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
@@ -531,7 +543,7 @@
                 'Hottest': 'Hottest', 'Latest': 'Latest', 'Outdated': 'Outdated', 'Predictive': 'Predictive',
                 'Last 1 hour': 'Last 1 hour', 'Last 6 hours': 'Last 6 hours', 'Last 24 hours': 'Last 24 hours', 'Last 3 days': 'Last 3 days', 'Last 7 days': 'Last 7 days', 'Last 30 days': 'Last 30 days', 'Last 90 days': 'Last 90 days', 'Last 1 year': 'Last 1 year',
                 'Next 3 days': 'Next 3 days', 'Next 5 days': 'Next 5 days', 'Next 7 days': 'Next 7 days',
-                'Region': 'Region', 'Timeframe': 'Timeframe', 'Source': 'Source'
+                'Region': 'Region', 'Timeframe': 'Timeframe', 'Source': 'Source', 'All Sources': 'All Sources'
             }
         };
 
@@ -568,9 +580,18 @@
             { selector: '#tb-status-select option[value="latest"]', key: 'Latest' },
             { selector: '#tb-status-select option[value="outdated"]', key: 'Outdated' },
             { selector: '#tb-status-select option[value="predictive"]', key: 'Predictive' },
-            { selector: '#main-filter-title-region', key: 'Region' }, // NEW
-            { selector: '#main-filter-title-timeframe', key: 'Timeframe' }, // NEW
-            { selector: '#main-filter-title-source', key: 'Source' } // NEW
+            { selector: '#main-filter-title-region', key: 'Region' },
+            { selector: '#main-filter-title-timeframe', key: 'Timeframe' },
+            { selector: '#main-filter-title-source', key: 'Source' },
+            { selector: '#main-source-filter option[value="All"]', key: 'All Sources' }, // NEW
+            { selector: '#main-timeframe-filter option[value="1h"]', key: 'Last 1 hour' }, // NEW
+            { selector: '#main-timeframe-filter option[value="6h"]', key: 'Last 6 hours' }, // NEW
+            { selector: '#main-timeframe-filter option[value="24h"]', key: 'Last 24 hours' }, // NEW
+            { selector: '#main-timeframe-filter option[value="3d"]', key: 'Last 3 days' }, // NEW
+            { selector: '#main-timeframe-filter option[value="7d"]', key: 'Last 7 days' }, // NEW
+            { selector: '#main-timeframe-filter option[value="1m"]', key: 'Last 30 days' }, // NEW
+            { selector: '#main-timeframe-filter option[value="3m"]', key: 'Last 90 days' }, // NEW
+            { selector: '#main-timeframe-filter option[value="12m"]', key: 'Last 1 year' } // NEW
         ];
 
         const DOM = {
@@ -599,7 +620,6 @@
             userTrendsChartTitle: document.getElementById('user-trends-chart-title'),
             tbStatusSelect: document.getElementById('tb-status-select'),
             tbCustomTimeframeSelect: document.getElementById('tb-custom-timeframe-select'),
-            // NEW: Main Filters elements
             mainRegionFilter: document.getElementById('main-region-filter'),
             mainTimeframeFilter: document.getElementById('main-timeframe-filter'),
             mainSourceFilter: document.getElementById('main-source-filter'),
@@ -627,7 +647,7 @@
                 if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
                 if (filters.hashtag) params.append('hashtag', filters.hashtag);
                 if (filters.trendStatus) params.append('trendStatus', filters.trendStatus);
-                if (filters.source && filters.source !== 'All') params.append('source', filters.source); // NEW: Pass source filter
+                if (filters.source && filters.source !== 'All') params.append('source', filters.source); 
                 
                 const url = `/.netlify/functions/fetch-trends?${params.toString()}`;
                 console.log("Fetching trends from:", url);
@@ -730,22 +750,12 @@
             if (DOM.tbTopicListHeader && DOM.tbTopicListHeader.children[0]) DOM.tbTopicListHeader.children[0].textContent = t('Trending Topics');
             if (DOM.tbQueryListHeader && DOM.tbQueryListHeader.children[0]) DOM.tbQueryListHeader.children[0].textContent = t('Trending Queries');
 
-            // Cập nhật: Populate Regions filter for both main and TB
-            const currentMainRegion = DOM.mainRegionFilter ? DOM.mainRegionFilter.value : 'global';
             populateRegionsFilter(DOM.mainRegionFilter);
-            if (DOM.mainRegionFilter) DOM.mainRegionFilter.value = currentMainRegion;
-
-            const currentTBRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global'; 
             populateRegionsFilter(DOM.tbRegionFilter); 
-            if (DOM.tbRegionFilter) DOM.tbRegionFilter.value = currentTBRegion; 
 
-            // Cập nhật: Populate Timeframe filter for main view
-            const currentMainTimeframe = DOM.mainTimeframeFilter ? DOM.mainTimeframeFilter.value : '12m';
-            populateMainTimeframeFilter();
-            if (DOM.mainTimeframeFilter) DOM.mainTimeframeFilter.value = currentMainTimeframe;
+            populateMainTimeframeFilter(); // Populate main-timeframe-filter
+            populateSourceFilter(); // Populate main-source-filter
 
-
-            // Cập nhật: Populate Trend Status Select and Custom Timeframe Options for TB
             const currentStatus = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
             if (DOM.tbStatusSelect) {
                 DOM.tbStatusSelect.innerHTML = `
@@ -756,10 +766,9 @@
                 `;
                 DOM.tbStatusSelect.value = currentStatus;
             }
-            populateCustomTimeframeOptions(currentTrendStatus.status); // Populates tb-custom-timeframe-select
+            populateCustomTimeframeOptions(currentTrendStatus.status);
 
             populateCategoryFilters(); // For both main and TB category filters
-            populateSourceFilter(); // NEW: Populate source filter
         }
 
         function updateLanguageToggleUI() {
@@ -819,11 +828,10 @@
                     (trendItem.description_en && trendItem.description_en.toLowerCase().includes(term))
                 ));
             }
-            // NEW: Apply additional main view filters
             if (currentFilter.region && currentFilter.region !== 'global') {
                 sourceList = sourceList.filter(trend => trend.region === currentFilter.region);
             }
-            if (currentFilter.timeframe && currentFilter.timeframe !== 'all') {
+            if (currentFilter.timeframe && currentFilter.timeframe !== 'all') { // Use currentFilter.timeframe
                 sourceList = sourceList.filter(trend => isTrendRelevantForTimeframe(trend, currentFilter.timeframe));
             }
             if (currentFilter.source && currentFilter.source !== 'All') {
@@ -886,20 +894,16 @@
 
         function updateClearFilterButtonVisibility() {
             const hasActiveFilter = (currentFilter.value !== 'All' || currentFilter.searchTerm !== '' || currentFilter.hashtag !== '' || 
-                                     currentFilter.region !== 'global' || currentFilter.timeframe !== '12m' || currentFilter.source !== 'All'); // NEW
+                                     currentFilter.region !== 'global' || currentFilter.timeframe !== '12m' || currentFilter.source !== 'All');
             if (DOM.clearFilterBtn) {
                 DOM.clearFilterBtn.classList.toggle('hidden', !hasActiveFilter);
             }
         }
 
         async function clearMainViewFilters() {
-            currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '', region: 'global', timeframe: '12m', source: 'All' }; // Reset all filters
+            currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '', region: 'global', timeframe: '12m', source: 'All' };
             if (DOM.searchInput) DOM.searchInput.value = '';
             if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
-            // Reset main view specific filters
-            if (DOM.mainRegionFilter) DOM.mainRegionFilter.value = 'global';
-            if (DOM.mainTimeframeFilter) DOM.mainTimeframeFilter.value = '12m';
-            if (DOM.mainSourceFilter) DOM.mainSourceFilter.value = 'All';
             
             updateUIForFilter();
         }
@@ -935,20 +939,19 @@
                     return;
                 }
                 if (DOM.trendingBoardContainer) DOM.trendingBoardContainer.classList.remove('hidden');
-                // Reset TB filters and search terms when entering TB view
+                
                 if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.value = 'All';
                 if (DOM.tbRegionFilter) DOM.tbRegionFilter.value = 'global';
                 user.tbSearchTerms = [];
                 if (DOM.tbSearchInput) DOM.tbSearchInput.value = '';
                 if (DOM.tbCompareInput) DOM.tbCompareInput.value = '';
                 
-                // Reset trend status filter to default
                 if(DOM.tbStatusSelect) DOM.tbStatusSelect.value = 'hottest';
                 currentTrendStatus.status = 'hottest';
                 currentTrendStatus.customTimeframe = '7d';
-                populateCustomTimeframeOptions(currentTrendStatus.status); // Call to set options based on hottest
+                populateCustomTimeframeOptions(currentTrendStatus.status); // Update options for hottest
 
-                await createHotTrendsChart();
+                await createHotTrendsChart(); // This will fetch filtered data and update allTrends
             }
 
             if (view !== 'trendingBoard') {
@@ -1001,7 +1004,6 @@
             }
         }
         
-        // NEW: Populate Regions filter for a given select element
         function populateRegionsFilter(selectElement) {
             if (!selectElement) return;
 
@@ -1021,7 +1023,6 @@
             selectElement.value = Array.from(selectElement.options).some(opt => opt.value === currentSelection) ? currentSelection : 'global';
         }
 
-        // NEW: Populate Timeframe filter for main view
         function populateMainTimeframeFilter() {
             if (!DOM.mainTimeframeFilter) return;
             const currentMainTimeframe = DOM.mainTimeframeFilter.value;
@@ -1040,13 +1041,12 @@
             currentFilter.timeframe = DOM.mainTimeframeFilter.value; // Sync with currentFilter
         }
 
-        // NEW: Populate Source filter for main view
         function populateSourceFilter() {
             if (!DOM.mainSourceFilter) return;
             const uniqueSources = [...new Set(masterTrendsList.map(trendItem => trendItem.submitter))].filter(Boolean).sort();
             const currentSource = DOM.mainSourceFilter.value;
 
-            let optionsHtml = `<option value="All">${t('All Sources') || 'All Sources'}</option>`; // Assuming 'All Sources' translation
+            let optionsHtml = `<option value="All">${t('All Sources') || 'All Sources'}</option>`;
             uniqueSources.forEach(sourceName => {
                 optionsHtml += `<option value="${sourceName}">${sourceName}</option>`;
             });
@@ -1090,7 +1090,6 @@
             }
             if (DOM.searchInput) DOM.searchInput.value = currentFilter.searchTerm;
 
-            // NEW: Update selected values for additional main view filters
             if (DOM.mainRegionFilter) DOM.mainRegionFilter.value = currentFilter.region;
             if (DOM.mainTimeframeFilter) DOM.mainTimeframeFilter.value = currentFilter.timeframe;
             if (DOM.mainSourceFilter) DOM.mainSourceFilter.value = currentFilter.source;
@@ -1751,7 +1750,7 @@
                 }
                 trendsMatchingSearch = Array.from(new Set(trendsMatchingSearch.map(t => t.id))).map(id => trendsToConsiderForStatus.find(t => t.id === id));
                 
-                trendsToDraw = trendsMatchingSearch; // Use these trends for drawing
+                trendsToDraw = trendsMatchingSearch; 
 
                 if (status === 'predictive') {
                     trendsToDraw = trendsToDraw.sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, user.tbSearchTerms.length);
@@ -1829,7 +1828,7 @@
                 if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('No trends found.');
             }
 
-            renderUserTrendsChart(customTimeframe); // Dùng customTimeframe cho biểu đồ người dùng
+            renderUserTrendsChart(customTimeframe); 
         }
 
         function populateCustomTimeframeOptions(status) {
@@ -1953,6 +1952,7 @@
                 if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
                 if (DOM.trendingBoardContainer) DOM.trendingBoardContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
 
+                // Initial fetch of master trends list (12 months, global, all categories)
                 masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }); 
                 
                 applyTrendOrdering();
@@ -2033,13 +2033,13 @@
                 if (list) list.addEventListener('click', handleInteraction);
             });
 
-            // NEW: Event listeners for main view filters
             if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.addEventListener('click', async (e) => {
                 if (e.target.matches('.filter-btn')) {
                     currentFilter.type = 'category';
                     currentFilter.value = e.target.dataset.filter;
-                    currentFilter.hashtag = ''; // Reset hashtag
+                    currentFilter.hashtag = '';
                     if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
+
                     updateUIForFilter();
                 }
             });
@@ -2055,7 +2055,6 @@
                 currentFilter.source = DOM.mainSourceFilter.value;
                 updateUIForFilter();
             });
-            // End NEW: Event listeners for main view filters
 
             if (DOM.clearFilterBtn) DOM.clearFilterBtn.addEventListener('click', clearMainViewFilters);
 
@@ -2075,7 +2074,7 @@
                         currentFilter.hashtag = hashtag;
                     }
                     currentFilter.type = 'hashtag';
-                    currentFilter.value = 'All'; // Reset category
+                    currentFilter.value = 'All';
                     if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
 
                     displayedTrends.main = 0;
@@ -2137,12 +2136,12 @@
                 masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }, true);
                 applyTrendOrdering();
 
-                populateRegionsFilter(DOM.mainRegionFilter); // For main view
-                populateRegionsFilter(DOM.tbRegionFilter); // For TB
+                populateRegionsFilter(DOM.mainRegionFilter);
+                populateRegionsFilter(DOM.tbRegionFilter);
                 categories = [...new Set(masterTrendsList.map(trendItem => trendItem.category))].sort();
                 populateCategoryFilters();
-                populateMainTimeframeFilter(); // For main view
-                populateSourceFilter(); // For main view
+                populateMainTimeframeFilter();
+                populateSourceFilter();
                 populateHashtagFilters();
 
                 if (currentView === 'trendingBoard') {
