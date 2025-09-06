@@ -201,6 +201,20 @@
         #ai-insight-modal h4 { color: var(--primary-light); margin-top: 1rem; margin-bottom: 0.5rem; }
         #ai-insight-modal ul { list-style-position: inside; padding-left: 5px; }
         #ai-insight-modal li { margin-bottom: 0.5rem; }
+
+        /* NEW: Custom styles for AI Insight modal's list to ensure readability */
+        #ai-insight-modal .modal-body ul {
+            list-style-type: disc; /* Hoặc square, circle */
+            padding-left: 20px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            text-align: left; /* Đảm bảo danh sách căn trái */
+        }
+        #ai-insight-modal .modal-body li {
+            margin-bottom: 5px;
+            color: var(--text-color); /* Đảm bảo màu chữ dễ đọc */
+        }
+
         .tb-header { border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem; }
         .tb-search-container { display: flex; gap: 1rem; margin-bottom: 1rem; }
         .tb-search-box { flex: 1; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; display: flex; align-items: center; }
@@ -1217,7 +1231,7 @@
             const chartData = generateChartDataFromScore(analysisData.successScore);
             modalBody.innerHTML = `
                 <div style="margin-bottom: 1rem;"><h4>${t('Success Score')}</h4><p style="font-size: 2rem; font-weight: bold; color: var(--primary-light);">${analysisData.successScore.toFixed(0)}%</p></div>
-                <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4><p>${DOMPurify.sanitize(analysisData.summary)}</p></div>
+                <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4>${analysisData.summary}</div>
                 <div><h4>${t('Interest Over Time')}</h4></div>`;
             renderAnalysisChart(chartData.historicalData, chartData.futureProjection);
         }
@@ -1998,7 +2012,8 @@
             const trendCard = targetElement.closest('.trend-card');
             
             // Cập nhật: Selector linh hoạt hơn để bắt các mục <li> trong bất kỳ leaderboard nào
-            let leaderboardItem = targetElement.closest('.tb-leaderboard-list li, .leaderboard-widget li');
+            // Sử dụng các class cụ thể của các bảng Trending Board và For U Leaderboards
+            let leaderboardItem = targetElement.closest('#tb-topic-list li, #tb-query-list li, #for-u-leaderboards li');
             
             let trendId = null;
             if (trendCard) { // Nếu click vào một trend card (Main View)
