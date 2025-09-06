@@ -238,31 +238,31 @@ const fetchVNExpressTech = () =>
 
 // === AI ===
 const fetchVentureBeatAI = () =>
-  fetchAndParseXmlFeed("https://venturebeat.com/category/ai/feed", "VentureBeat AI", "AI", "us", ["AI"]);
-const fetchNatureAI = () =>
-  fetchAndParseXmlFeed("https://www.nature.com/subjects/artificial-intelligence/rss", "Nature AI", "AI", "uk", ["AI"]);
-const fetchZingNewsAI = () =>
-  fetchAndParseXmlFeed("https://zingnews.vn/cong-nghe-tri-tue-nhan-tao.rss", "ZingNews AI", "AI", "vn", ["Vietnam", "AI"]);
+  fetchAndParseXmlFeed("https://venturebeat.com/feed/", "VentureBeat (AI/Tech)", "AI", "us", ["AI", "Tech"]);
+const fetchNatureML = () =>
+  fetchAndParseXmlFeed("https://www.nature.com/subjects/machine-learning/rss", "Nature Machine Learning", "AI", "uk", ["AI"]);
+const fetchZingNewsTech = () =>
+  fetchAndParseXmlFeed("https://zingnews.vn/cong-nghe.rss", "ZingNews Công Nghệ", "AI", "vn", ["Vietnam", "AI"]);
 
 // === Gaming ===
 const fetchIGNGaming = () =>
   fetchAndParseXmlFeed("https://feeds.ign.com/ign/games-all", "IGN Gaming", "Gaming", "us", ["Games"]);
 const fetchEurogamer = () =>
-  fetchAndParseXmlFeed("https://www.eurogamer.net/?format=rss", "Eurogamer", "Gaming", "uk", ["Games"]);
-const fetchGameKVN = () =>
-  fetchAndParseXmlFeed("https://gamek.vn/home.rss", "GameK VN", "Gaming", "vn", ["Vietnam", "Games"]);
+  fetchAndParseXmlFeed("https://www.eurogamer.net/feed", "Eurogamer", "Gaming", "uk", ["Games"]);
+const fetchGenKGame = () =>
+  fetchAndParseXmlFeed("https://genk.vn/game.rss", "GenK Game", "Gaming", "vn", ["Vietnam", "Games"]);
 
 // === Finance ===
 const fetchCNBCFinance = () =>
   fetchAndParseXmlFeed("https://www.cnbc.com/id/10000664/device/rss/rss.html", "CNBC Finance", "Finance", "us", ["Markets"]);
 const fetchGuardianBusiness = () =>
   fetchAndParseXmlFeed("https://www.theguardian.com/uk/business/rss", "Guardian Business", "Finance", "uk", ["Markets"]);
-const fetchCafeF = () =>
-  fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF", "Finance", "vn", ["Vietnam", "Markets"]);
+const fetchVNExpressBusiness = () =>
+  fetchAndParseXmlFeed("https://vnexpress.net/rss/kinh-doanh.rss", "VNExpress Kinh Doanh", "Finance", "vn", ["Vietnam", "Markets"]);
 
 // === Science ===
 const fetchScienceMagazine = () =>
-  fetchAndParseXmlFeed("https://www.sciencemag.org/rss/news_current.xml", "Science Magazine", "Science", "us", ["Science"]);
+  fetchAndParseXmlFeed("https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science", "Science Magazine", "Science", "us", ["Science"]);
 const fetchNewScientist = () =>
   fetchAndParseXmlFeed("https://www.newscientist.com/feed/home/", "New Scientist", "Science", "uk", ["Science"]);
 const fetchVNExpressScience = () =>
@@ -280,7 +280,7 @@ const fetchAppleMusicMostPlayedVN = () =>
 const fetchVariety = () =>
   fetchAndParseXmlFeed("https://variety.com/feed/", "Variety", "Entertainment", "us", ["Hollywood"]);
 const fetchGuardianCulture = () =>
-  fetchAndParseXmlFeed("https://www.theguardian.com/uk/culture/rss", "Guardian Culture", "Entertainment", "uk", ["Culture"]);
+  fetchAndParseXmlFeed("https://www.theguardian.com/culture/rss", "Guardian Culture", "Entertainment", "uk", ["Culture"]);
 const fetchZingNewsEntertainment = () =>
   fetchAndParseXmlFeed("https://zingnews.vn/rss/giai-tri.rss", "ZingNews Entertainment", "Entertainment", "vn", ["Vietnam"]);
 
@@ -303,32 +303,32 @@ const fetchVNLogistics = () =>
 // === Cybersecurity ===
 const fetchKrebsOnSecurity = () =>
   fetchAndParseXmlFeed("https://krebsonsecurity.com/feed/", "Krebs on Security", "Cybersecurity", "us", ["Security"]);
-const fetchSCMagUK = () =>
-  fetchAndParseXmlFeed("https://www.scmagazineuk.com/rss", "SC Magazine UK", "Cybersecurity", "uk", ["Security"]);
+const fetchSCMag = () =>
+  fetchAndParseXmlFeed("https://www.scmagazine.com/section/news/feed", "SC Magazine", "Cybersecurity", "uk", ["Security"]);
 const fetchVNExpressCyber = () =>
   fetchAndParseXmlFeed("https://vnexpress.net/rss/so-hoa.rss", "VNExpress Công Nghệ (Cyber)", "Cybersecurity", "vn", ["Vietnam"]);
 
 // === Healthcare ===
-const fetchMedicalNewsToday = () =>
-  fetchAndParseXmlFeed("https://www.medicalnewstoday.com/rss", "Medical News Today", "Healthcare", "us", ["Health"]);
+const fetchHealthline = () =>
+  fetchAndParseXmlFeed("https://www.healthline.com/rss", "Healthline", "Healthcare", "us", ["Health"]);
 const fetchNHSNews = () =>
   fetchAndParseXmlFeed("https://www.england.nhs.uk/news/feed/", "NHS England News", "Healthcare", "uk", ["Health"]);
 const fetchSucKhoeDoiSong = () =>
   fetchAndParseXmlFeed("https://suckhoedoisong.vn/rss/home.rss", "Sức Khỏe & Đời Sống", "Healthcare", "vn", ["Vietnam", "Health"]);
 
 // === Education ===
-const fetchEdSurge = () =>
-  fetchAndParseXmlFeed("https://www.edsurge.com/research.rss", "EdSurge", "Education", "us", ["Education"]);
-const fetchTimesHigherEd = () =>
-  fetchAndParseXmlFeed("https://www.timeshighereducation.com/rss", "Times Higher Education", "Education", "uk", ["Education"]);
+const fetchEdutopia = () =>
+  fetchAndParseXmlFeed("https://www.edutopia.org/rss.xml", "Edutopia", "Education", "us", ["Education"]);
+const fetchGuardianEducation = () =>
+  fetchAndParseXmlFeed("https://www.theguardian.com/education/rss", "Guardian Education", "Education", "uk", ["Education"]);
 const fetchTuoiTreEducation = () =>
   fetchAndParseXmlFeed("https://tuoitre.vn/rss/giao-duc.rss", "Tuổi Trẻ Giáo Dục", "Education", "vn", ["Vietnam", "Education"]);
 
 // === Environment ===
-const fetchNatGeoEnvironment = () =>
-  fetchAndParseXmlFeed("https://www.nationalgeographic.com/environment/rss/", "National Geographic Environment", "Environment", "us", ["Climate"]);
+const fetchNatGeoAnimals = () =>
+  fetchAndParseXmlFeed("https://www.nationalgeographic.com/animals/rss/", "National Geographic Animals & Environment", "Environment", "us", ["Environment"]);
 const fetchGuardianEnvironment = () =>
-  fetchAndParseXmlFeed("https://www.theguardian.com/uk/environment/rss", "Guardian Environment", "Environment", "uk", ["Environment"]);
+  fetchAndParseXmlFeed("https://www.theguardian.com/environment/rss", "Guardian Environment", "Environment", "uk", ["Environment"]);
 const fetchVNExpressEnvironment = () =>
   fetchAndParseXmlFeed("https://vnexpress.net/rss/khoa-hoc-moi-truong.rss", "VNExpress Môi Trường", "Environment", "vn", ["Vietnam", "Environment"]);
 
@@ -336,23 +336,23 @@ const fetchVNExpressEnvironment = () =>
 const fetchCNTraveler = () =>
   fetchAndParseXmlFeed("https://www.cntraveler.com/feed/rss", "Condé Nast Traveler", "Travel", "us", ["Travel"]);
 const fetchGuardianTravel = () =>
-  fetchAndParseXmlFeed("https://www.theguardian.com/uk/travel/rss", "Guardian Travel", "Travel", "uk", ["Travel"]);
+  fetchAndParseXmlFeed("https://www.theguardian.com/travel/rss", "Guardian Travel", "Travel", "uk", ["Travel"]);
 const fetchVNExpressTravel = () =>
   fetchAndParseXmlFeed("https://vnexpress.net/rss/du-lich.rss", "VNExpress Du Lịch", "Travel", "vn", ["Vietnam", "Travel"]);
 
 // === Toys ===
-const fetchToyNewsIntl = () =>
-  fetchAndParseXmlFeed("https://toyworldmag.co.uk/feed/", "Toy World Magazine", "Toys", "uk", ["Toys"]);
 const fetchToyBook = () =>
   fetchAndParseXmlFeed("https://toybook.com/feed/", "Toy Book US", "Toys", "us", ["Toys"]);
-const fetchGame4V = () =>
-  fetchAndParseXmlFeed("https://game4v.com/feed", "Game4V VN", "Toys", "vn", ["Vietnam", "Games", "Toys"]);
+const fetchToyWorld = () =>
+  fetchAndParseXmlFeed("https://toyworldmag.co.uk/feed/", "Toy World Magazine", "Toys", "uk", ["Toys"]);
+const fetchGame4VToys = () =>
+  fetchAndParseXmlFeed("https://genk.vn/game.rss", "GenK Game (VN Toys)", "Toys", "vn", ["Vietnam", "Games", "Toys"]);
 
-// Beauty ===
+// === Fashion / Beauty ===
 const fetchVogueUS = () =>
   fetchAndParseXmlFeed("https://www.vogue.com/feed/rss", "Vogue US", "Fashion", "us", ["Fashion"]);
 const fetchGuardianFashion = () =>
-  fetchAndParseXmlFeed("https://www.theguardian.com/uk/fashion/rss", "Guardian Fashion", "Fashion", "uk", ["Fashion"]);
+  fetchAndParseXmlFeed("https://www.theguardian.com/fashion/rss", "Guardian Fashion", "Fashion", "uk", ["Fashion"]);
 const fetchElleVN = () =>
   fetchAndParseXmlFeed("https://www.elle.vn/feed", "Elle Vietnam", "Fashion", "vn", ["Vietnam", "Fashion"]);
 
@@ -361,16 +361,16 @@ const fetchBonAppetit = () =>
   fetchAndParseXmlFeed("https://www.bonappetit.com/feed/rss", "Bon Appetit", "Food", "us", ["Food"]);
 const fetchBBCGoodFood = () =>
   fetchAndParseXmlFeed("https://www.bbcgoodfood.com/feed/rss", "BBC Good Food", "Food", "uk", ["Food"]);
-const fetchMonNgonMoiNgay = () =>
-  fetchAndParseXmlFeed("https://monngonmoingay.com/feed/", "Món Ngon Mỗi Ngày", "Food", "vn", ["Vietnam", "Food"]);
+const fetchCookyVN = () =>
+  fetchAndParseXmlFeed("https://www.cooky.vn/rss", "Cooky Vietnam", "Food", "vn", ["Vietnam", "Food"]);
 
 // === Cars ===
 const fetchCarDriver = () =>
   fetchAndParseXmlFeed("https://www.caranddriver.com/rss/all.xml/", "Car and Driver", "Cars", "us", ["Cars"]);
-const fetchTopGearUK = () =>
-  fetchAndParseXmlFeed("https://www.topgear.com/feeds/news", "TopGear UK", "Cars", "uk", ["Cars"]);
-const fetchAutoProVN = () =>
-  fetchAndParseXmlFeed("https://autopro.com.vn/rss/home.rss", "AutoPro Vietnam", "Cars", "vn", ["Vietnam", "Cars"]);
+const fetchAutocarUK = () =>
+  fetchAndParseXmlFeed("https://www.autocar.co.uk/rss", "Autocar UK", "Cars", "uk", ["Cars"]);
+const fetchVNExpressCars = () =>
+  fetchAndParseXmlFeed("https://vnexpress.net/rss/oto-xe-may.rss", "VNExpress Ô tô & Xe máy", "Cars", "vn", ["Vietnam", "Cars"]);
 
 // === Archaeology ===
 const fetchArchaeologyMagazine = () =>
@@ -378,35 +378,29 @@ const fetchArchaeologyMagazine = () =>
 const fetchCurrentArchaeology = () =>
   fetchAndParseXmlFeed("https://www.archaeology.co.uk/feed", "Current Archaeology UK", "Archaeology", "uk", ["Archaeology"]);
 const fetchHeritageVN = () =>
-  fetchAndParseXmlFeed("https://baodantoc.vn/rss/van-hoa", "Báo Dân Tộc & Phát Triển - Di Sản", "Archaeology", "vn", ["Vietnam", "Culture"]);
+  fetchAndParseXmlFeed("https://vietnamnet.vn/rss/giai-tri.rss", "VietnamNet Văn hóa", "Archaeology", "vn", ["Vietnam", "Culture"]);
 
 // === News ===
 const fetchNYTimesWorld = () =>
   fetchAndParseXmlFeed("https://rss.nytimes.com/services/xml/rss/nyt/World.xml", "NYTimes World", "News", "us", ["USA", "World"]);
-
 const fetchBBCWorld = () =>
   fetchAndParseXmlFeed("http://feeds.bbci.co.uk/news/world/rss.xml", "BBC World", "News", "uk", ["WorldNews", "UK"]);
-
 const fetchGoogleNewsVN = () =>
   fetchAndParseXmlFeed("https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi", "Google News VN", "News", "vn", ["GoogleNewsVN", "Vietnam"]);
 
 // === Military / Defense ===
 const fetchDefenseNews = () =>
   fetchAndParseXmlFeed("https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml", "Defense News", "Military", "us", ["USA", "Defense"]);
-
 const fetchUKDefenseJournal = () =>
   fetchAndParseXmlFeed("https://ukdefencejournal.org.uk/feed/", "UK Defence Journal", "Military", "uk", ["UK", "Defense"]);
-
 const fetchBaoQuanDoiNhanDan = () =>
-  fetchAndParseXmlFeed("https://www.qdnd.vn/rss/qsnd", "Báo Quân đội Nhân dân", "Military", "vn", ["Vietnam", "QuocPhong", "Defense"]);
+  fetchAndParseXmlFeed("https://www.qdnd.vn/rss/chinh-tri", "Báo Quân đội Nhân dân", "Military", "vn", ["Vietnam", "Defense"]);
 
 // === Politics ===
 const fetchPolitico = () =>
-  fetchAndParseXmlFeed("https://www.politico.com/rss/politics.xml", "Politico", "Politics", "us", ["USA", "Politics"]);
-
+  fetchAndParseXmlFeed("https://rss.politico.com/politics-news.xml", "Politico", "Politics", "us", ["USA", "Politics"]);
 const fetchGuardianPolitics = () =>
   fetchAndParseXmlFeed("https://www.theguardian.com/politics/rss", "The Guardian Politics", "Politics", "uk", ["UK", "Politics"]);
-
 const fetchVNExpressPolitics = () =>
   fetchAndParseXmlFeed("https://vnexpress.net/rss/thoi-su.rss", "VNExpress Politics", "Politics", "vn", ["Vietnam", "Politics"]);
 
