@@ -221,7 +221,7 @@
         }
 
         /* Đảm bảo các select boxes vẫn trông đẹp */
-        .tb-filter-select, #tb-status-select, #tb-custom-timeframe-select, #main-region-filter, #main-timeframe-filter, #main-source-filter, #region-selector {
+        .tb-filter-select, #tb-status-select, #tb-custom-timeframe-select, #main-region-filter, #main-timeframe-filter, #main-source-filter {
             background-color: var(--bg-color); 
             border: 1px solid var(--border-color); 
             color: var(--text-color); 
@@ -348,14 +348,7 @@
         </nav>
         <div style="display: flex; align-items: center; gap: 1rem;">
              <div class="nav-actions">
-                <!-- OLD: Language switcher -->
-                <!-- <div class="language-switcher"><button class="btn btn-outline" id="language-toggle">VN</button></div> -->
-                
-                <!-- NEW: Region Selector -->
-                <div class="region-switcher">
-                    <select class="btn btn-outline" id="region-selector"></select>
-                </div>
-
+                <div class="language-switcher"><button class="btn btn-outline" id="language-toggle">VN</button></div>
                 <button class="btn btn-primary" id="sign-in-btn"></button>
                 <div id="user-menu" class="hidden">
                     <button class="btn btn-secondary" id="user-email-btn"></button>
@@ -529,9 +522,7 @@
         let categories = []; 
         let regions = [];
         let sources = [];
-        // MODIFIED: currentLanguage now derived from currentRegion
-        let currentRegion = localStorage.getItem('currentRegion') || 'global';
-        let currentLanguage = ''; // Will be set in setGlobalRegion
+        let currentLanguage = localStorage.getItem('lang') || 'vi';
 
         let currentTrendStatus = {
             status: 'hottest', 
@@ -560,7 +551,7 @@
                 'Footer Description': 'Nền tảng phân tích và dự đoán xu hướng hàng đầu, giúp bạn nắm bắt những thay đổi mới nhất trong thế giới số.', 'Quick Links': 'Liên kết nhanh', 'Features': 'Tính năng', 'AI Analysis': 'Phân tích AI', 'Trend Prediction': 'Dự đoán xu hướng', 'Leaderboards': 'Bảng xếp hạng', 'Personal Recommendations': 'Gợi ý cá nhân', 'Contact': 'Liên hệ', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Hỗ trợ: support@trendpulse.com', 'All rights reserved.': 'Tất cả quyền được bảo lưu.',
                 'AI: Checking...': 'AI: Đang kiểm tra...', 'AI: Ready': 'AI: Sẵn sàng', 'AI: Unavailable': 'AI: Không khả dụng', 'AI: Connection error': 'AI: Lỗi kết nối', 'AI Insight for': 'AI Insight cho', 'AI Analysis Summary for': 'Tóm tắt Phân tích AI cho', 'AI Deep Dive for': 'Phân tích Chuyên sâu cho', 'Analyzing trend...': 'Đang phân tích xu hướng...', 'Unable to analyze trend.': 'Không thể phân tích xu hướng.', 'Trends for': 'Xu hướng cho', 'Success Score': 'Tỷ Lệ Thành Công', 'Summary': 'Tóm Tắt', 'Interest Over Time': 'Mức Độ Quan Tâm', 'Engagement': 'Tương tác', 'Find Trends': 'Tìm & Lọc Trends', 'Popular Tags': 'Thẻ Phổ Biến', 'Trending Topics': 'Chủ đề tìm kiếm', 'Trending Queries': 'Cụm từ tìm kiếm', 'Growth': 'Gia tăng', 'All Categories': 'Tất cả danh mục',
                 'Search by keyword...': 'Tìm kiếm theo từ khóa...', 'Add search term': 'Thêm cụm từ tìm kiếm', '+ Compare': '+ So sánh',
-                'Vietnam': 'Việt Nam', 'United States': 'Hoa Kỳ', 'Global': 'Toàn cầu', 'United Kingdom': 'Vương quốc Anh', // Thêm bản dịch mới
+                'Vietnam': 'Việt Nam', 'United States': 'Hoa Kỳ', 'Global': 'Toàn cầu',
                 'Last 12 months': '12 tháng qua', 'Last 30 days': '30 ngày qua', 'Last 7 days': '7 ngày qua',
                 'Rising': 'Đột phá', 'No trends found.': 'Không tìm thấy xu hướng nào.',
                 'No Title Available': 'Không có tiêu đề',
@@ -568,13 +559,14 @@
                 'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị',
                 'General': 'Chung', 'Toys': 'Đồ chơi', 'Sneakers': 'Giày thể thao', 'Beauty': 'Làm đẹp', 'Lifestyle': 'Phong cách sống', 'Family': 'Gia đình', 'Cars': 'Ô tô', 'Archaeology': 'Khảo cổ học', 
                 'Your Favorite Trends - Interest Over Time': 'Xu hướng yêu thích của bạn - Mức độ quan tâm theo thời gian',
+                'United Kingdom': 'Vương quốc Anh', 'India': 'Ấn Độ', 'Japan': 'Nhật Bản', 'Germany': 'Đức', 'France': 'Pháp', 'Canada': 'Canada', 'Australia': 'Úc',
                 'uk': 'Vương quốc Anh', 'in': 'Ấn Độ', 'jp': 'Nhật Bản', 'de': 'Đức', 'fr': 'Pháp', 'ca': 'Canada', 'au': 'Úc',
                 'Hottest': 'Hot nhất', 'Latest': 'Mới nhất', 'Outdated': 'Lỗi thời', 'Predictive': 'Dự đoán',
                 'Last 1 hour': '1 giờ qua', 'Last 6 hours': '6 giờ qua', 'Last 24 hours': '24 giờ qua', 'Last 3 days': '3 ngày qua', 'Last 7 days': '7 ngày qua', 'Last 30 days': '30 ngày qua', 'Last 90 days': '90 ngày qua', 'Last 1 year': '1 năm qua',
                 'Next 3 days': '3 ngày tới', 'Next 5 days': '5 ngày tới', 'Next 7 days': '7 ngày tới',
                 'Region': 'Khu vực', 'Timeframe': 'Khung thời gian', 'Source': 'Nguồn', 'All Sources': 'Tất cả nguồn' // NEW: Main Filter titles
             },
-            'en-US': { // NEW: US English translations
+            en: {
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
                 'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google',
                 'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now',
@@ -586,7 +578,7 @@
                 'Footer Description': 'A leading platform for trend analysis and prediction, helping you stay ahead of the curve in the digital world.', 'Quick Links': 'Quick Links', 'Features': 'Features', 'AI Analysis': 'AI Analysis', 'Trend Prediction': 'Trend Prediction', 'Leaderboards': 'Leaderboards', 'Personal Recommendations': 'Personal Recommendations', 'Contact': 'Contact', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Support: support@trendpulse.com', 'All rights reserved.': 'All rights reserved.',
                 'AI: Checking...': 'AI: Checking...', 'AI: Ready': 'AI: Ready', 'AI: Unavailable': 'AI: Unavailable', 'AI: Connection error': 'AI: Connection error', 'AI Insight for': 'AI Insight for', 'AI Analysis Summary for': 'AI Analysis Summary for', 'AI Deep Dive for': 'AI Deep Dive for', 'Analyzing trend...': 'Analyzing trend...', 'Unable to analyze trend.': 'Unable to analyze trend.', 'Trends for': 'Trends for', 'Success Score': 'Success Score', 'Summary': 'Summary', 'Interest Over Time': 'Interest Over Time', 'Engagement': 'Engagement', 'Find Trends': 'Find & Filter Trends', 'Popular Tags': 'Popular Tags', 'Trending Topics': 'Trending Topics', 'Trending Queries': 'Trending Queries', 'Growth': 'Growth', 'All Categories': 'All Categories',
                 'Search by keyword...': 'Search by keyword...', 'Add search term': 'Add search term', '+ Compare': '+ Compare',
-                'Vietnam': 'Vietnam', 'United States': 'United States', 'Global': 'Global', 'United Kingdom': 'United Kingdom',
+                'Vietnam': 'Vietnam', 'United States': 'United States', 'Global': 'Global',
                 'Last 12 months': 'Last 12 months', 'Last 30 days': 'Last 30 days', 'Last 7 days': 'Last 7 days',
                 'Rising': 'Rising', 'No trends found.': 'No trends found.',
                 'No Title Available': 'No Title Available',
@@ -599,51 +591,7 @@
                 'Last 1 hour': 'Last 1 hour', 'Last 6 hours': 'Last 6 hours', 'Last 24 hours': 'Last 24 hours', 'Last 3 days': 'Last 3 days', 'Last 7 days': 'Last 7 days', 'Last 30 days': 'Last 30 days', 'Last 90 days': 'Last 90 days', 'Last 1 year': 'Last 1 year',
                 'Next 3 days': 'Next 3 days', 'Next 5 days': 'Next 5 days', 'Next 7 days': 'Next 7 days',
                 'Region': 'Region', 'Timeframe': 'Timeframe', 'Source': 'Source', 'All Sources': 'All Sources'
-            },
-            'en-GB': { // NEW: UK English translations
-                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
-                'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google',
-                'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now',
-                'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': '🔍 Analyse', // UK spelling
-                'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in in for a personalized experience.": "Select the categories you're interested in for a personalised experience.", // UK spelling
-                'Save Preferences': 'Save Preferences', 'Premium Access Required': 'Premium Access Required',
-                'Please sign in with a company or school email to view the Trending Board.': 'Please sign in with a company or school email to view the Trending Board.', 'Log In': 'Log In', 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.',
-                'Trending Board Dashboard': 'Trending Board Dashboard', 'Top 5 Hot Trends': 'Top 5 Hot Trends', 'Your Followed Trends': 'Your Followed Trends', 'Category Leaderboards': 'Category Leaderboards', 'About TrendPulse': 'About TrendPulse',
-                "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualise, and analyse emerging trends. Click a trend's title to get AI-powered insights.", // UK spelling
-                'Footer Description': 'A leading platform for trend analysis and prediction, helping you stay ahead of the curve in the digital world.', 'Quick Links': 'Quick Links', 'Features': 'Features', 'AI Analysis': 'AI Analysis', 'Trend Prediction': 'Trend Prediction', 'Leaderboards': 'Leaderboards', 'Personal Recommendations': 'Personal Recommendations', 'Contact': 'Contact', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Support: support@trendpulse.com', 'All rights reserved.': 'All rights reserved.',
-                'AI: Checking...': 'AI: Checking...', 'AI: Ready': 'AI: Ready', 'AI: Unavailable': 'AI: Unavailable', 'AI: Connection error': 'AI: Connection error', 'AI Insight for': 'AI Insight for', 'AI Analysis Summary for': 'AI Analysis Summary for', 'AI Deep Dive for': 'AI Deep Dive for', 'Analyzing trend...': 'Analysing trend...', // UK spelling
-                'Unable to analyze trend.': 'Unable to analyse trend.', // UK spelling
-                'Trends for': 'Trends for', 'Success Score': 'Success Score', 'Summary': 'Summary', 'Interest Over Time': 'Interest Over Time', 'Engagement': 'Engagement', 'Find Trends': 'Find & Filter Trends', 'Popular Tags': 'Popular Tags', 'Trending Topics': 'Trending Topics', 'Trending Queries': 'Trending Queries', 'Growth': 'Growth', 'All Categories': 'All Categories',
-                'Search by keyword...': 'Search by keyword...', 'Add search term': 'Add search term', '+ Compare': '+ Compare',
-                'Vietnam': 'Vietnam', 'United States': 'United States', 'Global': 'Global', 'United Kingdom': 'United Kingdom',
-                'Last 12 months': 'Last 12 months', 'Last 30 days': 'Last 30 days', 'Last 7 days': 'Last 7 days',
-                'Rising': 'Rising', 'No trends found.': 'No trends found.',
-                'No Title Available': 'No Title Available',
-                'No Description Available': 'No Description Available',
-                'Technology': 'Technology', 'Fashion': 'Fashion', 'Gaming': 'Gaming', 'Finance': 'Finance', 'Health': 'Health', 'Travel': 'Travel', 'Food': 'Food', 'AI': 'AI', 'News': 'News', 'Science': 'Science', 'Music': 'Music', 'Media': 'Media', 'Entertainment': 'Entertainment', 'Sports': 'Sports', 'Logistics': 'Logistics', 'Cybersecurity': 'Cybersecurity', 'Healthcare': 'Healthcare', 'Education': 'Education', 'Environment': 'Environment', 'Politics': 'Politics', 'Marketing': 'Marketing',
-                'General': 'General', 'Toys': 'Toys', 'Sneakers': 'Sneakers', 'Beauty': 'Beauty', 'Lifestyle': 'Lifestyle', 'Family': 'Family', 'Cars': 'Cars', 'Archaeology': 'Archaeology',
-                'Your Favorite Trends - Interest Over Time': 'Your Favourite Trends - Interest Over Time', // UK spelling
-                'uk': 'United Kingdom', 'in': 'India', 'jp': 'Japan', 'de': 'Germany', 'fr': 'France', 'ca': 'Canada', 'au': 'Australia',
-                'Hottest': 'Hottest', 'Latest': 'Latest', 'Outdated': 'Outdated', 'Predictive': 'Predictive',
-                'Last 1 hour': 'Last 1 hour', 'Last 6 hours': 'Last 6 hours', 'Last 24 hours': 'Last 24 hours', 'Last 3 days': 'Last 3 days', 'Last 7 days': 'Last 7 days', 'Last 30 days': 'Last 30 days', 'Last 90 days': 'Last 90 days', 'Last 1 year': 'Last 1 year',
-                'Next 3 days': 'Next 3 days', 'Next 5 days': 'Next 5 days', 'Next 7 days': 'Next 7 days',
-                'Region': 'Region', 'Timeframe': 'Timeframe', 'Source': 'Source', 'All Sources': 'All Sources'
             }
-        };
-
-        // NEW: Map region codes to language codes
-        const regionLanguageMap = {
-            'vn': 'vi',
-            'us': 'en-US',
-            'uk': 'en-GB',
-            'global': 'en-US', // Default language for global view (can be changed)
-            // Add more mappings as needed for other regions like 'in', 'jp', 'de', etc.
-            'in': 'en-US', // Assuming US English for India for now
-            'jp': 'en-US', // Assuming US English for Japan for now
-            'de': 'en-US', // Assuming US English for Germany for now
-            'fr': 'en-US', // Assuming US English for France for now
-            'ca': 'en-US', // Assuming US English for Canada for now
-            'au': 'en-US'  // Assuming US English for Australia for now
         };
 
         const i18nBindings = [
@@ -682,22 +630,15 @@
             { selector: '#main-filter-title-region', key: 'Region' },
             { selector: '#main-filter-title-timeframe', key: 'Timeframe' },
             { selector: '#main-filter-title-source', key: 'Source' },
-            { selector: '#main-source-filter option[value="All"]', key: 'All Sources' }, 
-            { selector: '#main-timeframe-filter option[value="1h"]', key: 'Last 1 hour' }, 
-            { selector: '#main-timeframe-filter option[value="6h"]', key: 'Last 6 hours' }, 
-            { selector: '#main-timeframe-filter option[value="24h"]', key: 'Last 24 hours' }, 
-            { selector: '#main-timeframe-filter option[value="3d"]', key: 'Last 3 days' }, 
-            { selector: '#main-timeframe-filter option[value="7d"]', key: 'Last 7 days' }, 
-            { selector: '#main-timeframe-filter option[value="1m"]', key: 'Last 30 days' }, 
-            { selector: '#main-timeframe-filter option[value="3m"]', key: 'Last 90 days' }, 
-            { selector: '#main-timeframe-filter option[value="12m"]', key: 'Last 1 year' },
-
-            // NEW: Region selector options bindings
-            { selector: '#region-selector option[value="global"]', key: 'Global' },
-            { selector: '#region-selector option[value="vn"]', key: 'Vietnam' },
-            { selector: '#region-selector option[value="us"]', key: 'United States' },
-            { selector: '#region-selector option[value="uk"]', key: 'United Kingdom' }
-            // Add more region options as needed
+            { selector: '#main-source-filter option[value="All"]', key: 'All Sources' }, // NEW
+            { selector: '#main-timeframe-filter option[value="1h"]', key: 'Last 1 hour' }, // NEW
+            { selector: '#main-timeframe-filter option[value="6h"]', key: 'Last 6 hours' }, // NEW
+            { selector: '#main-timeframe-filter option[value="24h"]', key: 'Last 24 hours' }, // NEW
+            { selector: '#main-timeframe-filter option[value="3d"]', key: 'Last 3 days' }, // NEW
+            { selector: '#main-timeframe-filter option[value="7d"]', key: 'Last 7 days' }, // NEW
+            { selector: '#main-timeframe-filter option[value="1m"]', key: 'Last 30 days' }, // NEW
+            { selector: '#main-timeframe-filter option[value="3m"]', key: 'Last 90 days' }, // NEW
+            { selector: '#main-timeframe-filter option[value="12m"]', key: 'Last 1 year' } // NEW
         ];
 
         const DOM = {
@@ -730,20 +671,12 @@
             mainTimeframeFilter: document.getElementById('main-timeframe-filter'),
             mainSourceFilter: document.getElementById('main-source-filter'),
 
-            // NEW: Region selector element
-            regionSelector: document.getElementById('region-selector'),
-
             // NEW: Trend Overview Modal elements
             trendOverviewModal: document.getElementById('trend-overview-modal'),
             trendOverviewBody: document.getElementById('trend-overview-body'),
         };
 
-        function t(key) { 
-            // Fallback to en-US if specific region language not found, or to key itself
-            return (translations[currentLanguage] && translations[currentLanguage][key]) || 
-                   (translations['en-US'] && translations['en-US'][key]) || 
-                   key; 
-        }
+        function t(key) { return (translations[currentLanguage] && translations[currentLanguage][key]) || key; }
 
         function openModal(modalId) { document.getElementById(modalId).classList.add('show'); }
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
@@ -752,19 +685,14 @@
             const isMasterListRequest = (Object.keys(filters).length === 0) || 
                                         (filters.timeframe === '12m' && filters.region === 'global' && filters.category === 'All' && !filters.searchTerm && !filters.hashtag);
 
-            // MODIFIED: Use currentRegion for initial master list fetch
-            const masterListRegion = filters.region || currentRegion; 
-            if (isMasterListRequest && masterTrendsList.length > 0 && !forceRefetch && filters.region === masterListRegion) {
-                 console.log("Returning cached masterTrendsList for region:", masterListRegion);
+            if (isMasterListRequest && masterTrendsList.length > 0 && !forceRefetch) {
+                 console.log("Returning cached masterTrendsList.");
                  return masterTrendsList;
             }
             
             try {
                 const params = new URLSearchParams();
                 if (filters.region && filters.region !== 'global') params.append('region', filters.region);
-                // NEW: Ensure the correct region is always passed to the backend, defaulting to currentRegion
-                else params.append('region', currentRegion); 
-
                 if (filters.category && filters.category !== 'All') params.append('category', filters.category);
                 params.append('timeframe', filters.customTimeframe || filters.timeframe || '12m'); 
                 if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
@@ -786,8 +714,7 @@
                 }
                 const fetchedTrends = (Array.isArray(data.trends)) ? preprocessTrends(data.trends) : [];
 
-                // Store only if it's the master list for the current region
-                if (isMasterListRequest && filters.region === currentRegion) {
+                if (isMasterListRequest) {
                     masterTrendsList = fetchedTrends;
                     applyTrendOrdering();
                 }
@@ -804,7 +731,6 @@
 
         async function analyzeTrendSecurely(trend, analysisType) {
             try {
-                // MODIFIED: Use currentLanguage from global scope
                 const response = await fetch('/.netlify/functions/analyze-trend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trend, analysisType, language: currentLanguage }) });
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -844,10 +770,9 @@
             
             trends.forEach((trendItem, i) => {
                 // IMPORTANT: Ensure trendItem.id comes from the backend and is stable.
-                // If the backend truly fails to provide an ID, it's a critical data integrity issue,
-                // but for client-side safety in a demo, a fallback can be considered.
-                // However, with `fetch-trends.js` now generating stable IDs, this part is less critical.
-                trendItem.id = trendItem.id || `temp-id-${i}`; // Fallback if backend doesn't provide.
+                // Do NOT overwrite it here or generate temp IDs if the backend is providing them.
+                // If the backend truly fails to provide an ID, it's a critical data integrity issue.
+                // For now, let's assume trendItem.id is always present from the backend.
                 
                 trendItem.hotnessScore = calculateHotnessScore(trendItem, maxValues);
                 // Ensure type is present (backend might not always send it)
@@ -865,7 +790,6 @@
             return (normViews * weights.views) + (normInteractions * weights.interactions) + (normSearches * weights.searches) + (normVotes * weights.votes);
         }
 
-        // MODIFIED: applyTranslations now depends on `currentLanguage` being set externally
         function applyTranslations() {
             i18nBindings.forEach(b => {
                 const el = document.querySelector(b.selector);
@@ -901,36 +825,11 @@
             populateCustomTimeframeOptions(currentTrendStatus.status);
 
             populateCategoryFilters(); // For both main and TB category filters
-
-            populateRegionSelector(); // NEW: Populate region selector
-            if (DOM.regionSelector) DOM.regionSelector.value = currentRegion; // Set selected value
         }
 
-        // REMOVED: updateLanguageToggleUI() is no longer needed
-        // function updateLanguageToggleUI() {
-        //     document.getElementById('language-toggle').textContent = currentLanguage === 'vi' ? 'VN' : 'EN';
-        // }
-
-        // NEW: Populate the main region selector
-        function populateRegionSelector() {
-            if (!DOM.regionSelector) return;
-
-            const regionsForSelector = [
-                { code: 'global', nameKey: 'Global' },
-                { code: 'vn', nameKey: 'Vietnam' },
-                { code: 'us', nameKey: 'United States' },
-                { code: 'uk', nameKey: 'United Kingdom' }
-                // Add more region options here if needed, e.g., 'in', 'jp', 'de', 'fr', 'ca', 'au'
-            ];
-
-            let optionsHtml = '';
-            regionsForSelector.forEach(region => {
-                optionsHtml += `<option value="${region.code}">${t(region.nameKey)}</option>`;
-            });
-            DOM.regionSelector.innerHTML = optionsHtml;
-            // The actual value will be set after translations are applied in applyTranslations
+        function updateLanguageToggleUI() {
+            document.getElementById('language-toggle').textContent = currentLanguage === 'vi' ? 'VN' : 'EN';
         }
-
 
         // NEW: Function to generate the inner HTML of a trend card
         function createTrendCardContent(trend) {
@@ -997,7 +896,6 @@
                     (trendItem.description_en && trendItem.description_en.toLowerCase().includes(term))
                 ));
             }
-            // MODIFIED: Use currentFilter.region, which is now synced with currentRegion
             if (currentFilter.region && currentFilter.region !== 'global') {
                 sourceList = sourceList.filter(trend => trend.region === currentFilter.region);
             }
@@ -1063,17 +961,15 @@
         }
 
         function updateClearFilterButtonVisibility() {
-            // MODIFIED: Also check currentFilter.region/timeframe/source
             const hasActiveFilter = (currentFilter.value !== 'All' || currentFilter.searchTerm !== '' || currentFilter.hashtag !== '' || 
-                                     currentFilter.region !== currentRegion || currentFilter.timeframe !== '12m' || currentFilter.source !== 'All'); // Use currentRegion for comparison
+                                     currentFilter.region !== 'global' || currentFilter.timeframe !== '12m' || currentFilter.source !== 'All');
             if (DOM.clearFilterBtn) {
                 DOM.clearFilterBtn.classList.toggle('hidden', !hasActiveFilter);
             }
         }
 
         async function clearMainViewFilters() {
-            // MODIFIED: Reset to currentRegion's default settings
-            currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '', region: currentRegion, timeframe: '12m', source: 'All' };
+            currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '', region: 'global', timeframe: '12m', source: 'All' };
             if (DOM.searchInput) DOM.searchInput.value = '';
             if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
             
@@ -1113,8 +1009,7 @@
                 if (DOM.trendingBoardContainer) DOM.trendingBoardContainer.classList.remove('hidden');
                 
                 if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.value = 'All';
-                // MODIFIED: tbRegionFilter should reflect currentRegion
-                if (DOM.tbRegionFilter) DOM.tbRegionFilter.value = currentRegion; 
+                if (DOM.tbRegionFilter) DOM.tbRegionFilter.value = 'global';
                 user.tbSearchTerms = [];
                 if (DOM.tbSearchInput) DOM.tbSearchInput.value = '';
                 if (DOM.tbCompareInput) DOM.tbCompareInput.value = '';
@@ -1180,26 +1075,20 @@
         function populateRegionsFilter(selectElement) {
             if (!selectElement) return;
 
-            // MODIFIED: Regions are now derived from the global `regions` variable
-            // and explicitly mapped regions.
-            const availableRegions = [...new Set(masterTrendsList.map(trendItem => trendItem.region))].filter(Boolean);
+            const dynamicRegions = [...new Set(masterTrendsList.map(trendItem => trendItem.region))].filter(Boolean).sort();
             
             let optionsHtml = `<option value="global">${t('Global')}</option>`;
             
-            const explicitRegions = ['vn', 'us', 'uk', 'in', 'jp', 'de', 'fr', 'ca', 'au'];
-            explicitRegions.forEach(regionCode => {
-                // Only add if it's available in the fetched trends or explicitly defined
-                if (availableRegions.includes(regionCode) || ['vn', 'us', 'uk'].includes(regionCode)) { // Keep VN, US, UK always as examples
+            const regionsToAdd = ['vn', 'us', 'uk', 'in', 'jp', 'de', 'fr', 'ca', 'au'];
+            regionsToAdd.forEach(regionCode => {
+                if (dynamicRegions.includes(regionCode)) {
                     optionsHtml += `<option value="${regionCode}">${t(regionCode.toUpperCase()) || regionCode}</option>`;
                 }
             });
 
             const currentSelection = selectElement.value;
             selectElement.innerHTML = optionsHtml;
-            // Set the value back or default to the current global region or 'global'
-            selectElement.value = Array.from(selectElement.options).some(opt => opt.value === currentSelection) 
-                                ? currentSelection 
-                                : (Array.from(selectElement.options).some(opt => opt.value === currentRegion) ? currentRegion : 'global');
+            selectElement.value = Array.from(selectElement.options).some(opt => opt.value === currentSelection) ? currentSelection : 'global';
         }
 
         function populateMainTimeframeFilter() {
@@ -1269,7 +1158,6 @@
             }
             if (DOM.searchInput) DOM.searchInput.value = currentFilter.searchTerm;
 
-            // MODIFIED: Update main region/timeframe/source filters
             if (DOM.mainRegionFilter) DOM.mainRegionFilter.value = currentFilter.region;
             if (DOM.mainTimeframeFilter) DOM.mainTimeframeFilter.value = currentFilter.timeframe;
             if (DOM.mainSourceFilter) DOM.mainSourceFilter.value = currentFilter.source;
@@ -1405,11 +1293,14 @@
             const defaultTitle = t('No Title Available');
             const defaultDescription = t('No Description Available');
 
-            // MODIFIED: Use currentLanguage to select appropriate title/description
-            const title_lang = (trend[`title_${currentLanguage.split('-')[0]}`] || trend.title_en || trend.title_vi || defaultTitle);
-            const description_lang = (trend[`description_${currentLanguage.split('-')[0]}`] || trend.description_en || trend.description_vi || defaultDescription);
+            const title_vi = trend.title_vi || trend.title_en || defaultTitle;
+            const description_vi = trend.description_vi || trend.description_en || defaultDescription;
+            const title_en = trend.title_en || trend.title_vi || defaultTitle;
+            const description_en = trend.description_en || trend.description_vi || defaultDescription;
 
-            return { title: title_lang, description: description_lang };
+            return currentLanguage === 'vi' ?
+                { title: title_vi, description: description_vi } :
+                { title: title_en, description: description_en };
         }
 
         function truncateText(text = '', maxLength = 180) {
@@ -1462,8 +1353,7 @@
 
         async function checkAIStatus() {
             try {
-                // MODIFIED: Pass currentLanguage to backend
-                const response = await fetch("/.netlify/functions/analyze-trend?language=" + currentLanguage, { method: 'GET' });
+                const response = await fetch("/.netlify/functions/analyze-trend", { method: 'GET' });
                 const statusIndicator = document.getElementById('ai-status-indicator');
                 const statusText = document.getElementById('ai-status-text');
                 const isOnline = response.ok;
@@ -1485,37 +1375,6 @@
             else if (activeView === 'forU') { if (DOM.navForU && DOM.navForU.querySelector('a')) DOM.navForU.querySelector('a').classList.add('active-link'); }
             else if (activeView === 'trendingBoard') { if (DOM.navTrendingBoard) DOM.navTrendingBoard.classList.add('active-link'); }
             else if (activeView === 'about') { if (DOM.navAbout) DOM.navAbout.classList.add('active-link'); }
-        }
-
-        // NEW: Function to set the global region and update UI/data accordingly
-        async function setGlobalRegion(newRegionCode) {
-            console.log("Setting global region to:", newRegionCode);
-            currentRegion = newRegionCode;
-            localStorage.setItem('currentRegion', currentRegion);
-
-            // Determine language based on region
-            currentLanguage = regionLanguageMap[currentRegion] || 'en-US'; // Fallback to en-US
-            localStorage.setItem('lang', currentLanguage);
-
-            // Update main view filter state
-            currentFilter.region = currentRegion; 
-            
-            // Apply all translations and update dependent UI elements
-            applyTranslations(); 
-
-            // Re-fetch master trends list for the new region (force refetch)
-            masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: currentRegion, category: 'All' }, true);
-            applyTrendOrdering(); // Re-shuffle based on new master list
-
-            // Re-render views
-            if (currentView === 'trendingBoard') {
-                await createHotTrendsChart(); // This will use the updated currentRegion for filtering
-            } else {
-                displayTrends(); // This will use the updated currentFilter.region
-            }
-
-            // Also update main filter UI for region
-            if (DOM.mainRegionFilter) DOM.mainRegionFilter.value = currentRegion;
         }
 
         // NEW: Function to open the AI Insight modal
@@ -1915,8 +1774,7 @@
             if (hotTrendsChart) hotTrendsChart.destroy();
 
             const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All';
-            // MODIFIED: Use currentRegion for TB region filter
-            const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : currentRegion; 
+            const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
             const status = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
             const customTimeframe = DOM.tbCustomTimeframeSelect ? DOM.tbCustomTimeframeSelect.value : '7d';
 
@@ -2215,19 +2073,15 @@
         }
 
             async function initializeApp() {
-                // MODIFIED: Initial setup for currentRegion and currentLanguage
-                currentRegion = localStorage.getItem('currentRegion') || 'global';
-                currentLanguage = regionLanguageMap[currentRegion] || 'en-US'; 
-                localStorage.setItem('lang', currentLanguage); // Ensure localStorage lang is consistent
-
-                applyTranslations(); // Apply initial translations based on determined language
+                applyTranslations();
+                updateLanguageToggleUI();
 
                 if (DOM.mainViewContainer) DOM.mainViewContainer.classList.toggle('hidden', currentView !== 'main');
                 if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
                 if (DOM.trendingBoardContainer) DOM.trendingBoardContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
 
-                // Initial fetch of master trends list for the CURRENTLY SELECTED REGION
-                masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: currentRegion, category: 'All' }); 
+                // Initial fetch of master trends list (12 months, global, all categories)
+                masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }); 
                 
                 applyTrendOrdering();
 
@@ -2247,7 +2101,7 @@
 
                 if (currentView === 'trendingBoard') {
                     const initialTbFilters = {
-                        region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : currentRegion, // Use currentRegion as default
+                        region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
                         category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
                     };
                     allTrends = masterTrendsList.filter(trend => 
@@ -2436,10 +2290,28 @@
                 }
             });
 
-            // NEW: Event listener for the region selector
-            if (DOM.regionSelector) DOM.regionSelector.addEventListener('change', async (e) => {
-                const selectedRegionCode = e.target.value;
-                await setGlobalRegion(selectedRegionCode);
+            document.getElementById('language-toggle')?.addEventListener('click', async () => {
+                currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi';
+                localStorage.setItem('lang', currentLanguage);
+                applyTranslations();
+                updateLanguageToggleUI();
+                
+                masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }, true);
+                applyTrendOrdering();
+
+                populateRegionsFilter(DOM.mainRegionFilter);
+                populateRegionsFilter(DOM.tbRegionFilter);
+                categories = [...new Set(masterTrendsList.map(trendItem => trendItem.category))].sort();
+                populateCategoryFilters();
+                populateMainTimeframeFilter();
+                populateSourceFilter();
+                populateHashtagFilters();
+
+                if (currentView === 'trendingBoard') {
+                    await createHotTrendsChart();
+                } else {
+                    displayTrends();
+                }
             });
 
             initializeApp();
