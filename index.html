@@ -578,7 +578,8 @@
                 'Hottest': 'Hot nhất', 'Latest': 'Mới nhất', 'Outdated': 'Lỗi thời', 'Predictive': 'Dự đoán',
                 'Last 1 hour': '1 giờ qua', 'Last 6 hours': '6 giờ qua', 'Last 24 hours': '24 giờ qua', 'Last 3 days': '3 ngày qua', 'Last 7 days': '7 ngày qua', 'Last 30 days': '30 ngày qua', 'Last 90 days': '90 ngày qua', 'Last 1 year': '1 năm qua',
                 'Next 3 days': '3 ngày tới', 'Next 5 days': '5 ngày tới', 'Next 7 days': '7 ngày tới',
-                'Region': 'Khu vực', 'Timeframe': 'Khung thời gian', 'Source': 'Nguồn', 'All Sources': 'Tất cả nguồn' // NEW: Main Filter titles
+                'Region': 'Khu vực', 'Timeframe': 'Khung thời gian', 'Source': 'Nguồn', 'All Sources': 'Tất cả nguồn',
+                'Germany': 'Đức', 'France': 'Pháp', 'Europe': 'Châu Âu', 'China': 'Trung Quốc', 'South Korea': 'Hàn Quốc', 'India': 'Ấn Độ', 'Australia': 'Úc', 'Japan': 'Nhật Bản'
             },
             en: {
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
@@ -604,7 +605,8 @@
                 'Hottest': 'Hottest', 'Latest': 'Latest', 'Outdated': 'Outdated', 'Predictive': 'Predictive',
                 'Last 1 hour': 'Last 1 hour', 'Last 6 hours': 'Last 6 hours', 'Last 24 hours': 'Last 24 hours', 'Last 3 days': 'Last 3 days', 'Last 7 days': 'Last 7 days', 'Last 30 days': 'Last 30 days', 'Last 90 days': 'Last 90 days', 'Last 1 year': 'Last 1 year',
                 'Next 3 days': 'Next 3 days', 'Next 5 days': 'Next 5 days', 'Next 7 days': 'Next 7 days',
-                'Region': 'Region', 'Timeframe': 'Timeframe', 'Source': 'Source', 'All Sources': 'All Sources'
+                'Region': 'Region', 'Timeframe': 'Timeframe', 'Source': 'Source', 'All Sources': 'All Sources',
+                'de': 'Germany', 'fr': 'France', 'eu': 'Europe', 'cn': 'China', 'kr': 'South Korea', 'in': 'India', 'au': 'Australia', 'jp': 'Japan'
             }
         };
 
@@ -1093,7 +1095,7 @@
             
             let optionsHtml = `<option value="global">${t('Global')}</option>`;
             
-            const regionsToAdd = ['vn', 'us', 'uk', 'in', 'jp', 'de', 'fr', 'ca', 'au'];
+            const regionsToAdd = ['vn', 'us', 'uk', 'in', 'jp', 'de', 'fr', 'ca', 'au', 'eu', 'cn', 'kr']; // CẬP NHẬT: Thêm các mã vùng mới
             regionsToAdd.forEach(regionCode => {
                 if (dynamicRegions.includes(regionCode)) {
                     optionsHtml += `<option value="${regionCode}">${t(regionCode.toUpperCase()) || regionCode}</option>`;
@@ -2012,7 +2014,7 @@
             const trendCard = targetElement.closest('.trend-card');
             
             // Cập nhật: Selector linh hoạt hơn để bắt các mục <li> trong bất kỳ leaderboard nào
-            // Sử dụng các class cụ thể của các bảng Trending Board và For U Leaderboards
+            // Sử dụng các id cụ thể của các bảng Trending Board và For U Leaderboards
             let leaderboardItem = targetElement.closest('#tb-topic-list li, #tb-query-list li, #for-u-leaderboards li');
             
             let trendId = null;
