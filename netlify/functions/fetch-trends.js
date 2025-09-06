@@ -328,7 +328,7 @@ const fetchSyncedReviewCN = () =>
   fetchAndParseXmlFeed("https://syncedreview.com/feed/", "SyncedReview CN", "AI", "cn", ["China","AI"]);
 const fetchAISTJP = () =>
   fetchAndParseXmlFeed("https://www.aist.go.jp/index_en.rdf", "AIST (JP) News", "AI", "jp", ["Japan","AI"]);
-const fetchKasperskyAI RU = () =>
+const fetchKasperskyAIRU = () =>
   fetchAndParseXmlFeed("https://securelist.com/feed/", "Securelist (Kaspersky) RU", "AI", "ru", ["Russia","AI","Security"]);
 const fetchEuractivAI = () =>
   fetchAndParseXmlFeed("https://www.euractiv.com/section/digital/feed/", "Euractiv Digital EU", "AI", "eu", ["EU","AI"]);
@@ -815,9 +815,7 @@ exports.handler = async (event) => {
       fetchZingNewsAI(),
       fetchSyncedReviewCN(),
       fetchAISTJP(),
-      fetchSecurelistRU, // defined below as function fetchSecurelistRU(); but we used name fetchKasperskyAI RU earlier -> fix call
-      // fix: use fetchSecurelistRU()
-      // (we push again properly)
+      fetchKasperskyAIRU(),
       fetchSecurelistRU(),
       fetchEuractivAI(),
       fetchCSIROAI(),
