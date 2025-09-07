@@ -363,12 +363,13 @@
         <div style="display: flex; align-items: center; gap: 1rem;">
              <div class="nav-actions">
                 <div class="language-switcher"><button class="btn btn-outline" id="language-toggle">VN</button></div>
-                <button class="btn btn-primary" id="sign-in-btn"></button>
-                <div id="user-menu" class="hidden">
+                <!-- REMOVED: Sign In button -->
+                <div id="user-menu"> <!-- Changed to always visible -->
                     <button class="btn btn-secondary" id="user-email-btn"></button>
                     <div class="dropdown" id="user-dropdown">
                         <div class="dropdown-header" id="dropdown-user-email"></div>
-                        <a href="#" class="dropdown-item" id="dropdown-work-school"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></a>
+                        <!-- REMOVED/HIDDEN: Work/School option as accountType is always 'work' -->
+                        <a href="#" class="dropdown-item hidden" id="dropdown-work-school"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></a>
                         <a href="#" class="dropdown-item" id="dropdown-sign-out"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span></span></a>
                     </div>
                 </div>
@@ -484,10 +485,11 @@
 
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
-    <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions">
+    <!-- REMOVED: Login choice modal -->
+    <!-- <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions">
         <button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span id="login-google-text"></span></button>
         <button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span id="login-work-text"></span></button>
-    </div></div></div>
+    </div></div></div> -->
     <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
     
     <!-- NEW: Trend Overview Modal -->
@@ -515,7 +517,16 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        let user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [], tbSearchTerms: [] };
+        // CẬP NHẬT: user object sẽ luôn ở trạng thái đã đăng nhập và là tài khoản "work"
+        let user = { 
+            isLoggedIn: true, 
+            email: 'guest@trendpulse.com', // Email mặc định hoặc có thể để null
+            accountType: 'work', // Thiết lập là 'work' để truy cập các tính năng trước đây là premium
+            preferences: [], 
+            hasSetPreferences: false, // Để hiển thị preferences modal lần đầu
+            followedTrends: [], 
+            tbSearchTerms: [] 
+        };
         const TRENDS_PER_PAGE = 5;
         let displayedTrends = { main: 0, forU: 0 };
         let currentFilter = { 
@@ -613,18 +624,20 @@
         const i18nBindings = [
             { selector: '#nav-top-trends', key: 'Top Trends' }, { selector: '#nav-trending-board', key: 'Trending Board' },
             { selector: '#nav-for-u a', key: 'For U' }, { selector: '#nav-about', key: 'About' },
-            { selector: '#sign-in-btn', key: 'Sign In' }, { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' },
-            { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' },
-            { selector: '#login-google-text', key: 'Sign in with Google' },
-            { selector: '#login-work-text', key: 'Sign in with Work/School' },
+            // REMOVED: { selector: '#sign-in-btn', key: 'Sign In' }, 
+            { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' },
+            // REMOVED/HIDDEN: { selector: '#dropdown-work-school span:last-child', key: 'Sign in with Work/School' },
+            // REMOVED: { selector: '#login-google-text', key: 'Sign in with Google' },
+            // REMOVED: { selector: '#login-work-text', key: 'Sign in with Work/School' },
             { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' }, { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' },
             { selector: '#trending-header-text', key: 'Trending Now' }, { selector: '#clear-filter-btn', key: 'Show All Trends' },
             { selector: '#load-more-btn', key: 'Load More' }, { selector: '#for-u-load-more-btn', key: 'Load More' },
             { selector: '.for-u-container .trending-title-group span', key: 'For You' },
             { selector: '#preferences-modal .modal-title', key: 'Welcome! Set Your Preferences' }, { selector: '#preferences-modal .modal-body', key: "Select the categories you're interested in in for a personalized experience." },
             { selector: '#save-preferences-btn', key: 'Save Preferences' }, { selector: '#premium-modal .modal-title', key: 'Premium Access Required' },
-            { selector: '#premium-modal .modal-body', key: 'Please sign in with a company or school email to view the Trending Board.' }, { selector: '#premium-login-btn', key: 'Log In' },
-            { selector: '#login-choice-modal .modal-title', key: 'Sign In' }, { selector: '#login-choice-modal .modal-body', key: 'Choose an account to continue to TrendPulse.' },
+            { selector: '#premium-modal .modal-body', key: 'Please sign in with a company or school email to view the Trending Board.' }, 
+            { selector: '#premium-login-btn', key: 'Log In' }, // This button will now lead to nothing since login is removed
+            // REMOVED: login-choice-modal bindings
             { selector: '#tb-main-title', key: 'Trending Board Dashboard' }, { selector: '#for-u-leaderboard-panel h3', key: 'Category Leaderboards' },
             { selector: '#about-modal .modal-title', key: 'About TrendPulse' }, { selector: '#about-modal .modal-body', key: "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights." },
             { selector: '.footer-section:nth-child(1) .footer-description', key: 'Footer Description' }, { selector: '.footer-section:nth-child(2) .footer-title', key: 'Quick Links' },
@@ -659,7 +672,9 @@
 
         const DOM = {
             body: document.body, mainNav: document.getElementById('main-nav'), hamburgerMenu: document.getElementById('hamburger-menu'),
-            logo: document.getElementById('logo'), signInBtn: document.getElementById('sign-in-btn'), userMenu: document.getElementById('user-menu'),
+            logo: document.getElementById('logo'), 
+            // REMOVED: signInBtn: document.getElementById('sign-in-btn'), 
+            userMenu: document.getElementById('user-menu'),
             userEmailBtn: document.getElementById('user-email-btn'), dropdownHeader: document.getElementById('dropdown-user-email'), userDropdown: document.getElementById('user-dropdown'),
             dropdownSignOut: document.getElementById('dropdown-sign-out'), dropdownWorkSchool: document.getElementById('dropdown-work-school'),
             navTopTrends: document.getElementById('nav-top-trends'), navTrendingBoard: document.getElementById('nav-trending-board'),
@@ -924,7 +939,7 @@
 
             // For 'forU' view, apply user-specific filters on top of already filtered sourceList
             if (currentView === 'forU') {
-                if (!user.isLoggedIn || user.accountType !== 'work') return [];
+                // Since accountType is always 'work', this check simplifies
                 const preferenceTrends = sourceList.filter(trendItem => trendItem && user.preferences.includes(trendItem.category));
                 const followedTrendsData = sourceList.filter(trendItem => trendItem && user.followedTrends.includes(trendItem.id));
                 const combined = [...followedTrendsData, ...preferenceTrends];
@@ -1010,18 +1025,10 @@
             if (view === 'main') {
                 if (DOM.mainViewContainer) DOM.mainViewContainer.classList.remove('hidden');
             } else if (view === 'forU') {
-                if (!user.isLoggedIn || user.accountType !== 'work') {
-                    switchView('main');
-                    openModal('premium-modal');
-                    return;
-                }
+                // No longer need login check here, as user is always 'work'
                 if (DOM.forUViewContainer) DOM.forUViewContainer.classList.remove('hidden');
             } else if (view === 'trendingBoard') {
-                if (!user.isLoggedIn || user.accountType !== 'work') {
-                    switchView('main');
-                    openModal('premium-modal');
-                    return;
-                }
+                // No longer need login check here, as user is always 'work'
                 if (DOM.trendingBoardContainer) DOM.trendingBoardContainer.classList.remove('hidden');
                 
                 if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.value = 'All';
@@ -1050,24 +1057,24 @@
 
         function updateAuthUI() {
             if (DOM.body) DOM.body.className = '';
+            // Since user is always logged in, simplify this part
             if (user.isLoggedIn) {
                 if (DOM.body) DOM.body.classList.add('logged-in');
-                if (DOM.signInBtn) DOM.signInBtn.classList.add('hidden');
-                if (DOM.userMenu) DOM.userMenu.classList.remove('hidden');
+                // DOM.signInBtn is removed, so no need to hide it
+                if (DOM.userMenu) DOM.userMenu.classList.remove('hidden'); // Always show user menu
                 if (DOM.userEmailBtn) DOM.userEmailBtn.textContent = user.email;
                 if (DOM.dropdownHeader) DOM.dropdownHeader.textContent = user.email;
-                if (DOM.navForU) DOM.navForU.classList.toggle('hidden', user.accountType !== 'work');
-                if (DOM.dropdownWorkSchool) DOM.dropdownWorkSchool.classList.toggle('hidden', user.accountType !== 'personal');
-                if (user.accountType === 'work' && DOM.body) DOM.body.classList.add('work-account-view');
-            } else {
-                if (DOM.signInBtn) DOM.signInBtn.classList.remove('hidden');
-                if (DOM.userMenu) DOM.userMenu.classList.add('hidden');
-                if (DOM.navForU) DOM.navForU.classList.add('hidden');
-                if (DOM.body) DOM.body.classList.remove('work-account-view');
+                if (DOM.navForU) DOM.navForU.classList.remove('hidden'); // 'For U' is always available
+                // DOM.dropdownWorkSchool is hidden in HTML, no need to toggle
+                if (DOM.body) DOM.body.classList.add('work-account-view'); // Always apply work-account-view for full features
             }
+            // else block is no longer relevant as isLoggedIn is always true
             displayTrends();
         }
-
+        
+        // CẬP NHẬT: Hàm signIn không còn được gọi từ bên ngoài, có thể bỏ hoặc giữ lại nếu có nhu cầu tương lai.
+        // Hiện tại, trạng thái user được khởi tạo trực tiếp.
+        /*
         function signIn(type) {
             user = {
                 isLoggedIn: true,
@@ -1078,7 +1085,7 @@
                 followedTrends: [],
                 tbSearchTerms: []
             };
-            closeModal('login-choice-modal');
+            // closeModal('login-choice-modal'); // Modal này đã bị xóa
             updateAuthUI();
             if (type === 'work' && !user.hasSetPreferences) {
                 populatePreferenceCheckboxes();
@@ -1087,6 +1094,7 @@
                 switchView('main');
             }
         }
+        */
         
         function populateRegionsFilter(selectElement) {
             if (!selectElement) return;
@@ -1395,7 +1403,7 @@
 
         // NEW: Function to open the AI Insight modal
         async function openAIInsightModal(trend, analysisType) {
-            if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
+            // No longer need login check here, as user is always 'work'
             
             const isSummary = (analysisType === 'summary');
             const titleKey = isSummary ? 'AI Analysis Summary for' : 'AI Deep Dive for';
@@ -1424,14 +1432,12 @@
 
         // NEW: Function to open the trend overview modal
         function openTrendOverviewModal(trend) {
+            // No longer need login check here, as user is always 'work'
             if (!trend) {
                 console.error("No trend data provided for overview modal.");
                 return;
             }
-            if (!user.isLoggedIn || user.accountType !== 'work') {
-                return openModal('premium-modal');
-            }
-
+           
             DOM.trendOverviewBody.innerHTML = createTrendCardContent(trend);
             openModal('trend-overview-modal');
             
@@ -1717,7 +1723,8 @@
                 return;
             }
 
-            if (!user.isLoggedIn || user.accountType !== 'work' || (!user.hasSetPreferences && user.followedTrends.length === 0)) {
+            // No longer need login check here, as user is always 'work'
+            if (!user.hasSetPreferences && user.followedTrends.length === 0) {
                 chartContainer.classList.add('hidden');
                 return;
             }
@@ -2048,7 +2055,7 @@
             // Xác định hành động cụ thể dựa trên phần tử con được nhấp
             if (targetElement.closest('.btn-follow')) {
                 console.log("Follow button clicked");
-                if (!user.isLoggedIn || user.accountType !== 'work') return openModal('premium-modal');
+                // Không cần kiểm tra user.isLoggedIn hoặc accountType nữa
                 
                 const isFollowed = user.followedTrends.includes(trend.id);
                 user.followedTrends = isFollowed ? user.followedTrends.filter(id => id !== trend.id) : [...user.followedTrends, trend.id];
@@ -2116,7 +2123,33 @@
                 updateActiveNav(currentView);
                 updateClearFilterButtonVisibility();
 
-                if (currentView === 'trendingBoard') {
+                // CẬP NHẬT: Mở Preferences Modal ngay lập tức nếu chưa thiết lập
+                if (!user.hasSetPreferences) {
+                    populatePreferenceCheckboxes();
+                    openModal('preferences-modal');
+                }
+                // else if (currentView === 'trendingBoard') { // Nếu đã thiết lập preferences và đang ở trendingBoard
+                //     const initialTbFilters = {
+                //         region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
+                //         category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
+                //     };
+                //     allTrends = masterTrendsList.filter(trend => 
+                //         (initialTbFilters.region === 'global' || trend.region === initialTbFilters.region) &&
+                //         (initialTbFilters.category === 'All' || trend.category === initialTbFilters.category)
+                //     );
+                //     currentTrendStatus.status = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
+                //     currentTrendStatus.customTimeframe = DOM.tbCustomTimeframeSelect ? DOM.tbCustomTimeframeSelect.value : '7d';
+                //     populateCustomTimeframeOptions(currentTrendStatus.status); 
+                //     await createHotTrendsChart();
+                // } else { // Nếu đã thiết lập preferences và không ở trendingBoard, hiển thị main view
+                //     displayTrends();
+                // }
+
+
+                // CẬP NHẬT: Logic điều hướng sau khi preferences modal được xử lý hoặc nếu đã thiết lập
+                if (!user.hasSetPreferences && currentView === 'main') {
+                    // Do nothing here, preferences modal is already open
+                } else if (currentView === 'trendingBoard') {
                     const initialTbFilters = {
                         region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
                         category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
@@ -2125,7 +2158,6 @@
                         (initialTbFilters.region === 'global' || trend.region === initialTbFilters.region) &&
                         (initialTbFilters.category === 'All' || trend.category === initialTbFilters.category)
                     );
-                    
                     currentTrendStatus.status = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
                     currentTrendStatus.customTimeframe = DOM.tbCustomTimeframeSelect ? DOM.tbCustomTimeframeSelect.value : '7d';
                     populateCustomTimeframeOptions(currentTrendStatus.status); 
@@ -2134,6 +2166,7 @@
                     displayTrends();
                 }
 
+
                 document.getElementById('loader')?.classList.add('loader-hidden');
             }
 
@@ -2141,21 +2174,29 @@
             if (DOM.logo) DOM.logo.addEventListener('click', () => switchView('main'));
             if (DOM.navTopTrends) DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
             if (DOM.navForU) DOM.navForU.addEventListener('click', (e) => { e.preventDefault(); switchView('forU'); });
-            if (DOM.signInBtn) DOM.signInBtn.addEventListener('click', () => openModal('login-choice-modal'));
+            // REMOVED: signInBtn event listener
+            // if (DOM.signInBtn) DOM.signInBtn.addEventListener('click', () => openModal('login-choice-modal'));
             if (DOM.userEmailBtn) DOM.userEmailBtn.addEventListener('click', () => { if (DOM.userDropdown) DOM.userDropdown.classList.toggle('show'); });
             if (DOM.dropdownSignOut) DOM.dropdownSignOut.addEventListener('click', () => {
-                user = { isLoggedIn: false, email: null, accountType: null, preferences: [], hasSetPreferences: false, followedTrends: [], tbSearchTerms: [] };
+                // CẬP NHẬT: Sign Out sẽ reset user về trạng thái ban đầu (đã đăng nhập, chưa thiết lập preferences)
+                user = { isLoggedIn: true, email: 'guest@trendpulse.com', accountType: 'work', preferences: [], hasSetPreferences: false, followedTrends: [], tbSearchTerms: [] };
+                localStorage.removeItem('userPreferences'); // Xóa preferences đã lưu
+                localStorage.removeItem('userHasSetPreferences'); // Xóa trạng thái đã thiết lập
                 updateAuthUI();
                 if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
-                switchView('main');
+                switchView('main'); // Chuyển về main view
+                populatePreferenceCheckboxes(); // Hiển thị lại preferences modal
+                openModal('preferences-modal');
             });
-            if (DOM.dropdownWorkSchool) DOM.dropdownWorkSchool.addEventListener('click', () => {
-                 signIn('work');
-                 if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
-            });
+            // REMOVED: dropdownWorkSchool event listener (nếu bạn muốn giữ nút, hãy giữ event listener)
+            // if (DOM.dropdownWorkSchool) DOM.dropdownWorkSchool.addEventListener('click', () => {
+            //      signIn('work'); // Hàm signIn đã không còn được sử dụng trực tiếp
+            //      if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
+            // });
             if (DOM.navAbout) DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
-            if (DOM.navTrendingBoard) DOM.navTrendingBoard.addEventListener('click', (e) => { e.preventDefault(); if (user.isLoggedIn && user.accountType === 'work') { switchView('trendingBoard'); } else { openModal('premium-modal'); } });
-            document.getElementById('premium-login-btn')?.addEventListener('click', () => { closeModal('premium-modal'); openModal('login-choice-modal'); });
+            if (DOM.navTrendingBoard) DOM.navTrendingBoard.addEventListener('click', (e) => { e.preventDefault(); /* Không cần kiểm tra login/premium nữa */ switchView('trendingBoard'); });
+            // REMOVED: premium-login-btn, login-google-btn, login-work-btn event listeners
+            document.getElementById('premium-login-btn')?.addEventListener('click', () => { closeModal('premium-modal'); /* openModal('login-choice-modal'); */ }); // Nút này bây giờ có thể vô tác dụng hoặc cần định tuyến lại
             DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => {
                 closeModal(btn.closest('.modal-overlay').id);
                 const modalId = btn.closest('.modal-overlay').id;
@@ -2163,15 +2204,19 @@
                     updateActiveNav(currentView);
                 }
             }));
-            document.getElementById('login-google-btn')?.addEventListener('click', () => signIn('personal'));
-            document.getElementById('login-work-btn')?.addEventListener('click', () => signIn('work'));
+            // REMOVED: login-google-btn, login-work-btn event listeners
+            // document.getElementById('login-google-btn')?.addEventListener('click', () => signIn('personal'));
+            // document.getElementById('login-work-btn')?.addEventListener('click', () => signIn('work'));
+
             if (DOM.loadMoreBtn) DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
             if (DOM.forULoadMoreBtn) DOM.forULoadMoreBtn.addEventListener('click', loadMoreTrends);
             if (DOM.savePreferencesBtn) DOM.savePreferencesBtn.addEventListener('click', () => {
                 user.preferences = [...document.querySelectorAll('#preferences-grid input:checked')].map(cb => cb.value);
                 user.hasSetPreferences = true;
+                localStorage.setItem('userPreferences', JSON.stringify(user.preferences)); // Lưu preferences
+                localStorage.setItem('userHasSetPreferences', 'true'); // Lưu trạng thái đã thiết lập
                 closeModal('preferences-modal');
-                switchView('forU');
+                switchView('forU'); // Chuyển đến For U sau khi lưu
             });
 
             // Gắn event listener cho các danh sách trends (Main, For U, Leaderboards TB)
@@ -2330,6 +2375,18 @@
                     displayTrends();
                 }
             });
+
+            // CẬP NHẬT: Thêm logic tải preferences từ localStorage
+            const storedPreferences = localStorage.getItem('userPreferences');
+            if (storedPreferences) {
+                user.preferences = JSON.parse(storedPreferences);
+                user.hasSetPreferences = true;
+            }
+            const storedHasSetPreferences = localStorage.getItem('userHasSetPreferences');
+            if (storedHasSetPreferences === 'true') {
+                user.hasSetPreferences = true;
+            }
+
 
             initializeApp();
         });
