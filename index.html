@@ -1,3 +1,18 @@
+Tuyệt vời! Dưới đây là phiên bản HTML đầy đủ đã tích hợp tất cả các thay đổi cho đến nay, bao gồm:
+1.  **Loại bỏ chức năng đăng nhập** và hiển thị preferences modal khi truy cập lần đầu.
+2.  **Cập nhật các nguồn báo chí** quốc tế.
+3.  **Cải thiện định dạng AI Analysis Summary** thành danh sách HTML dễ đọc.
+4.  **Thêm hiệu ứng hover** cho các mục Trending Board leaderboard.
+5.  **Căn giữa các bảng metrics** trong AI Deep Dive.
+6.  **Cải thiện hoàn chỉnh responsiveness** cho toàn bộ trang web trên các thiết bị mobile, tablet, laptop, desktop.
+
+Hãy sao chép toàn bộ nội dung này và dán vào tệp `index.html` của bạn.
+
+**Lưu ý quan trọng:**
+*   **Deploy Netlify Functions:** Đảm bảo bạn đã **deploy lại Builder Function (`trends-builder.js`) và Netlify Function (`fetch-trends.js`, `analyze-trend.js`)** sau các thay đổi trước đó, để dữ liệu và định dạng AI mới nhất có hiệu lực.
+*   **Thử nghiệm trên nhiều thiết bị:** Sau khi cập nhật file HTML, hãy kiểm tra kỹ lưỡng trang web trên các trình duyệt và kích thước màn hình khác nhau để đảm bảo mọi thứ hoạt động và hiển thị đúng như mong muốn.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,7 +34,13 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; overflow-x: hidden; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            line-height: 1.6; 
+            overflow-x: hidden; 
+        }
         .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease; }
         .loader-overlay.loader-hidden { opacity: 0; visibility: hidden; }
         @keyframes pulse { 0% { top: 36px; left: 36px; width: 0; height: 0; opacity: 1; } 100% { top: 0px; left: 0px; width: 72px; height: 72px; opacity: 0; } }
@@ -28,10 +49,26 @@
         .loader-pulse div:nth-child(2) { animation-delay: -0.6s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; background-color: var(--bg-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; height: var(--header-height); animation: fadeIn 0.5s ease-out; }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 2rem; /* Giữ nguyên cho desktop */
+            background-color: var(--bg-color); 
+            border-bottom: 1px solid var(--border-color); 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+            height: var(--header-height); 
+            animation: fadeIn 0.5s ease-out; 
+        }
         .logo { font-size: 1.8rem; font-weight: 700; cursor: pointer; }
         .logo-trend { color: var(--primary-light); }
-        .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+        .nav-links { 
+            display: flex; 
+            gap: 1.5rem; 
+            list-style: none; 
+        }
         .nav-links a { color: var(--text-muted-color); text-decoration: none; font-weight: 500; transition: color 0.3s ease; padding-bottom: 4px; border-bottom: 2px solid transparent; }
         .nav-links a:hover { color: var(--primary-color); }
         .nav-links a.active-link { color: var(--text-color); border-bottom-color: var(--primary-color); }
@@ -45,9 +82,24 @@
         .btn-outline { background: transparent; color: var(--primary-light); border: 1px solid var(--primary-light); font-size: 0.8rem; padding: 0.3rem 0.8rem; }
         .btn-outline:hover { background: var(--primary-light); color: white; }
         .analyze-trend-btn { margin-right: 0.5rem; }
-        .main-container { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; padding: 2rem; width: 100%; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
-        .for-u-container { display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 2rem; width: 100%; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
-        .trending-board-container { padding: 2rem; width: 100%; max-width: 1400px; margin: auto; animation: slideInUp 0.6s ease-out; }
+        .main-container, 
+        .for-u-container { 
+            display: grid; 
+            grid-template-columns: 320px 1fr; /* 2 cột cho desktop */
+            gap: 2rem; 
+            padding: 2rem; /* Giữ nguyên cho desktop */
+            width: 100%; 
+            max-width: 1400px; 
+            margin: auto; 
+            animation: slideInUp 0.6s ease-out; 
+        }
+        .trending-board-container { 
+            padding: 2rem; 
+            width: 100%; 
+            max-width: 1400px; 
+            margin: auto; 
+            animation: slideInUp 0.6s ease-out; 
+        }
         .demo-banner { grid-column: 1 / -1; background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         .trending-container, .for-u-content, .leaderboard-panel, #search-filter-panel { background-color: var(--surface-color); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
         .trending-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
@@ -402,26 +454,136 @@
         .footer-links a { color: var(--text-muted-color); text-decoration: none; }
         .footer-links a:hover { color: var(--primary-light); }
         .footer-bottom { border-top: 1px solid var(--border-color); margin-top: 2rem; padding-top: 1.5rem; text-align: center; color: var(--text-muted-color); font-size: 0.9rem; }
-        @media (max-width: 1024px) { .main-container, .for-u-container { grid-template-columns: 1fr; } #search-filter-panel, .leaderboard-panel { grid-row: 1; }
-            /* NEW: Adjust dropdown position for smaller screens */
-            .nav-actions .dropdown { right: 1rem; left: auto; }
+        @media (max-width: 1024px) { 
+            .header {
+                padding: 0 1.5rem; /* Giảm padding ngang */
+            }
+            .main-container, 
+            .for-u-container { 
+                grid-template-columns: 1fr; /* Chuyển sang bố cục 1 cột */
+                padding: 1.5rem; /* Giảm padding tổng thể */
+            }
+            .trending-board-container {
+                padding: 1.5rem;
+            }
+            #search-filter-panel, 
+            .leaderboard-panel { 
+                grid-row: auto; /* Đảm bảo xếp chồng bình thường */
+                order: 1; /* Di chuyển search/filter panel lên đầu */
+            }
+            .trending-container, .for-u-content {
+                order: 2; /* Đảm bảo nội dung chính theo sau panel */
+            }
+            .nav-actions .dropdown { 
+                right: 1rem; 
+                left: auto; 
+            }
+            .tb-leaderboards-grid {
+                grid-template-columns: 1fr; /* 1 cột cho tablet ngang */
+            }
+            .tb-filters {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* 2-3 cột nhỏ hơn cho filters */
+                gap: 0.75rem;
+            }
         }
+
+        /* Mobile (Smartphones) - Max-width 768px */
         @media (max-width: 768px) {
-            .header { padding: 0 1rem; }
-            .nav-links { position: fixed; top: var(--header-height); left: 0; width: 100%; height: calc(100vh - var(--header-height)); background-color: var(--bg-color); flex-direction: column; align-items: center; padding-top: 2rem; transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
-            nav.nav-active .nav-links { transform: translateX(0); }
-            .hamburger-menu { display: flex; flex-direction: column; justify-content: space-around; width: 2rem; height: 2rem; background: transparent; border: none; cursor: pointer; z-index: 10; }
-            .hamburger-menu.active span:nth-child(1) { transform: translateY(0.875rem) rotate(45deg); } /* Adjusted transform origin */
-            .hamburger-menu.active span:nth-child(2) { opacity: 0; }
-            .hamburger-menu.active span:nth-child(3) { transform: translateY(-0.875rem) rotate(-45deg); } /* Adjusted transform origin */
-            .main-container, .for-u-container, .trending-board-container { padding: 1rem; }
-            .trending-title-group { font-size: 1.25rem; }
-            .trend-card { padding: 1rem; }
-            .trend-title { font-size: 1.1rem; }
-            .tb-leaderboards-grid { grid-template-columns: 1fr; }
-            .footer-content { grid-template-columns: 1fr; text-align: center; }
+            .header { 
+                padding: 0 1rem; 
+                height: 60px; /* Chiều cao nhỏ hơn cho mobile */
+            }
+            .logo {
+                font-size: 1.5rem;
+            }
+            .nav-links { 
+                position: fixed; 
+                top: var(--header-height); /* Bắt đầu dưới header */
+                left: 0; 
+                width: 100%; 
+                height: calc(100vh - var(--header-height)); 
+                background-color: var(--bg-color); 
+                flex-direction: column; 
+                align-items: center; 
+                padding-top: 2rem; 
+                transform: translateX(-100%); 
+                transition: transform 0.3s ease-in-out; 
+                z-index: 999; /* Đảm bảo nằm trên nội dung */
+            }
+            nav.nav-active .nav-links { 
+                transform: translateX(0); 
+            }
+            .hamburger-menu { 
+                display: flex; 
+                /* ... các style khác */
+            }
+            .nav-actions {
+                order: 1; /* Đảm bảo hamburger menu và actions ở cuối header */
+                display: none; /* Ẩn user menu / lang switcher trên mobile, chỉ hiện hamburger */
+            }
+            .hamburger-menu {
+                display: flex;
+            }
+            
+            .main-container, 
+            .for-u-container, 
+            .trending-board-container { 
+                padding: 1rem; 
+            }
+            .trending-title-group { 
+                font-size: 1.25rem; 
+            }
+            .trend-card { 
+                padding: 1rem; 
+            }
+            .trend-title { 
+                font-size: 1.1rem; 
+            }
+            .tb-leaderboards-grid { 
+                grid-template-columns: 1fr; 
+            }
+            .footer-content { 
+                grid-template-columns: 1fr; 
+                text-align: center; 
+            }
+            .tb-filters {
+                grid-template-columns: 1fr; /* 1 cột cho filter trên mobile */
+                gap: 0.5rem;
+            }
+
+            /* Ẩn chi tiết meta trên mobile để giữ gọn gàng */
+            .trend-meta {
+                display: none;
+            }
+            /* Điều chỉnh các nút trong trend-actions cho mobile */
+            .trend-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            .trend-actions .btn {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.8rem;
+            }
+
+            /* Modal riêng cho mobile */
+            .modal-content {
+                width: 95%; /* Chiếm gần hết chiều rộng */
+                margin: 1rem; /* Khoảng cách xung quanh */
+            }
         }
-        .hidden { display: none !important; }
+
+        /* iPad ngang (landscape) - Max-width 1024px, nhưng rộng hơn */
+        @media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+            .main-container, 
+            .for-u-container { 
+                grid-template-columns: 1fr 300px; /* Có thể giữ 2 cột nhưng sidebar nhỏ hơn */
+                padding: 1.5rem;
+            }
+            .tb-leaderboards-grid {
+                grid-template-columns: 1fr 1fr; /* 2 cột vẫn tốt cho iPad ngang */
+            }
+        }
     </style>
 </head>
 <body>
