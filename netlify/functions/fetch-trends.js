@@ -15,6 +15,8 @@ function calculateHotnessScore(trend, maxValues) {
 function preprocessTrends(trends) {
     if (!trends || trends.length === 0) return [];
     
+    // Tính toán maxValues dựa trên TẤT CẢ các trends được truyền vào hàm này
+    // (trong trường hợp này là master list từ builder)
     const maxValues = {
         views: Math.max(1, ...trends.map(trendItem => trendItem.views || 0)),
         interactions: Math.max(1, ...trends.map(trendItem => trendItem.interactions || 0)),
@@ -23,6 +25,9 @@ function preprocessTrends(trends) {
     };
     
     trends.forEach((trendItem, i) => {
+        // Đảm bảo id có sẵn từ backend
+        // trendItem.id = trendItem.id || `temp-id-${i}`; // Không cần tạo ID tạm nữa nếu backend gửi về ổn định
+        
         trendItem.hotnessScore = calculateHotnessScore(trendItem, maxValues);
         trendItem.type = trendItem.type || (i % 3 === 0 ? 'topic' : 'query');
     });
@@ -43,10 +48,10 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { region, category, timeframe, searchTerm, hashtag } = event.queryStringParameters || {};
+    const { region, category, timeframe, searchTerm, hashtag, source } = event.queryStringParameters || {}; // CẬP NHẬT: Thêm 'source' filter
 
-    // Call the Builder Function to get the cached (or newly built) master list of trends
-    // The Builder function is exposed at /.netlify/builders/trends-builder
+    // Gọi Builder Function để lấy danh sách master trends đã được cache (hoặc mới build)
+    // Builder function được expose tại /.netlify/builders/trends-builder
     const builderUrl = `${process.env.URL || "http://localhost:8888"}/.netlify/builders/trends-builder`;
     console.log("Calling trends-builder function:", builderUrl);
     
@@ -63,13 +68,13 @@ exports.handler = async (event) => {
         throw new Error(data.message || "Failed to get valid trends data from builder.");
     }
 
-    // The Builder function already preprocesses, but let's re-apply hotness score calculation
-    // to ensure consistency if the builder's preprocessing changes or is minimal.
-    // However, for performance, it's better if the builder function sends fully preprocessed trends.
-    // For this example, let's trust the builder sends preprocessed trends.
+    // Builder function đã thực hiện preprocess, nhưng chúng ta sẽ preprocess lại
+    // trên master list để đảm bảo 'hotnessScore' được tính toán dựa trên tập dữ liệu đầy đủ
+    // nếu logic tính toán hotnessScore của client/backend cần giá trị tương đối.
+    // Nếu Builder đã gửi về hotnessScore cuối cùng, bước này có thể bỏ qua để tối ưu.
     let allFetchedTrends = preprocessTrends(data.trends);
 
-    // Now, apply client-side filters
+    // Áp dụng các bộ lọc động từ client
     let filteredTrends = allFetchedTrends;
 
     if (region && region !== "global") {
@@ -78,7 +83,10 @@ exports.handler = async (event) => {
     if (category && category !== "All") { 
       filteredTrends = filteredTrends.filter(t => t.category && t.category.toLowerCase() === category.toLowerCase());
     }
-    if (timeframe && timeframe !== "all") { // Match timeframe logic from client-side
+    if (source && source !== "All") { // NEW: Apply source filter
+      filteredTrends = filteredTrends.filter(t => t.submitter && t.submitter === source);
+    }
+    if (timeframe && timeframe !== "all") { // Logic timeframe này giống như ở client-side
       const now = new Date();
       let cutoffDate = new Date(now);
       switch (timeframe) {
