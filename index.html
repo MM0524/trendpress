@@ -263,10 +263,17 @@
 
         .ai-metric-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            /* CẬP NHẬT: Giới hạn số lượng cột và căn giữa toàn bộ grid */
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Cho phép 2 hoặc nhiều cột nếu đủ không gian, mỗi cột tối thiểu 150px */
             gap: 1rem;
-            margin-top: 1rem;
-            margin-bottom: 1.5rem;
+            
+            /* NEW: Để căn giữa toàn bộ khối grid */
+            max-width: 350px; /* Giới hạn chiều rộng tối đa của grid để nó không chiếm hết 100% */
+            margin: 1rem auto 1.5rem auto; /* Căn giữa theo chiều ngang và điều chỉnh margin trên/dưới */
+            
+            /* NEW (optional but good practice for centering grid tracks/items): */
+            justify-content: center; /* Căn giữa các track của grid trong không gian còn lại */
+            align-items: center; /* Căn giữa các item theo chiều dọc trong cell của chúng */
         }
 
         .ai-metric-item {
@@ -274,7 +281,7 @@
             border: 1px solid var(--border-color);
             border-radius: 6px;
             padding: 0.75rem;
-            text-align: center;
+            text-align: center; /* Giữ nguyên, căn giữa nội dung bên trong mỗi hộp */
         }
 
         .ai-metric-item strong {
