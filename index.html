@@ -1275,7 +1275,8 @@
             if (user.isLoggedIn && user.followedTrends.length > 0) {
                 const leaderboardDiv = document.createElement('div');
                 leaderboardDiv.className = 'leaderboard-widget';
-                const listItems = followedTrendsData.map(trendItem => `<li data-trend-id="${trendItem.id}">${truncateText(getLocalizedTrendText(trendItem).title, 35)}</li>`).join('');
+                const listItems = masterTrendsList.filter(trendItem => user.followedTrends.includes(trendItem.id))
+                                   .map(trendItem => `<li data-trend-id="${trendItem.id}">${truncateText(getLocalizedTrendText(trendItem).title, 35)}</li>`).join('');
                 leaderboardDiv.innerHTML = `<h4>${t('Your Followed Trends')}</h4><ul>${listItems}</ul>`;
                 container.appendChild(leaderboardDiv);
             }
@@ -2275,6 +2276,7 @@
             // Đã cập nhật để bao gồm các id cụ thể cho các bảng Trending Board
             [
                 DOM.trendsList, 
+                DOM.forUTrendsList, // THÊM LẮNG NGHE CHO FOR U TRENDS LIST
                 document.getElementById('for-u-leaderboards'),
                 document.getElementById('tb-topic-list'), 
                 document.getElementById('tb-query-list')  
