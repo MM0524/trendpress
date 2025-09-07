@@ -603,8 +603,6 @@ const fetchToyCircle = () => fetchAndParseXmlFeed("https://www.toycir.com/rss", 
 // --------------------- S: Sneakers / Beauty (re-categorized to avoid overlap with Fashion/Lifestyle) ---------------------
 const fetchSneakerNews = () => fetchAndParseXmlFeed("https://sneakernews.com/feed/", "Sneaker News", "Sneakers", "us", ["Shoes", "Fashion"]);
 const fetchHypebeastSneakers = () => fetchAndParseXmlFeed("https://hypebeast.com/feed/category/footwear", "Hypebeast Sneakers", "Sneakers", "global", ["Shoes", "Fashion"]);
-const fetchAllureBeauty = () => fetchAndParseXmlFeed("https://www.allure.com/feed/all", "Allure Beauty", "Beauty", "us", ["Beauty", "Cosmetics"]);
-const fetchIntoTheGloss = () => fetchAndParseXmlFeed("https://intothegloss.com/feed", "Into The Gloss", "Beauty", "us", ["Beauty"]);
 
 
 exports.handler = builder(async (event, context) => { 
