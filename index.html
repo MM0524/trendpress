@@ -263,17 +263,12 @@
 
         .ai-metric-grid {
             display: grid;
-            /* CẬP NHẬT: Giới hạn số lượng cột và căn giữa toàn bộ grid */
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Cho phép 2 hoặc nhiều cột nếu đủ không gian, mỗi cột tối thiểu 150px */
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
-            
-            /* NEW: Để căn giữa toàn bộ khối grid */
-            max-width: 350px; /* Giới hạn chiều rộng tối đa của grid để nó không chiếm hết 100% */
-            margin: 1rem auto 1.5rem auto; /* Căn giữa theo chiều ngang và điều chỉnh margin trên/dưới */
-            
-            /* NEW (optional but good practice for centering grid tracks/items): */
-            justify-content: center; /* Căn giữa các track của grid trong không gian còn lại */
-            align-items: center; /* Căn giữa các item theo chiều dọc trong cell của chúng */
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            /* NEW: Center the grid items horizontally */
+            justify-content: center; 
         }
 
         .ai-metric-item {
@@ -281,7 +276,7 @@
             border: 1px solid var(--border-color);
             border-radius: 6px;
             padding: 0.75rem;
-            text-align: center; /* Giữ nguyên, căn giữa nội dung bên trong mỗi hộp */
+            text-align: center;
         }
 
         .ai-metric-item strong {
@@ -1737,7 +1732,7 @@
                 } else { 
                     let decayRate = 0.05;
                     let peakShiftDays = 3; 
-
+                                        
                     if (timeframe === '7d' || timeframe === '3d' || timeframe.includes('h')) {
                         decayRate = 0.8; 
                         peakShiftDays = 1; 
