@@ -200,23 +200,95 @@
         #login-choice-modal .btn-social svg { position: absolute; left: 1.5rem; stroke: var(--text-muted-color); width: 20px; height: 20px; }
         .preferences-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: left; margin-bottom: 1.5rem; }
         #ai-insight-modal .modal-content { max-width: 550px; width: 90%; text-align: left; }
-        #ai-insight-modal .modal-body { max-height: 70vh; overflow-y: auto; padding-right: 15px; }
-        #ai-insight-modal h4 { color: var(--primary-light); margin-top: 1rem; margin-bottom: 0.5rem; }
-        #ai-insight-modal ul { list-style-position: inside; padding-left: 5px; }
-        #ai-insight-modal li { margin-bottom: 0.5rem; }
+        #ai-insight-modal .modal-body { 
+            max-height: 70vh; 
+            overflow-y: auto; 
+            padding-right: 15px; 
+            line-height: 1.8; /* Dễ đọc hơn */
+            text-align: left; /* Đảm bảo căn trái */
+        }
+        #ai-insight-modal h4 { 
+            color: var(--primary-light); 
+            margin-top: 1.5rem; /* Khoảng cách trên lớn hơn cho các phần chính */
+            margin-bottom: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color); /* Đường kẻ dưới tiêu đề */
+            padding-bottom: 0.5rem;
+        }
 
-        /* NEW: Custom styles for AI Insight modal's list to ensure readability */
-        #ai-insight-modal .modal-body ul {
-            list-style-type: disc; /* Hoặc square, circle */
-            padding-left: 20px;
-            margin-top: 10px;
-            margin-bottom: 10px;
-            text-align: left; /* Đảm bảo danh sách căn trái */
+        /* NEW: Styles for AI Deep Dive content */
+        #ai-insight-modal h5 { /* For sub-sections */
+            color: var(--text-color);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 500;
         }
-        #ai-insight-modal .modal-body li {
-            margin-bottom: 5px;
-            color: var(--text-color); /* Đảm bảo màu chữ dễ đọc */
+
+        #ai-insight-modal p {
+            margin-bottom: 1rem;
+            color: var(--text-muted-color);
         }
+
+        #ai-insight-modal ul {
+            list-style-type: disc; /* Kiểu dấu đầu dòng */
+            padding-left: 25px;
+            margin-bottom: 1rem;
+            color: var(--text-color); /* Màu chữ cho danh sách */
+        }
+
+        #ai-insight-modal li {
+            margin-bottom: 0.5rem;
+            color: var(--text-muted-color); /* Màu chữ cho item trong danh sách */
+        }
+
+        #ai-insight-modal strong {
+            color: var(--primary-light); /* Làm nổi bật văn bản in đậm */
+        }
+
+        /* Specific styles for AI Insight Sections */
+        .ai-section {
+            background-color: var(--bg-color); /* Nền nhẹ nhàng cho từng phần */
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ai-highlight {
+            color: var(--primary-light);
+            font-weight: 700;
+        }
+
+        .ai-metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ai-metric-item {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.75rem;
+            text-align: center;
+        }
+
+        .ai-metric-item strong {
+            display: block;
+            font-size: 1.2rem;
+            color: var(--text-color);
+        }
+
+        .ai-metric-item span {
+            font-size: 0.8rem;
+            color: var(--text-muted-color);
+        }
+        /* End NEW AI Deep Dive styles */
+
 
         .tb-header { border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem; }
         .tb-search-container { display: flex; gap: 1rem; margin-bottom: 1rem; }
@@ -1230,7 +1302,7 @@
             // analysisData.summary đã là HTML từ backend
             modalBody.innerHTML = `
                 <div style="margin-bottom: 1rem;"><h4>${t('Success Score')}</h4><p style="font-size: 2rem; font-weight: bold; color: var(--primary-light);">${analysisData.successScore.toFixed(0)}%</p></div>
-                <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4>${DOMPurify.sanitize(analysisData.summary)}</div>
+                <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4>${DOMPurify.sanitize(analysisData.summary, { USE_PROFILES: { html: true } })}</div>
                 <div><h4>${t('Interest Over Time')}</h4></div>`;
             renderAnalysisChart(generateChartDataFromScore(analysisData.successScore).historicalData, generateChartDataFromScore(analysisData.successScore).futureProjection);
         }
@@ -1419,7 +1491,7 @@
                         <div><h4>${t('Interest Over Time')}</h4></div>`;
                     renderAnalysisChart(generateChartDataFromScore(parsedSummaryData.successScore).historicalData, generateChartDataFromScore(parsedSummaryData.successScore).futureProjection);
                 }
-                else { renderDetailedAnalysis(data); } // Đối với detailed vẫn là markdown string
+                else { renderDetailedAnalysis(DOMPurify.sanitize(data, { USE_PROFILES: { html: true } })); } // Đối với detailed vẫn là markdown string, cần sanitize sau khi chuyển đổi từ Markdown sang HTML
             } catch (err) {
                 if (modalBody) {
                     modalBody.classList.add('error-message');
@@ -2203,7 +2275,6 @@
             // Đã cập nhật để bao gồm các id cụ thể cho các bảng Trending Board
             [
                 DOM.trendsList, 
-                DOM.forUTrendsList, 
                 document.getElementById('for-u-leaderboards'),
                 document.getElementById('tb-topic-list'), 
                 document.getElementById('tb-query-list')  
