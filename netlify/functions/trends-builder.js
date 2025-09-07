@@ -225,6 +225,7 @@ async function fetchJsonFeed(url, sourceName, defaultCategory, defaultRegion, ex
 
 // =========================================================================
 // AUTO-GENERATED FEED FETCHERS (Alphabetical blocks by Category/Region)
+// Đảm bảo tên hàm là DUY NHẤT
 // =========================================================================
 
 // --- AI ---
@@ -240,7 +241,7 @@ const fetchTAdviserAI = () => fetchAndParseXmlFeed("https://www.tadviser.ru/inde
 const fetchCNewsAI = () => fetchAndParseXmlFeed("https://www.cnews.ru/inc/rss/news.xml", "CNews Russia Tech/AI", "AI", "ru", ["Russia","AI"]);
 const fetchSyncedReviewAI = () => fetchAndParseXmlFeed("https://syncedreview.com/feed/", "Synced Review", "AI", "cn", ["China","AI"]);
 const fetchTechNodeAI = () => fetchAndParseXmlFeed("https://technode.com/feed/", "TechNode AI", "AI", "cn", ["China","AI"]);
-const fetchVNExpressAI = () => fetchAndParseXmlFeed("https://vnexpress.net/rss/khoa-hoc.rss", "VNExpress AI", "AI", "vn", ["Vietnam","AI"]); // Using science feed for AI
+const fetchVNExpressAI = () => fetchAndParseXmlFeed("https://vnexpress.net/rss/khoa-hoc.rss", "VNExpress AI", "AI", "vn", ["Vietnam","AI"]);
 
 // --- Archaeology ---
 const fetchArchaeologyMag = () => fetchAndParseXmlFeed("https://www.archaeology.org/rss.xml", "Archaeology Magazine", "Archaeology", "us", ["Archaeology"]);
@@ -313,9 +314,9 @@ const fetchBkavNews = () => fetchAndParseXmlFeed("https://bkav.com.vn/rss", "Bka
 const fetchChronicleHigherEd = () => fetchAndParseXmlFeed("https://www.chronicle.com/feed", "Chronicle of Higher Education", "Education", "us", ["Education"]);
 const fetchInsideHigherEd = () => fetchAndParseXmlFeed("https://www.insidehighered.com/rss/news", "Inside Higher Ed", "Education", "us", ["Education"]);
 const fetchTimesHigherEducation = () => fetchAndParseXmlFeed("https://www.timeshighereducation.com/rss", "Times Higher Education", "Education", "uk", ["Education"]);
-const fetchGuardianEducation = () => fetchAndParseXmlFeed("https://www.theguardian.com/education/rss", "Guardian Education", "Education", "uk", ["Education"]);
+const fetchGuardianEducation = () => fetchAndParseXmlFeed("https://www.theguardian.com/education/rss", "Guardian Education", "Education", "uk", ["UK","Education"]);
 const fetchUniversityWorldNews = () => fetchAndParseXmlFeed("https://www.universityworldnews.com/rss/", "University World News", "Education", "eu", ["Education"]);
-const fetchEurydiceNews = () => fetchAndParseXmlFeed("https://eacea.ec.europa.eu/education/european-policy/feeds_en", "Eurydice / EACEA", "Education", "eu", ["Education"]);
+const fetchEurydiceNews = () => fetchAndParseXmlFeed("https://eacea.ec.europa.eu/education/european-policy/feeds_en", "Eurydice / EACEA", "Education", "eu", ["EU","Education"]);
 const fetchLeFigaroEducation = () => fetchAndParseXmlFeed("https://www.lefigaro.fr/rss/le-figaro-education.xml", "Le Figaro Education", "Education", "fr", ["France","Education"]);
 const fetchEducPros = () => fetchAndParseXmlFeed("https://www.letudiant.fr/educpros.rss", "EducPros", "Education", "fr", ["France","Education"]);
 const fetchTasseEducation = () => fetchAndParseXmlFeed("https://tass.com/rss/education.xml", "TASS Education", "Education", "ru", ["Russia","Education"]);
@@ -379,17 +380,18 @@ const fetchElle = () => fetchAndParseXmlFeed("https://www.elle.com/rss/all.xml",
 const fetchHarperBazaar = () => fetchAndParseXmlFeed("https://www.harpersbazaar.com/rss/all.xml", "Harper's Bazaar", "Fashion", "uk", ["Fashion"]);
 const fetchDazed = () => fetchAndParseXmlFeed("https://www.dazeddigital.com/rss.xml", "Dazed", "Fashion", "uk", ["Lifestyle"]);
 const fetchHighsnobiety = () => fetchAndParseXmlFeed("https://www.highsnobiety.com/feed", "Highsnobiety", "Fashion", "eu", ["Fashion"]);
-const fetchRefinery29Fashion = () => fetchAndParseXmlFeed("https://www.refinery29.com/en-us/feed", "Refinery29 Fashion", "Fashion", "eu", ["Lifestyle"]); // Specific category name
+const fetchRefinery29Fashion = () => fetchAndParseXmlFeed("https://www.refinery29.com/en-us/feed", "Refinery29 Fashion", "Fashion", "us", ["Lifestyle"]); // Changed from EU to US to match other sources in group
 const fetchLeMondeStyles = () => fetchAndParseXmlFeed("https://www.lemonde.fr/m-styles/rss_full.xml", "Le Monde Styles", "Fashion", "fr", ["France","Fashion"]);
 const fetchGraziaFR = () => fetchAndParseXmlFeed("https://www.grazia.fr/rss", "Grazia France", "Fashion", "fr", ["France","Fashion"]);
-const fetchGQ = () => fetchAndParseXmlFeed("https://www.gq.com/rss", "GQ", "Fashion", "us", ["Fashion"]);
-const fetchHypebeast = () => fetchAndParseXmlFeed("https://hypebeast.com/feed", "Hypebeast", "Fashion", "global", ["Fashion"]);
+const fetchGQ = () => fetchAndParseXmlFeed("https://www.gq.com/rss", "GQ", "Fashion", "us", ["Fashion"]); // US-based
+const fetchHypebeast = () => fetchAndParseXmlFeed("https://hypebeast.com/feed", "Hypebeast", "Fashion", "global", ["Fashion"]); // Global
 const fetchVogueRU = () => fetchAndParseXmlFeed("https://www.vogue.ru/rss", "Vogue Russia", "Fashion", "ru", ["Russia","Fashion"]);
 const fetchElleRU = () => fetchAndParseXmlFeed("https://www.elle.ru/rss", "Elle Russia", "Fashion", "ru", ["Russia","Fashion"]);
 const fetchChinaDailyFashion = () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/fashion.xml", "ChinaDaily Fashion", "Fashion", "cn", ["China","Fashion"]);
 const fetchSCMPFashion = () => fetchAndParseXmlFeed("https://www.scmp.com/lifestyle/fashion-beauty/feed", "SCMP Fashion", "Fashion", "cn", ["China","Fashion"]);
 const fetchElleVN = () => fetchAndParseXmlFeed("https://www.elle.vn/feed", "ELLE Vietnam Fashion", "Fashion", "vn", ["Vietnam","Fashion"]);
 const fetchDepOnline = () => fetchAndParseXmlFeed("https://dep.com.vn/rss", "Đẹp Online", "Fashion", "vn", ["Vietnam","Fashion"]);
+
 
 // --- Finance ---
 const fetchYahooFinance = () => fetchAndParseXmlFeed("https://finance.yahoo.com/news/rss", "Yahoo Finance", "Finance", "us", ["Finance"]);
@@ -406,7 +408,6 @@ const fetchCaixinFinance = () => fetchAndParseXmlFeed("https://www.caixinglobal.
 const fetchChinaSecuritiesJournal = () => fetchAndParseXmlFeed("https://www.cs.com.cn/rss/", "China Securities Journal", "Finance", "cn", ["China","Finance"]);
 const fetchCafeF = () => fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF Finance", "Finance", "vn", ["Vietnam","Finance"]);
 const fetchVietstock = () => fetchAndParseXmlFeed("https://vietstock.vn/rss/home.rss", "Vietstock Finance", "Finance", "vn", ["Vietnam","Finance"]);
-
 
 // --- Food ---
 const fetchBonAppetit = () => fetchAndParseXmlFeed("https://www.bonappetit.com/feed/rss", "Bon Appétit", "Food", "us", ["Food"]);
@@ -507,7 +508,7 @@ const fetchVnExpressNews = () => fetchAndParseXmlFeed("https://vnexpress.net/rss
 const fetchThanhNienNews = () => fetchAndParseXmlFeed("https://thanhnien.vn/rss/home.rss", "Thanh Niên News", "News", "vn", ["Vietnam","News"]);
 
 
-// --- Politics ---
+// --------------------- P: Politics ---------------------
 const fetchPolitico = () => fetchAndParseXmlFeed("https://www.politico.com/rss/politics.xml", "Politico", "Politics", "us", ["USA","Politics"]);
 const fetchCNNPolitics = () => fetchAndParseXmlFeed("https://www.cnn.com/specials/politics/rss", "CNN Politics", "Politics", "us", ["USA","Politics"]);
 const fetchGuardianPolitics = () => fetchAndParseXmlFeed("https://www.theguardian.com/politics/rss", "Guardian Politics", "Politics", "uk", ["UK","Politics"]);
@@ -524,7 +525,7 @@ const fetchVnExpressPolitics = () => fetchAndParseXmlFeed("https://vnexpress.net
 const fetchVnNewsPolitics = () => fetchAndParseXmlFeed("https://tuoitre.vn/rss/tin-moi-nhat.rss", "Tuổi Trẻ (Politics/News)", "Politics", "vn", ["Vietnam","Politics"]);
 
 
-// --- Science ---
+// --------------------- S: Science ---------------------
 const fetchNature = () => fetchAndParseXmlFeed("https://www.nature.com/nature.rss", "Nature", "Science", "global", ["Research"]);
 const fetchScienceMag = () => fetchAndParseXmlFeed("https://www.sciencemag.org/rss/news_current.xml", "Science Magazine", "Science", "us", ["Science"]);
 const fetchNewScientist = () => fetchAndParseXmlFeed("https://www.newscientist.com/feed/home/", "New Scientist", "Science", "uk", ["Science"]);
@@ -533,7 +534,7 @@ const fetchEuronewsScience = () => fetchAndParseXmlFeed("https://www.euronews.co
 const fetchScienceDaily = () => fetchAndParseXmlFeed("https://www.sciencedaily.com/rss/all.xml", "ScienceDaily", "Science", "eu", ["Science"]);
 const fetchCNRSNews = () => fetchAndParseXmlFeed("https://www.cnrs.fr/en/rss", "CNRS News", "Science", "fr", ["France","Science"]);
 const fetchLeMondeScience = () => fetchAndParseXmlFeed("https://www.lemonde.fr/sciences/rss_full.xml", "Le Monde Sciences", "Science", "fr", ["France","Science"]);
-const fetchTassScience = () => fetchAndParseXmlFeed("https://tass.com/science/rss", "TASS Science", "Science", "ru", ["Russia","Science"]);
+const fetchTassScience = () => fetchAndParseXmlFeed("https://tass.com/rss/science.xml", "TASS Science", "Science", "ru", ["Russia","Science"]);
 const fetchRASNews = () => fetchAndParseXmlFeed("https://www.ras.ru/rss/rss_all.xml", "RAS News", "Science", "ru", ["Russia","Science"]);
 const fetchNatureAsia = () => fetchAndParseXmlFeed("https://www.natureasia.com/en/research/rss", "Nature Asia", "Science", "cn", ["China","Science"]);
 const fetchCaixinScience = () => fetchAndParseXmlFeed("https://www.caixinglobal.com/rss", "Caixin Science", "Science", "cn", ["China","Science"]);
@@ -567,7 +568,7 @@ const fetchEUDigital = () => fetchAndParseXmlFeed("https://digital-strategy.ec.e
 const fetchUsineDigitale = () => fetchAndParseXmlFeed("https://www.usine-digitale.fr/rss", "L’Usine Digitale", "Technology", "fr", ["France","Tech"]);
 const fetchNumerama = () => fetchAndParseXmlFeed("https://www.numerama.com/feed/", "Numerama", "Technology", "fr", ["France","Tech"]);
 const fetchTAdviser = () => fetchAndParseXmlFeed("https://www.tadviser.ru/index.php?title=Special:NewsFeed&feed=rss", "TAdviser", "Technology", "ru", ["Russia","Tech"]);
-const fetchCNewsRussia = () => fetchAndParseXmlXmlFeed("https://www.cnews.ru/inc/rss/news.xml", "CNews Russia", "Technology", "ru", ["Russia","Tech"]); // Typo fixed: fetchAndParseXmlXmlFeed -> fetchAndParseXmlFeed
+const fetchCNewsRussia = () => fetchAndParseXmlFeed("https://www.cnews.ru/inc/rss/news.xml", "CNews Russia", "Technology", "ru", ["Russia","Tech"]);
 const fetchPandaily = () => fetchAndParseXmlFeed("https://pandaily.com/feed/", "Pandaily", "Technology", "cn", ["China","Tech"]);
 const fetchTechNode = () => fetchAndParseXmlFeed("https://technode.com/feed/", "TechNode", "Technology", "cn", ["China","Tech"]);
 const fetchVnExpressTech = () => fetchAndParseXmlFeed("https://vnexpress.net/rss/so-hoa.rss", "VNExpress Technology", "Technology", "vn", ["Vietnam","Tech"]);
@@ -606,10 +607,6 @@ const fetchAllureBeauty = () => fetchAndParseXmlFeed("https://www.allure.com/fee
 const fetchIntoTheGloss = () => fetchAndParseXmlFeed("https://intothegloss.com/feed", "Into The Gloss", "Beauty", "us", ["Beauty"]);
 
 
-
-// ===================== END OF AUTO-GENERATED FEED FETCHERS =====================
-
-
 exports.handler = builder(async (event, context) => { 
   const headers = {
     "Content-Type": "application/json",
@@ -623,7 +620,7 @@ exports.handler = builder(async (event, context) => {
   }
 
   try {
-    const sources = [
+    const allSources = [
         // AI
         fetchVentureBeatAI(), fetchMITTechReviewAI(), fetchGuardianAI(), fetchFTTechAI(),
         fetchEuronewsNextAI(), fetchEUDigitalAI(), fetchLeMondeAI(), fetchNumeramaAI(),
@@ -635,7 +632,7 @@ exports.handler = builder(async (event, context) => {
         fetchHeritageDaily(), fetchAncientOrigins(), fetchHeritageFR(), fetchLeMondeHistory(),
         fetchHeritageRU(), fetchPastRU(), fetchChinaHeritage(), fetchCulturalChina(),
 
-        // Beauty (re-categorized)
+        // Beauty
         fetchAllureBeauty(), fetchIntoTheGloss(), fetchVogueBeautyUK(),
 
         // Business
@@ -710,7 +707,7 @@ exports.handler = builder(async (event, context) => {
         fetchTASSHealth(), fetchRiaHealth(), fetchChinaDailyHealth(), fetchCCTVhealth(),
         fetchSucKhoeDoiSong(), fetchBacSiOnline(),
 
-        // Lifestyle (some re-used from other categories)
+        // Lifestyle
         fetchRefinery29Lifestyle(), fetchGoop(), fetchAfamilyLifestyle(), fetchDepPlus(),
 
         // Music
@@ -739,7 +736,7 @@ exports.handler = builder(async (event, context) => {
         fetchTassScience(), fetchRASNews(), fetchNatureAsia(), fetchCaixinScience(),
         fetchVnExpressScience(), fetchKhoaHocPhapLuat(),
 
-        // Sneakers (re-categorized)
+        // Sneakers
         fetchSneakerNews(), fetchHypebeastSneakers(),
 
         // Sports
@@ -766,7 +763,7 @@ exports.handler = builder(async (event, context) => {
     ];
 
 
-    const results = await Promise.allSettled(sources);
+    const results = await Promise.allSettled(allSources); // Use allSources variable now
 
     let allFetchedTrends = [];
     for (const r of results) {
