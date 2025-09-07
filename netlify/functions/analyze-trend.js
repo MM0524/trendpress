@@ -1,4 +1,4 @@
-// File: netlify/functions/analyze-trend.js
+// netlify/functions/analyze-trend.js
 const fetch = require("node-fetch");
 
 exports.handler = async (event, context) => {
@@ -38,16 +38,14 @@ exports.handler = async (event, context) => {
       const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || trend.title_en || trend.title_vi || "No Title Provided";
       const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || trend.description_en || trend.description_vi || "No description provided.";
       const trendCategory = trend.category || "General";
-      const trendRegion = trend.region === 'vn' ? 'Vietnam' : (trend.region === 'us' ? 'United States' : 'Global'); // Translate region for analysis
-      const trendSubmitter = trend.submitter || 'Unknown Source';
-      const trendDate = trend.date ? new Date(trend.date).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US') : 'Unknown Date';
+      const trendRegion = trend.region === 'vn' ? (language === 'vi' ? 'Việt Nam' : 'Vietnam') : (trend.region === 'us' ? (language === 'vi' ? 'Hoa Kỳ' : 'United States') : (language === 'vi' ? 'Toàn cầu' : 'Global')); // Translate region for analysis
+      const trendSubmitter = trend.submitter || (language === 'vi' ? 'Nguồn không xác định' : 'Unknown Source');
+      const trendDate = trend.date ? new Date(trend.date).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US') : (language === 'vi' ? 'Ngày không xác định' : 'Unknown Date');
       
-      // NEW: Metrics for more dynamic analysis text
       const views = trend.views || 0;
       const interactions = trend.interactions || 0;
       const searches = trend.searches || 0;
       const votes = trend.votes || 0;
-
 
       if (trendTitle === "No Title Provided" || trendDescription === "No description provided.") {
         return {
@@ -56,7 +54,7 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({
             success: false,
             message: `Trend data is incomplete: Title="${trendTitle}", Description="${trendDescription}". Cannot analyze an undefined trend.`,
-            data: "The provided trend has no valid title or description. Please ensure the trend data is complete before requesting analysis."
+            data: (language === 'vi' ? "Xu hướng không có tiêu đề hoặc mô tả hợp lệ. Vui lòng đảm bảo dữ liệu xu hướng đầy đủ trước khi yêu cầu phân tích." : "The provided trend has no valid title or description. Please ensure the trend data is complete before requesting analysis.")
           }),
         };
       }
@@ -64,20 +62,19 @@ exports.handler = async (event, context) => {
       let analysisResult = {};
 
       if (analysisType === 'summary') {
-        // CẬP NHẬT: Tính successScore dựa trên hotnessScore (nếu có)
         const successScore = trend.hotnessScore ? 
-                             (Math.min(99, Math.max(20, trend.hotnessScore * 100 + Math.random() * 10 - 5))) : // Tăng phạm vi và thêm ngẫu nhiên
-                             (Math.floor(Math.random() * 40) + 60); // Fallback
+                             (Math.min(99, Math.max(20, trend.hotnessScore * 100 + Math.random() * 10 - 5))) :
+                             (Math.floor(Math.random() * 40) + 60);
         
         const sentiment = successScore > 75 ? (language === 'vi' ? "tích cực" : "positive") : (successScore > 50 ? (language === 'vi' ? "trung lập" : "neutral") : (language === 'vi' ? "hỗn hợp" : "mixed"));
         const growthPotential = successScore > 80 ? (language === 'vi' ? "tiềm năng tăng trưởng cao" : "high potential for growth") : (successScore > 60 ? (language === 'vi' ? "tăng trưởng vừa phải" : "moderate growth") : (language === 'vi' ? "phát triển ổn định" : "stable development"));
         
-        // NEW: Tạo summary bằng HTML để dễ đọc hơn
+        // CẬP NHẬT: Tạo summary bằng HTML trực tiếp, không stringify bên trong
         const htmlSummary = language === 'vi' ? `
             <ul style="list-style-type: disc; padding-left: 20px; text-align: left;">
                 <li><strong>Xu hướng:</strong> "${trendTitle}" (Lĩnh vực: ${trendCategory}).</li>
                 <li><strong>Nguồn gốc:</strong> Từ ${trendSubmitter} vào ngày ${trendDate}.</li>
-                <li><strong>Điểm liên quan:</strong> <strong>${successScore}%</strong> (tâm lý ${sentiment}).</li>
+                <li><strong>Điểm liên quan:</strong> <strong>${successScore.toFixed(0)}%</strong> (tâm lý ${sentiment}).</li>
                 <li><strong>Chỉ số tương tác:</strong> Khoảng ${Math.round(views / 1000)}K lượt xem, ${Math.round(interactions / 1000)}K tương tác, ${Math.round(searches / 1000)}K lượt tìm kiếm và ${votes} lượt bầu chọn.</li>
                 <li><strong>Triển vọng tăng trưởng:</strong> Xu hướng này cho thấy ${growthPotential}.</li>
                 <li><strong>Trọng tâm chính:</strong> Chủ yếu xoay quanh <strong>${trendTitle}</strong>.</li>
@@ -87,7 +84,7 @@ exports.handler = async (event, context) => {
             <ul style="list-style-type: disc; padding-left: 20px; text-align: left;">
                 <li><strong>Trend:</strong> "${trendTitle}" (Domain: ${trendCategory}).</li>
                 <li><strong>Origin:</strong> From ${trendSubmitter} on ${trendDate}.</li>
-                <li><strong>Relevance Score:</strong> <strong>${successScore}%</strong> (${sentiment} sentiment).</li>
+                <li><strong>Relevance Score:</strong> <strong>${successScore.toFixed(0)}%</strong> (${sentiment} sentiment).</li>
                 <li><strong>Engagement Metrics:</strong> Approx. ${Math.round(views / 1000)}K views, ${Math.round(interactions / 1000)}K interactions, ${Math.round(searches / 1000)}K searches, and ${votes} votes.</li>
                 <li><strong>Growth Outlook:</strong> This trend shows ${growthPotential}.</li>
                 <li><strong>Key Focus:</strong> Primarily revolves around <strong>${trendTitle}</strong>.</li>
@@ -96,13 +93,13 @@ exports.handler = async (event, context) => {
         `;
 
         analysisResult = {
-          successScore: parseFloat(successScore.toFixed(0)),
+          successScore: parseFloat(successScore.toFixed(0)), // Giữ nguyên là số để client có thể dùng cho biểu đồ
           summary: htmlSummary, // Gửi về HTML đã định dạng
         };
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify({ success: true, data: JSON.stringify(analysisResult) }),
+          body: JSON.stringify({ success: true, data: analysisResult }), // TRẢ VỀ OBJECT JSON TRỰC TIẾP
         };
 
       } else if (analysisType === 'detailed') {
@@ -110,7 +107,6 @@ exports.handler = async (event, context) => {
         const sentiment = successScore > 75 ? (language === 'vi' ? "tích cực" : "positive") : (successScore > 50 ? (language === 'vi' ? "trung lập" : "neutral") : (language === 'vi' ? "hỗn hợp" : "mixed"));
         const audienceDemographics = trend.category === "Gaming" ? (language === 'vi' ? "đối tượng trẻ (18-30)" : "younger audience (18-30)") : (trend.category === "Fashion" ? (language === 'vi' ? "những người quan tâm thời trang (20-40)" : "fashion-conscious individuals (20-40)") : (language === 'vi' ? "người dùng đa dạng quan tâm đổi mới" : "diverse users interested in innovation"));
 
-        // NEW: Localize detailed analysis content
         const detailedAnalysisContent = language === 'vi' ? `
           # Phân tích chuyên sâu AI cho "${trendTitle}"
 
