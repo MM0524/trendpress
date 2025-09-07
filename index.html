@@ -673,7 +673,7 @@
         const DOM = {
             body: document.body, mainNav: document.getElementById('main-nav'), hamburgerMenu: document.getElementById('hamburger-menu'),
             logo: document.getElementById('logo'), 
-            // REMOVED: signInBtn: document.getElementById('sign-in-btn'), 
+            signInBtn: document.getElementById('sign-in-btn'), // Keep for now, but will be hidden
             userMenu: document.getElementById('user-menu'),
             userEmailBtn: document.getElementById('user-email-btn'), dropdownHeader: document.getElementById('dropdown-user-email'), userDropdown: document.getElementById('user-dropdown'),
             dropdownSignOut: document.getElementById('dropdown-sign-out'), dropdownWorkSchool: document.getElementById('dropdown-work-school'),
@@ -713,27 +713,16 @@
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
 
         async function fetchLiveTrends(filters = {}, forceRefetch = false) {
-            const isMasterListRequest = (Object.keys(filters).length === 0) || 
-                                        (filters.timeframe === '12m' && filters.region === 'global' && filters.category === 'All' && !filters.searchTerm && !filters.hashtag);
+            // CẬP NHẬT: URL để gọi Builder Function để lấy master list
+            const url = `/.netlify/functions/fetch-trends?${new URLSearchParams(filters).toString()}`;
+            console.log("Fetching trends from:", url);
 
-            if (isMasterListRequest && masterTrendsList.length > 0 && !forceRefetch) {
-                 console.log("Returning cached masterTrendsList.");
-                 return masterTrendsList;
-            }
+            // if (isMasterListRequest && masterTrendsList.length > 0 && !forceRefetch) { // No longer needed if allFetchedTrends is from Builder
+            //      console.log("Returning cached masterTrendsList.");
+            //      return masterTrendsList;
+            // }
             
             try {
-                const params = new URLSearchParams();
-                if (filters.region && filters.region !== 'global') params.append('region', filters.region);
-                if (filters.category && filters.category !== 'All') params.append('category', filters.category);
-                params.append('timeframe', filters.customTimeframe || filters.timeframe || '12m'); 
-                if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
-                if (filters.hashtag) params.append('hashtag', filters.hashtag);
-                if (filters.trendStatus) params.append('trendStatus', filters.trendStatus);
-                if (filters.source && filters.source !== 'All') params.append('source', filters.source); 
-                
-                const url = `/.netlify/functions/fetch-trends?${params.toString()}`;
-                console.log("Fetching trends from:", url);
-
                 const res = await fetch(url);
                 if (!res.ok) {
                     const errorText = await res.text();
@@ -745,11 +734,10 @@
                 }
                 const fetchedTrends = (Array.isArray(data.trends)) ? preprocessTrends(data.trends) : [];
 
-                if (isMasterListRequest) {
-                    masterTrendsList = fetchedTrends;
-                    applyTrendOrdering();
-                }
-
+                // CẬP NHẬT: masterTrendsList luôn được cập nhật từ kết quả fetch
+                masterTrendsList = fetchedTrends;
+                applyTrendOrdering();
+                
                 return fetchedTrends;
             } catch (e) {
                 console.warn('Failed to fetch live trends:', e.message);
@@ -771,7 +759,9 @@
                 if (!result.success) throw new Error(result.message || 'Analysis failed on the server');
 
                 if (analysisType === 'summary') {
-                    try { return JSON.parse(result.data); } catch (e) { console.error("Failed to parse AI summary JSON:", result.data); throw new Error("AI returned an invalid summary format."); }
+                    // CẬP NHẬT: Bây giờ summary đã là HTML từ backend, không cần JSON.parse
+                    // Client-side sẽ chỉ sanitize và hiển thị HTML đó
+                    return result.data; // result.data đã là HTML string
                 }
                 const cleanHtml = DOMPurify.sanitize(result.data, { USE_PROFILES: { html: true } });
                 const formatDetailedInsight = (markdownText) => markdownText
@@ -1060,12 +1050,12 @@
             // Since user is always logged in, simplify this part
             if (user.isLoggedIn) {
                 if (DOM.body) DOM.body.classList.add('logged-in');
-                // DOM.signInBtn is removed, so no need to hide it
+                DOM.signInBtn.classList.add('hidden'); // Ensure hidden
                 if (DOM.userMenu) DOM.userMenu.classList.remove('hidden'); // Always show user menu
                 if (DOM.userEmailBtn) DOM.userEmailBtn.textContent = user.email;
                 if (DOM.dropdownHeader) DOM.dropdownHeader.textContent = user.email;
                 if (DOM.navForU) DOM.navForU.classList.remove('hidden'); // 'For U' is always available
-                // DOM.dropdownWorkSchool is hidden in HTML, no need to toggle
+                DOM.dropdownWorkSchool.classList.add('hidden'); // Ensure hidden
                 if (DOM.body) DOM.body.classList.add('work-account-view'); // Always apply work-account-view for full features
             }
             // else block is no longer relevant as isLoggedIn is always true
@@ -1420,7 +1410,8 @@
 
             try {
                 const data = await analyzeTrendSecurely(trend, analysisType);
-                if (isSummary) { renderSummaryAnalysis(data); }
+                // CẬP NHẬT: summary data đã là HTML string, nên không cần JSON.parse nữa
+                if (isSummary) { modalBody.innerHTML = DOMPurify.sanitize(data); } // Trực tiếp chèn HTML
                 else { renderDetailedAnalysis(data); }
             } catch (err) {
                 if (modalBody) {
@@ -2128,28 +2119,8 @@
                     populatePreferenceCheckboxes();
                     openModal('preferences-modal');
                 }
-                // else if (currentView === 'trendingBoard') { // Nếu đã thiết lập preferences và đang ở trendingBoard
-                //     const initialTbFilters = {
-                //         region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
-                //         category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
-                //     };
-                //     allTrends = masterTrendsList.filter(trend => 
-                //         (initialTbFilters.region === 'global' || trend.region === initialTbFilters.region) &&
-                //         (initialTbFilters.category === 'All' || trend.category === initialTbFilters.category)
-                //     );
-                //     currentTrendStatus.status = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
-                //     currentTrendStatus.customTimeframe = DOM.tbCustomTimeframeSelect ? DOM.tbCustomTimeframeSelect.value : '7d';
-                //     populateCustomTimeframeOptions(currentTrendStatus.status); 
-                //     await createHotTrendsChart();
-                // } else { // Nếu đã thiết lập preferences và không ở trendingBoard, hiển thị main view
-                //     displayTrends();
-                // }
-
-
                 // CẬP NHẬT: Logic điều hướng sau khi preferences modal được xử lý hoặc nếu đã thiết lập
-                if (!user.hasSetPreferences && currentView === 'main') {
-                    // Do nothing here, preferences modal is already open
-                } else if (currentView === 'trendingBoard') {
+                else if (currentView === 'trendingBoard') { // Nếu đã thiết lập preferences và đang ở trendingBoard
                     const initialTbFilters = {
                         region: DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global',
                         category: DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All',
@@ -2162,7 +2133,7 @@
                     currentTrendStatus.customTimeframe = DOM.tbCustomTimeframeSelect ? DOM.tbCustomTimeframeSelect.value : '7d';
                     populateCustomTimeframeOptions(currentTrendStatus.status); 
                     await createHotTrendsChart();
-                } else {
+                } else { // Nếu đã thiết lập preferences và không ở trendingBoard, hiển thị main view
                     displayTrends();
                 }
 
@@ -2171,13 +2142,14 @@
             }
 
             if (DOM.hamburgerMenu) DOM.hamburgerMenu.addEventListener('click', () => { if (DOM.mainNav) DOM.mainNav.classList.toggle('nav-active'); });
-            if (DOM.logo) DOM.logo.addEventListener('click', () => switchView('main'));
+            if (DOM.logo) DOM.logo.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); }); // Ngăn chặn refresh
             if (DOM.navTopTrends) DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
             if (DOM.navForU) DOM.navForU.addEventListener('click', (e) => { e.preventDefault(); switchView('forU'); });
             // REMOVED: signInBtn event listener
             // if (DOM.signInBtn) DOM.signInBtn.addEventListener('click', () => openModal('login-choice-modal'));
             if (DOM.userEmailBtn) DOM.userEmailBtn.addEventListener('click', () => { if (DOM.userDropdown) DOM.userDropdown.classList.toggle('show'); });
-            if (DOM.dropdownSignOut) DOM.dropdownSignOut.addEventListener('click', () => {
+            if (DOM.dropdownSignOut) DOM.dropdownSignOut.addEventListener('click', (e) => {
+                e.preventDefault(); // Ngăn chặn hành vi mặc định
                 // CẬP NHẬT: Sign Out sẽ reset user về trạng thái ban đầu (đã đăng nhập, chưa thiết lập preferences)
                 user = { isLoggedIn: true, email: 'guest@trendpulse.com', accountType: 'work', preferences: [], hasSetPreferences: false, followedTrends: [], tbSearchTerms: [] };
                 localStorage.removeItem('userPreferences'); // Xóa preferences đã lưu
@@ -2196,7 +2168,7 @@
             if (DOM.navAbout) DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
             if (DOM.navTrendingBoard) DOM.navTrendingBoard.addEventListener('click', (e) => { e.preventDefault(); /* Không cần kiểm tra login/premium nữa */ switchView('trendingBoard'); });
             // REMOVED: premium-login-btn, login-google-btn, login-work-btn event listeners
-            document.getElementById('premium-login-btn')?.addEventListener('click', () => { closeModal('premium-modal'); /* openModal('login-choice-modal'); */ }); // Nút này bây giờ có thể vô tác dụng hoặc cần định tuyến lại
+            document.getElementById('premium-login-btn')?.addEventListener('click', (e) => { e.preventDefault(); closeModal('premium-modal'); /* openModal('login-choice-modal'); */ }); // Nút này bây giờ có thể vô tác dụng hoặc cần định tuyến lại
             DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => {
                 closeModal(btn.closest('.modal-overlay').id);
                 const modalId = btn.closest('.modal-overlay').id;
@@ -2358,7 +2330,8 @@
                 applyTranslations();
                 updateLanguageToggleUI();
                 
-                masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }, true);
+                // CẬP NHẬT: Không forceRefetch nữa nếu Builder Function đã cache tốt
+                masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }, false); 
                 applyTrendOrdering();
 
                 populateRegionsFilter(DOM.mainRegionFilter);
@@ -2376,11 +2349,17 @@
                 }
             });
 
-            // CẬP NHẬT: Thêm logic tải preferences từ localStorage
+            // CẬP NHẬT: Tải preferences từ localStorage và khởi tạo user state
             const storedPreferences = localStorage.getItem('userPreferences');
             if (storedPreferences) {
-                user.preferences = JSON.parse(storedPreferences);
-                user.hasSetPreferences = true;
+                try {
+                    user.preferences = JSON.parse(storedPreferences);
+                    user.hasSetPreferences = true;
+                } catch (e) {
+                    console.error("Failed to parse stored preferences:", e);
+                    localStorage.removeItem('userPreferences');
+                    localStorage.removeItem('userHasSetPreferences');
+                }
             }
             const storedHasSetPreferences = localStorage.getItem('userHasSetPreferences');
             if (storedHasSetPreferences === 'true') {
