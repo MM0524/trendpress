@@ -58,17 +58,6 @@
             gap: 0.75rem; /* Tăng khoảng cách giữa các nút */
             margin-bottom: 2rem; 
         }
-        .filter-btn { 
-            background-color: var(--surface-color); 
-            border: 1px solid var(--border-color); 
-            color: var(--text-color); /* Đổi màu chữ sang text-color */
-            padding: 0.6rem 1.2rem; /* Tăng padding */
-            border-radius: 8px; /* Bo tròn góc hơn */
-            cursor: pointer; 
-            font-weight: 500; /* Làm mỏng chữ hơn một chút */
-            transition: all 0.2s ease; /* Transition mượt mà hơn */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Thêm shadow nhẹ */
-        }
         .filter-btn:hover { 
             background-color: var(--border-color); /* Nền hơi sáng lên */
             border-color: var(--primary-light); /* Viền màu primary-light */
@@ -567,7 +556,7 @@
             vi: {
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign In': 'Đăng nhập', 'Sign Out': 'Đăng xuất',
                 'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google',
-                'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại',
+                'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại',
                 'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': '🔍 Phân tích',
                 'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium',
                 'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.',
@@ -673,7 +662,7 @@
         const DOM = {
             body: document.body, mainNav: document.getElementById('main-nav'), hamburgerMenu: document.getElementById('hamburger-menu'),
             logo: document.getElementById('logo'), 
-            signInBtn: document.getElementById('sign-in-btn'), // Keep for now, but will be hidden
+            // REMOVED: signInBtn: document.getElementById('sign-in-btn'), // THIS LINE IS REMOVED
             userMenu: document.getElementById('user-menu'),
             userEmailBtn: document.getElementById('user-email-btn'), dropdownHeader: document.getElementById('dropdown-user-email'), userDropdown: document.getElementById('user-dropdown'),
             dropdownSignOut: document.getElementById('dropdown-sign-out'), dropdownWorkSchool: document.getElementById('dropdown-work-school'),
@@ -759,7 +748,7 @@
                 if (!result.success) throw new Error(result.message || 'Analysis failed on the server');
 
                 if (analysisType === 'summary') {
-                    // CẬP NHẬT: Bây giờ summary đã là HTML từ backend, không cần JSON.parse
+                    // CẬP NHẬT: summary data đã là HTML string, nên không cần JSON.parse
                     // Client-side sẽ chỉ sanitize và hiển thị HTML đó
                     return result.data; // result.data đã là HTML string
                 }
@@ -1050,7 +1039,7 @@
             // Since user is always logged in, simplify this part
             if (user.isLoggedIn) {
                 if (DOM.body) DOM.body.classList.add('logged-in');
-                DOM.signInBtn.classList.add('hidden'); // Ensure hidden
+                // DOM.signInBtn is removed, so no need to hide it (Dòng này đã bị xóa)
                 if (DOM.userMenu) DOM.userMenu.classList.remove('hidden'); // Always show user menu
                 if (DOM.userEmailBtn) DOM.userEmailBtn.textContent = user.email;
                 if (DOM.dropdownHeader) DOM.dropdownHeader.textContent = user.email;
@@ -1199,14 +1188,11 @@
             container.innerHTML = '';
 
             if (user.isLoggedIn && user.followedTrends.length > 0) {
-                const followedTrendsData = masterTrendsList.filter(trendItem => user.followedTrends.includes(trendItem.id));
-                if (followedTrendsData.length > 0) {
-                    const leaderboardDiv = document.createElement('div');
-                    leaderboardDiv.className = 'leaderboard-widget';
-                    const listItems = followedTrendsData.map(trendItem => `<li data-trend-id="${trendItem.id}">${truncateText(getLocalizedTrendText(trendItem).title, 35)}</li>`).join('');
-                    leaderboardDiv.innerHTML = `<h4>${t('Your Followed Trends')}</h4><ul>${listItems}</ul>`;
-                    container.appendChild(leaderboardDiv);
-                }
+                const leaderboardDiv = document.createElement('div');
+                leaderboardDiv.className = 'leaderboard-widget';
+                const listItems = followedTrendsData.map(trendItem => `<li data-trend-id="${trendItem.id}">${truncateText(getLocalizedTrendText(trendItem).title, 35)}</li>`).join('');
+                leaderboardDiv.innerHTML = `<h4>${t('Your Followed Trends')}</h4><ul>${listItems}</ul>`;
+                container.appendChild(leaderboardDiv);
             }
 
             const uniqueCategoriesToShow = Array.from(new Set(categoriesToShow)).sort();
@@ -1228,12 +1214,12 @@
             const modalBody = document.getElementById('ai-insight-body');
             if (!modalBody) return;
             modalBody.classList.remove('error-message');
-            const chartData = generateChartDataFromScore(analysisData.successScore);
+            // analysisData.summary đã là HTML từ backend
             modalBody.innerHTML = `
                 <div style="margin-bottom: 1rem;"><h4>${t('Success Score')}</h4><p style="font-size: 2rem; font-weight: bold; color: var(--primary-light);">${analysisData.successScore.toFixed(0)}%</p></div>
                 <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4>${analysisData.summary}</div>
                 <div><h4>${t('Interest Over Time')}</h4></div>`;
-            renderAnalysisChart(chartData.historicalData, chartData.futureProjection);
+            renderAnalysisChart(generateChartDataFromScore(analysisData.successScore).historicalData, generateChartDataFromScore(analysisData.successScore).futureProjection);
         }
 
         function renderDetailedAnalysis(htmlContent) {
@@ -1410,8 +1396,10 @@
 
             try {
                 const data = await analyzeTrendSecurely(trend, analysisType);
-                // CẬP NHẬT: summary data đã là HTML string, nên không cần JSON.parse nữa
-                if (isSummary) { modalBody.innerHTML = DOMPurify.sanitize(data); } // Trực tiếp chèn HTML
+                // CẬP NHẬT: summary data đã là HTML string, nên không cần JSON.parse
+                if (isSummary) { 
+                    renderSummaryAnalysis(JSON.parse(data)); // Call renderSummaryAnalysis with parsed data to get score for chart
+                }
                 else { renderDetailedAnalysis(data); }
             } catch (err) {
                 if (modalBody) {
