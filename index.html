@@ -762,9 +762,8 @@
                 if (!result.success) throw new Error(result.message || 'Analysis failed on the server');
 
                 if (analysisType === 'summary') {
-                    // CẬP NHẬT: summary data đã là HTML string, nên không cần JSON.parse
-                    // Client-side sẽ chỉ sanitize và hiển thị HTML đó
-                    return result.data; // result.data đã là HTML string
+                    // CẬP NHẬT: result.data bây giờ là một JSON object { successScore: X, summary: "<html>" }
+                    return result.data; 
                 }
                 const cleanHtml = DOMPurify.sanitize(result.data, { USE_PROFILES: { html: true } });
                 const formatDetailedInsight = (markdownText) => markdownText
@@ -1053,7 +1052,7 @@
             // Since user is always logged in, simplify this part
             if (user.isLoggedIn) {
                 if (DOM.body) DOM.body.classList.add('logged-in');
-                // DOM.signInBtn is removed, so no need to hide it (Dòng này đã bị xóa)
+                // DOM.signInBtn is removed from HTML and DOM object, no longer referenced
                 if (DOM.userMenu) DOM.userMenu.classList.remove('hidden'); // Always show user menu
                 if (DOM.userEmailBtn) DOM.userEmailBtn.textContent = user.email;
                 if (DOM.dropdownHeader) DOM.dropdownHeader.textContent = user.email;
@@ -1231,7 +1230,7 @@
             // analysisData.summary đã là HTML từ backend
             modalBody.innerHTML = `
                 <div style="margin-bottom: 1rem;"><h4>${t('Success Score')}</h4><p style="font-size: 2rem; font-weight: bold; color: var(--primary-light);">${analysisData.successScore.toFixed(0)}%</p></div>
-                <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4>${analysisData.summary}</div>
+                <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4>${DOMPurify.sanitize(analysisData.summary)}</div>
                 <div><h4>${t('Interest Over Time')}</h4></div>`;
             renderAnalysisChart(generateChartDataFromScore(analysisData.successScore).historicalData, generateChartDataFromScore(analysisData.successScore).futureProjection);
         }
@@ -1410,27 +1409,17 @@
 
             try {
                 const data = await analyzeTrendSecurely(trend, analysisType);
-                // CẬP NHẬT: summary data đã là HTML string, nên không cần JSON.parse
+                // CẬP NHẬT: result.data bây giờ là một JSON object { successScore: X, summary: "<html>" }
+                // Cần truy cập các thuộc tính của object đó
                 if (isSummary) { 
-                    modalBody.innerHTML = DOMPurify.sanitize(data); // Render HTML summary
-                    // We still need to generate chart data from score.
-                    // The 'data' from analyzeTrendSecurely for summary is now HTML.
-                    // We need the score to generate the chart. Let's re-fetch the score
-                    // if needed, or better, make analyzeTrendSecurely return score separately.
-                    // For now, let's assume `data` also includes a parsable score for the chart
-                    // or re-calculate it client-side for mock purposes.
-                    // For the sake of this example, let's parse score from the HTML if possible,
-                    // or generate a new mock score.
-                    
-                    // Since the backend now sends HTML, we need to extract the score from it
-                    // or make analyzeTrendSecurely return { html: "...", score: X }
-                    // To keep it simple for now, we'll re-generate a mock score for chart here.
-                    const mockSuccessScore = trend.hotnessScore ? 
-                                             (Math.min(99, Math.max(20, trend.hotnessScore * 100 + Math.random() * 10 - 5))) : // Tăng phạm vi và thêm ngẫu nhiên
-                                             (Math.floor(Math.random() * 40) + 60); // Fallback
-                    renderAnalysisChart(generateChartDataFromScore(mockSuccessScore).historicalData, generateChartDataFromScore(mockSuccessScore).futureProjection);
+                    const parsedSummaryData = data; // data đã là object { successScore, summary }
+                    modalBody.innerHTML = `
+                        <div style="margin-bottom: 1rem;"><h4>${t('Success Score')}</h4><p style="font-size: 2rem; font-weight: bold; color: var(--primary-light);">${parsedSummaryData.successScore.toFixed(0)}%</p></div>
+                        <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4>${DOMPurify.sanitize(parsedSummaryData.summary, { USE_PROFILES: { html: true } })}</div>
+                        <div><h4>${t('Interest Over Time')}</h4></div>`;
+                    renderAnalysisChart(generateChartDataFromScore(parsedSummaryData.successScore).historicalData, generateChartDataFromScore(parsedSummaryData.successScore).futureProjection);
                 }
-                else { renderDetailedAnalysis(data); }
+                else { renderDetailedAnalysis(data); } // Đối với detailed vẫn là markdown string
             } catch (err) {
                 if (modalBody) {
                     modalBody.classList.add('error-message');
@@ -2046,6 +2035,7 @@
                 currentFilter.hashtag = targetElement.dataset.tag;
                 currentFilter.searchTerm = '';
                 switchView('main');
+                closeModal('trend-overview-modal'); // Đảm bảo đóng modal nếu đang mở
                 return; 
             }
 
@@ -2114,7 +2104,7 @@
                 if (DOM.trendingBoardContainer) DOM.trendingBoardContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
 
                 // Initial fetch of master trends list (12 months, global, all categories)
-                masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }); 
+                masterTrendsList = await fetchLiveTrends({ timeframe: '12m', region: 'global', category: 'All' }, false); 
                 
                 applyTrendOrdering();
 
