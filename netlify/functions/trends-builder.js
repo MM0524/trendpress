@@ -82,6 +82,15 @@ function toSortValue(d) {
   return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0; 
 }
 
+function calculateHotnessScore(trend, maxValues) {
+    const weights = { views: 0.2, interactions: 0.4, searches: 0.3, votes: 0.1 };
+    const normViews = (trend.views / maxValues.views) || 0;
+    const normInteractions = (trend.interactions / maxValues.interactions) || 0;
+    const normSearches = (trend.searches / maxValues.searches) || 0;
+    const normVotes = (trend.votes / maxValues.votes) || 0;
+    return (normViews * weights.views) + (normInteractions * weights.interactions) + (normSearches * weights.searches) + (normVotes * weights.votes);
+}
+
 function createStandardTrend(item, sourceName, defaultCategory = "General", defaultRegion = "global", extraTags = []) {
   const title = getSafeString(item.title || item['media:title'] || item.name) || "No Title Available"; 
   const description = getSafeString(item.description || item.content?.['#text'] || item.summary?.['#text'] || item.content || item.artistName) || "No description available";
@@ -594,8 +603,8 @@ const fetchCNBCFinance = () =>
 
 const fetchFinancialTimes = () =>
   fetchAndParseXmlFeed("https://www.ft.com/?format=rss", "Financial Times", "Finance", "uk", ["Finance"]);
-const fetchCityAM = () =>
-  fetchAndParseXmlFeed("https://www.cityam.com/feed/", "City A.M.", "Finance", "uk", ["Finance"]);
+const fetchCityAMFinance = () => // Renamed to avoid collision with CityAMBiz
+  fetchAndParseXmlFeed("https://www.cityam.com/feed/", "City A.M. Finance", "Finance", "uk", ["Finance"]);
 
 const fetchReutersFinance = () =>
   fetchAndParseXmlFeed("https://feeds.reuters.com/reuters/businessNews", "Reuters Business", "Finance", "eu", ["Finance"]);
@@ -608,19 +617,19 @@ const fetchBFMFinance = () =>
   fetchAndParseXmlFeed("https://bfmbusiness.bfmtv.com/rss", "BFM Business", "Finance", "fr", ["France","Finance"]);
 
 // Russia Finance
-const fetchKommersantBusiness = () =>
-  fetchAndParseXmlFeed("https://www.kommersant.ru/RSS/news.xml", "Kommersant Business", "Finance", "ru", ["Russia","Finance"]);
-const fetchRBCBusiness = () =>
-  fetchAndParseXmlFeed("https://rssexport.rbc.ru/rbcnews/news/30/full.rss", "RBC Business", "Finance", "ru", ["Russia","Finance"]);
+const fetchKommersantFinance = () => // Renamed to avoid collision with KommersantBusiness
+  fetchAndParseXmlFeed("https://www.kommersant.ru/RSS/news.xml", "Kommersant Finance", "Finance", "ru", ["Russia","Finance"]);
+const fetchRBCFinance = () => // Renamed to avoid collision with RBCBusiness
+  fetchAndParseXmlFeed("https://rssexport.rbc.ru/rbcnews/news/30/full.rss", "RBC Finance", "Finance", "ru", ["Russia","Finance"]);
 
-const fetchCaixin = () =>
-  fetchAndParseXmlFeed("https://www.caixinglobal.com/rss", "Caixin", "Finance", "cn", ["China","Finance"]);
+const fetchCaixinFinance = () => // Renamed to avoid collision with Caixin
+  fetchAndParseXmlFeed("https://www.caixinglobal.com/rss", "Caixin Finance", "Finance", "cn", ["China","Finance"]);
 const fetchChinaSecuritiesJournal = () =>
   fetchAndParseXmlFeed("https://www.cs.com.cn/rss/", "China Securities Journal", "Finance", "cn", ["China","Finance"]);
 
-const fetchCafeF = () =>
+const fetchCafeF = () => // Re-use CafeFBiz
   fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF", "Finance", "vn", ["Vietnam","Finance"]);
-const fetchVietstock = () =>
+const fetchVietstock = () => // Re-use VietstockBiz
   fetchAndParseXmlFeed("https://vietstock.vn/rss/home.rss", "Vietstock", "Finance", "vn", ["Vietnam","Finance"]);
 
 
@@ -1126,7 +1135,7 @@ exports.handler = builder(async (event, context) => { // ADD builder HERE
         fetchWSJBusiness(),
         fetchBloombergBiz(),
         fetchFinancialTimesBiz(),
-        fetchCityAMBiz(),
+        fetchCityAMBiz(), // Renamed
         fetchReutersBusiness(),
         fetchEuronewsBusiness(),
         fetchLesEchosBiz(),
@@ -1240,7 +1249,7 @@ exports.handler = builder(async (event, context) => { // ADD builder HERE
         fetchHarperBazaar(),
         fetchDazed(),
         fetchHighsnobiety(),
-        fetchRefinery29(),
+        fetchRefinery29(), // Re-use from Lifestyle section but categorized as Fashion for diversity
         fetchLeMondeStyles(),
         fetchGraziaFR(),
         fetchGQ(),
@@ -1256,14 +1265,14 @@ exports.handler = builder(async (event, context) => { // ADD builder HERE
         fetchYahooFinance(),
         fetchCNBCFinance(),
         fetchFinancialTimes(),
-        fetchCityAM(),
+        fetchCityAMFinance(), // Renamed to avoid collision
         fetchReutersFinance(),
         fetchEuronewsFinance(),
         fetchLesEchos(),
         fetchBFMFinance(),
-        fetchKommersantBusiness(), // Re-use Business source
-        fetchRBCBusiness(), // Re-use Business source
-        fetchCaixin(),
+        fetchKommersantFinance(), // Renamed to avoid collision
+        fetchRBCFinance(), // Renamed to avoid collision
+        fetchCaixinFinance(), // Renamed to avoid collision
         fetchChinaSecuritiesJournal(),
         fetchCafeF(),
         fetchVietstock(),
@@ -1317,12 +1326,10 @@ exports.handler = builder(async (event, context) => { // ADD builder HERE
         fetchBacSiOnline(),
 
         // === Lifestyle ===
-        fetchRefinery29Lifestyle(),
+        fetchRefinery29Lifestyle(), // Re-use
         fetchGoop(),
-        fetchAfamilyLifestyle(),
+        fetchAfamilyLifestyle(), // Re-use
         fetchDepPlus(),
-        fetchParents(), // Re-use Parents.com
-        fetchCosmopolitan(), // Re-use Cosmopolitan
 
         // === Music ===
         fetchBillboard(),
@@ -1472,11 +1479,10 @@ exports.handler = builder(async (event, context) => { // ADD builder HERE
       if (r.status === "fulfilled" && Array.isArray(r.value)) {
         allFetchedTrends.push(...r.value);
       } else if (r.status === "rejected") {
-        console.warn("A source failed:", r.reason?.message || r.reason);
+        console.warn(`Builder Function - A source failed (${r.reason?.message || r.reason})`);
       }
     }
 
-    // Đảm bảo id là duy nhất và loại bỏ các trend trùng lặp dựa trên id
     const uniqueTrendsMap = new Map();
     for (const trend of allFetchedTrends) {
         if (trend.id) {
@@ -1485,24 +1491,34 @@ exports.handler = builder(async (event, context) => { // ADD builder HERE
     }
     allFetchedTrends = Array.from(uniqueTrendsMap.values());
 
-
     if (allFetchedTrends.length === 0) {
+      // It's possible for all sources to fail. Return an empty array but with success.
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ success: true, trends: [], message: "No trends found from any source." }),
+        body: JSON.stringify({ success: true, trends: [], message: "No trends found from any source for builder." }),
       };
     }
 
     // Preprocess trends here once for the master list before caching
     // This ensures hotnessScore etc. are calculated for the full dataset
+    // We need to calculate maxValues based on the *current* batch of allFetchedTrends
+    const maxViews = Math.max(1, ...allFetchedTrends.map(t => t.views || 0));
+    const maxInteractions = Math.max(1, ...allFetchedTrends.map(t => t.interactions || 0));
+    const maxSearches = Math.max(1, ...allFetchedTrends.map(t => t.searches || 0));
+    const maxVotes = Math.max(1, ...allFetchedTrends.map(t => t.votes || 0));
+
+    const maxValuesForHotness = {
+        views: maxViews,
+        interactions: maxInteractions,
+        searches: maxSearches,
+        votes: maxVotes,
+    };
+
     const preprocessedTrends = allFetchedTrends.map(trend => {
-        // Mock maxValues for hotnessScore calculation for individual trends
-        // (This part is still somewhat mock, but applied consistently)
-        const mockMaxValues = { views: 1000000, interactions: 500000, searches: 200000, votes: 50000 };
         return {
             ...trend,
-            hotnessScore: calculateHotnessScore(trend, mockMaxValues),
+            hotnessScore: calculateHotnessScore(trend, maxValuesForHotness),
             type: trend.type || (Math.random() > 0.5 ? 'topic' : 'query') // Ensure type is set
         };
     });
@@ -1522,14 +1538,14 @@ exports.handler = builder(async (event, context) => { // ADD builder HERE
       body: JSON.stringify({ success: true, trends: sortedTrends }),
     };
   } catch (err) {
-    console.error("trends-builder handler error:", err);
+    console.error("trends-builder handler error (caught):", err); // Log the actual error
     return {
       statusCode: 500,
       headers: {
         ...headers,
         "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate", // Don't cache errors
       },
-      body: JSON.stringify({ success: false, error: "Failed to fetch trends", message: err.message }),
+      body: JSON.stringify({ success: false, error: "Failed to fetch trends", message: `Builder internal error: ${err.message}` }), // Provide more info
     };
   }
 });
