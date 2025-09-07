@@ -106,7 +106,6 @@ exports.handler = async (event, context) => {
         const sentiment = successScore > 75 ? (language === 'vi' ? "tích cực" : "positive") : (successScore > 50 ? (language === 'vi' ? "trung lập" : "neutral") : (language === 'vi' ? "hỗn hợp" : "mixed"));
         const audienceDemographics = trend.category === "Gaming" ? (language === 'vi' ? "đối tượng trẻ (18-30)" : "younger audience (18-30)") : (trend.category === "Fashion" ? (language === 'vi' ? "những người quan tâm thời trang (20-40)" : "fashion-conscious individuals (20-40)") : (language === 'vi' ? "người dùng đa dạng quan tâm đổi mới" : "diverse users interested in innovation"));
 
-        // CẬP NHẬT: Cấu trúc Markdown/HTML chi tiết với các class CSS mới và biểu tượng (nếu có thể)
         const detailedAnalysisContent = language === 'vi' ? `
           <div class="ai-section">
               <h4><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M20 17.58A5 5 0 0 0 18 10c0-1.84-.82-2.91-1.2-3.46C15.65 5.56 14 5 12 5a7 7 0 0 0-4 1.55c-1.37 1.25-2.26 2.92-2.76 4.67-1.4 5.38-2.67 9.17-2.75 9.42-.03.07-.05.15-.05.21V22h19v-1.75c0-.07-.02-.15-.05-.21z"></path></svg>Phân tích chuyên sâu cho "${trendTitle}"</h4>
