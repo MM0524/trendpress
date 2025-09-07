@@ -1,12 +1,9 @@
 [build]
-  publish = "."
-  functions = "netlify/functions"
+  functions = "netlify/functions" 
+  publish = "." 
 
-[dev]
-  publish = "."
-  functions = "netlify/functions"
-  framework = "#static"
-
-
-
-
+[[redirects]]
+  from = "/.netlify/builders/trends-builder"
+  to = "/.netlify/builders/trends-builder"
+  status = 200
+  force = true
