@@ -757,7 +757,7 @@ exports.handler = builder(async (event, context) => {
 
         // Toys
         fetchToyNewsUS(), fetchToyBook(), fetchToyWorldMag(), fetchKidscreen(),
-        fetchRussianToys(), fetchPlayLab(), fetchChinaToy(), fetchToyCircle(),
+        fetchRussianToys(), fetchPlayLab(), fetchChinaToy(), fetchToyCircle()
     ];
 
 
