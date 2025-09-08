@@ -399,7 +399,7 @@ const fetchers_Lifestyle = [
 // --- Media ---
 const fetchers_Media = [ 
   () => fetchAndParseXmlFeed("https://rsshub.app/tiktok/trending/vi", "TikTok Trending VN", "Media", "vn", ["TikTok", "Trending", "VN"]),
-  () => fetchAndParseXmlFeed("https://rsshub.app/youtube/trending/region/VN", "YouTube Trending VN", "Media", "vn", ["YouTube", "Trending", "VN"]),
+  () => fetchAndParseXmlFeed("https://www.youtube.com/feeds/videos.xml?channel_id=UC3XTzVzaHQEd30rQbuvCtTQ", "Vie Channel - HTV2", "Entertainment", "vn", ["YouTube", "Vie Channel", "HTV2"]),
 ];
 // --- Music ---
 const fetchers_Music = [
