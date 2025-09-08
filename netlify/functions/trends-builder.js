@@ -398,8 +398,8 @@ const fetchers_Lifestyle = [
 
 // --- Media ---
 const fetchers_Media = [ 
-  () => fetchAndParseXmlFeed("https://rsshub.app/tiktok/trending/vi", "TikTok Trending VN", "Media", "vn", ["TikTok", "Trending", "VN"]);
-  () => fetchAndParseXmlFeed("https://rsshub.app/youtube/trending/region/VN", "YouTube Trending VN", "Media", "vn", ["YouTube", "Trending", "VN"]);
+  () => fetchAndParseXmlFeed("https://rsshub.app/tiktok/trending/vi", "TikTok Trending VN", "Media", "vn", ["TikTok", "Trending", "VN"]),
+  () => fetchAndParseXmlFeed("https://rsshub.app/youtube/trending/region/VN", "YouTube Trending VN", "Media", "vn", ["YouTube", "Trending", "VN"]),
 
 // --- Music ---
 const fetchers_Music = [
