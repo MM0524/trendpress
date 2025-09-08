@@ -396,6 +396,10 @@ const fetchers_Lifestyle = [
   () => fetchAndParseXmlFeed("https://afamily.vn/rss/home.rss", "Afamily Lifestyle", "Lifestyle", "vn", ["Vietnam","Lifestyle"]),
 ];
 
+// --- Media ---
+const fetchers_Media = [ 
+  () => fetchAndParseXmlFeed("https://rsshub.app/tiktok/trending/vi", "TikTok Trending VN", "Media", "vn", ["TikTok", "Trending", "VN"]);
+  () => fetchAndParseXmlFeed("https://rsshub.app/youtube/trending/region/VN", "YouTube Trending VN", "Media", "vn", ["YouTube", "Trending", "VN"]);
 
 // --- Music ---
 const fetchers_Music = [
@@ -530,6 +534,7 @@ exports.handler = builder(async (event, context) => {
       ...fetchers_Gaming,
       ...fetchers_Healthcare,
       ...fetchers_Lifestyle,
+      ...fetchers_Media,
       ...fetchers_Music,
       ...fetchers_News,
       ...fetchers_Politics,
