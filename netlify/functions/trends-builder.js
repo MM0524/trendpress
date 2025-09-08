@@ -6,7 +6,7 @@ const crypto = require('crypto');
 
 // ===== Helpers (giữ nguyên từ fetch-trends.js) =====
 
-async function fetchWithTimeout(url, options = {}, ms = 20000) { // Keep 20s for individual fetch
+async function fetchWithTimeout(url, options = {}, ms = 40000) { // Keep 20s for individual fetch
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
