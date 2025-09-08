@@ -6,7 +6,7 @@ const crypto = require('crypto');
 
 // ===== Helpers (giữ nguyên từ fetch-trends.js) =====
 
-async function fetchWithTimeout(url, options = {}, ms = 20000) { // Keep 20s for individual fetch
+async function fetchWithTimeout(url, options = {}, ms = 25000) { // Keep 20s for individual fetch
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
@@ -259,10 +259,10 @@ const fetchers_Business = [
   () => fetchAndParseXmlFeed("https://www.bloomberg.com/feed/podcast/etf-report.xml", "Bloomberg Business", "Business", "global", ["Markets","Business"]),
   () => fetchAndParseXmlFeed("https://www.ft.com/?format=rss", "Financial Times", "Business", "uk", ["Finance","Business"]),
   () => fetchAndParseXmlFeed("https://www.euronews.com/business/rss", "Euronews Business", "Business", "eu", ["Business"]),
-  () => fetchAndParseXmlFeed("https://www.lesechos.fr/rss", "Les Echos Business", "Business", "fr", ["France","Business"]),
+  () => fetchAndParseXmlFeed("https://bfmbusiness.bfmtv.com/rss/info/flux-rss/flux-toutes-les-actualites/", "BFM Business", "Business", "fr", ["France","Business"]),
   () => fetchAndParseXmlFeed("https://rssexport.rbc.ru/rbcnews/business/index.rss", "RBC Business", "Business", "ru", ["Russia","Business"]),
-  () => fetchAndParseXmlFeed("https://www.caixinglobal.com/rss", "Caixin Business", "Business", "cn", ["China","Business"]),
-  () => fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF Business", "Business", "vn", ["Vietnam","Business"]),
+  () => fetchAndParseXmlFeed("https://www.scmp.com/rss/91/feed", "South China Morning Post Business", "Business", "cn", ["China","Business"]),
+  () => fetchAndParseXmlFeed("https://vietnambiz.vn/kinh-doanh.rss", "VietnamBiz", "Business", "vn", ["Vietnam","Business"]),
 ];
 
 // --- Cars ---
@@ -396,19 +396,14 @@ const fetchers_Lifestyle = [
   () => fetchAndParseXmlFeed("https://afamily.vn/rss/home.rss", "Afamily Lifestyle", "Lifestyle", "vn", ["Vietnam","Lifestyle"]),
 ];
 
-// --- Media ---
-const fetchers_Media = [ 
-  () => fetchAndParseXmlFeed("https://rsshub.app/tiktok/trending/vi", "TikTok Trending VN", "Media", "vn", ["TikTok", "Trending", "VN"]),
-  () => fetchAndParseXmlFeed("https://www.youtube.com/feeds/videos.xml?channel_id=UC3XTzVzaHQEd30rQbuvCtTQ", "Vie Channel - HTV2", "Entertainment", "vn", ["YouTube", "Vie Channel", "HTV2"]),
-];
 // --- Music ---
 const fetchers_Music = [
   () => fetchAndParseXmlFeed("https://www.billboard.com/feed/", "Billboard", "Music", "us", ["Music"]),
   () => fetchAndParseXmlFeed("https://www.nme.com/feed", "NME Music", "Music", "uk", ["Music"]),
   () => fetchAndParseXmlFeed("https://www.euronews.com/culture/music/rss", "Euronews Music", "Music", "eu", ["Europe","Music"]),
-  () => fetchAndParseXmlFeed("https://www.lemonde.fr/culture/music.rss", "Le Monde Music", "Music", "fr", ["France","Music"]),
+  () => fetchAndParseXmlFeed("https://www.francemusique.fr/rss", "France Musique", "Music", "fr", ["France","Music"]),
   () => fetchAndParseXmlFeed("https://www.themoscowtimes.com/feeds/rss/culture", "MoscowTimes Culture/Music", "Music", "ru", ["Russia","Music"]),
-  () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/entertainment.xml", "ChinaDaily Entertainment (Music)", "Music", "cn", ["China","Music"]),
+  () => fetchAndParseXmlFeed("https://www.scmp.com/rss/32/feed", "SCMP Culture", "Music", "cn", ["China","Music"]),
   () => fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json", "Apple Music Most Played VN", "Music", "vn", ["Vietnam","Music"]),
 ];
 
@@ -418,8 +413,8 @@ const fetchers_News = [
   () => fetchAndParseXmlFeed("http://feeds.bbci.co.uk/news/rss.xml", "BBC News", "News", "uk", ["UK","News"]),
   () => fetchAndParseXmlFeed("https://www.euronews.com/rss?format=xml", "Euronews", "News", "eu", ["Europe","News"]),
   () => fetchAndParseXmlFeed("https://www.france24.com/en/rss", "France24 News", "News", "fr", ["France","News"]),
-  () => fetchAndParseXmlFeed("https://www.themoscowtimes.com/feeds/rss/news", "The Moscow Times", "News", "ru", ["Russia","News"]),
-  () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/cnews.xml", "China Daily", "News", "cn", ["China","News"]),
+  () => fetchAndParseXmlFeed("https://tass.com/rss/v2.xml", "TASS", "News", "ru", ["Russia","News"]),
+  () => fetchAndParseXmlFeed("https://www.globaltimes.cn/rss/", "China Globaltimes", "News", "cn", ["China","News"]),
   () => fetchAndParseXmlFeed("https://www.koreaherald.com/rss/xml/news_all.xml", "The Korea Herald", "News", "kr", ["SouthKorea"]),
   () => fetchAndParseXmlFeed("https://feeds.feedburner.com/ndtvnews-latest", "NDTV", "News", "in", ["India"]),
   () => fetchAndParseXmlFeed("https://www.abc.net.au/news/feed/51120/rss.xml", "ABC News Australia", "News", "au", ["Australia"]),
