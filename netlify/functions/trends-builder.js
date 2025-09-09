@@ -529,7 +529,6 @@ exports.handler = builder(async (event, context) => {
       ...fetchers_Gaming,
       ...fetchers_Healthcare,
       ...fetchers_Lifestyle,
-      ...fetchers_Media,
       ...fetchers_Music,
       ...fetchers_News,
       ...fetchers_Politics,
