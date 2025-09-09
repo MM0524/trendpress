@@ -1,8 +1,4 @@
-// netlify/functions/trends-builder.js
-import { builder } from "@netlify/functions";
-import fetch from "node-fetch";
-import crypto from "crypto";
-import { XMLParser } from "fast-xml-parser";
+const crypto = require("crypto");
 
 // =========================
 // Helpers
@@ -25,15 +21,13 @@ async function fetchWithTimeout(resource, options = {}) {
 function createStandardTrend(item, sourceName, defaultCategory, defaultRegion, extraTags = []) {
   const title = item.title || "";
   const link = item.link || item.url || "";
-  const description = item.description || item.contentSnippet || item.excerpt || "";
-  const pubDate = item.pubDate || item.date || new Date().toISOString();
+  const description = item.description || item.content || "";
+  const pubDate = item.pubDate || new Date().toISOString();
   const id = crypto.createHash("md5").update(link + title).digest("hex");
 
   return {
     id,
     title,
-    title_en: title,
-    title_vi: title,
     description,
     link,
     pubDate,
@@ -48,52 +42,41 @@ function createStandardTrend(item, sourceName, defaultCategory, defaultRegion, e
   };
 }
 
-async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultRegion, extraTags = []) {
+async function fetchGoogleTrendsRss(url, sourceName, defaultRegion) {
   try {
     const res = await fetchWithTimeout(url);
     const xml = await res.text();
-    const parser = new XMLParser({
-      ignoreAttributes: false,
-      attributeNamePrefix: "",
-      isArray: (name, jpath) => name === "item" || name === "entry",
+
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(match => {
+      const block = match[1];
+      const get = (tag) => {
+        const m = block.match(new RegExp(`<${tag}>(.*?)</${tag}>`, "s"));
+        return m ? m[1].trim() : "";
+      };
+      return {
+        title: get("title"),
+        link: get("link"),
+        description: get("description"),
+        pubDate: get("pubDate"),
+      };
     });
-    const parsed = parser.parse(xml);
 
-    let rawItems = [];
-    if (parsed?.rss?.channel?.item) {
-      rawItems = parsed.rss.channel.item;
-    } else if (parsed?.feed?.entry) {
-      rawItems = parsed.feed.entry;
-    }
-
-    return rawItems.map((item) =>
-      createStandardTrend(item, sourceName, defaultCategory, defaultRegion, extraTags)
-    );
+    return items.map(item => createStandardTrend(item, sourceName, "Trends", defaultRegion, ["GoogleTrends"]));
   } catch (err) {
-    console.error(`❌ XML feed error ${sourceName} (${url}):`, err.message);
+    console.error(`❌ Google Trends error ${sourceName}:`, err.message);
     return [];
   }
 }
 
-async function fetchJsonFeed(url, sourceName, defaultCategory, defaultRegion, extraTags = []) {
+async function fetchNewsApi(url, sourceName, defaultRegion) {
   try {
     const res = await fetchWithTimeout(url);
     const json = await res.json();
+    if (!json.articles) return [];
 
-    let rawItems = [];
-    if (json?.articles) {
-      rawItems = json.articles; // NewsAPI format
-    } else if (json?.feed?.results) {
-      rawItems = json.feed.results;
-    } else if (json?.items) {
-      rawItems = json.items;
-    }
-
-    return rawItems.map((item) =>
-      createStandardTrend(item, sourceName, defaultCategory, defaultRegion, extraTags)
-    );
+    return json.articles.map(item => createStandardTrend(item, sourceName, "News", defaultRegion, ["NewsAPI"]));
   } catch (err) {
-    console.error(`❌ JSON feed error ${sourceName} (${url}):`, err.message);
+    console.error(`❌ NewsAPI error ${sourceName}:`, err.message);
     return [];
   }
 }
@@ -109,75 +92,63 @@ function calculateHotnessScore(trend, maxValues) {
 }
 
 // =========================
-// Fetchers (ví dụ giữ lại AI + thêm GoogleTrends + NewsAPI)
+// Fetchers
 // =========================
+const fetchers = [
+  // Google Trends VN & US
+  () => fetchGoogleTrendsRss("https://trends.google.com/trends/trendingsearches/daily/rss?geo=VN", "Google Trends VN", "vn"),
+  () => fetchGoogleTrendsRss("https://trends.google.com/trends/trendingsearches/daily/rss?geo=US", "Google Trends US", "us"),
 
-const fetchers_Archaeology = [
-  () => fetchAndParseXmlFeed("https://www.archaeology.org/rss.xml", "Archaeology Magazine", "Archaeology", "us", ["Archaeology"]),
-  () => fetchAndParseXmlFeed("https://www.heritagedaily.com/category/archaeology/feed", "HeritageDaily", "Archaeology", "global", ["Archaeology"]), // Changed to global
-  // () => fetchAndParseXmlFeed("https://www.chinahistory.net/rss", "China Heritage", "Archaeology", "cn", ["China","Archaeology"]), // Removed
-];
-
-// --- Google Trends ---
-const fetchers_GoogleTrends = [
-  () => fetchAndParseXmlFeed(
-    "https://trends.google.com/trends/trendingsearches/daily/rss?geo=VN",
-    "Google Trends VN", "Trends", "vn", ["GoogleTrends","Vietnam"]
-  ),
-  () => fetchAndParseXmlFeed(
-    "https://trends.google.com/trends/trendingsearches/daily/rss?geo=US",
-    "Google Trends US", "Trends", "us", ["GoogleTrends","USA"]
-  ),
-];
-
-// --- NewsAPI ---
-const fetchers_NewsAPI = [
-  () => fetchJsonFeed(
-    `https://newsapi.org/v2/top-headlines?country=vn&apiKey=${process.env.NEWSAPI_KEY}`,
-    "NewsAPI VN", "News", "vn", ["NewsAPI","Vietnam"]
-  ),
-  () => fetchJsonFeed(
-    `https://newsapi.org/v2/top-headlines?country=us&apiKey=${process.env.NEWSAPI_KEY}`,
-    "NewsAPI US", "News", "us", ["NewsAPI","USA"]
-  ),
+  // NewsAPI (cần NEWSAPI_KEY trong Netlify env)
+  () => fetchNewsApi(`https://newsapi.org/v2/top-headlines?country=vn&apiKey=${process.env.NEWSAPI_KEY}`, "NewsAPI VN", "vn"),
+  () => fetchNewsApi(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${process.env.NEWSAPI_KEY}`, "NewsAPI US", "us"),
 ];
 
 // =========================
 // Handler
 // =========================
-export const handler = builder(async () => {
-  const allFetchers = [
-    ...fetchers_Archaeology,
-    ...fetchers_GoogleTrends,
-    ...fetchers_NewsAPI,
-    // 👉 bạn có thể thêm các fetchers khác ở đây
-  ];
+exports.handler = async () => {
+  try {
+    const results = (await Promise.allSettled(fetchers.map(fn => fn())))
+      .flatMap(r => (r.status === "fulfilled" ? r.value : []));
 
-  const results = (await Promise.allSettled(allFetchers.map(fn => fn())))
-    .flatMap(r => (r.status === "fulfilled" ? r.value : []));
+    if (results.length === 0) {
+      throw new Error("No trends fetched. Check NEWSAPI_KEY or feeds.");
+    }
 
-  const maxValues = results.reduce(
-    (acc, t) => {
-      acc.views = Math.max(acc.views, t.views || 0);
-      acc.interactions = Math.max(acc.interactions, t.interactions || 0);
-      acc.searches = Math.max(acc.searches, t.searches || 0);
-      acc.votes = Math.max(acc.votes, t.votes || 0);
-      return acc;
-    },
-    { views: 0, interactions: 0, searches: 0, votes: 0 }
-  );
+    const maxValues = results.reduce(
+      (acc, t) => {
+        acc.views = Math.max(acc.views, t.views || 0);
+        acc.interactions = Math.max(acc.interactions, t.interactions || 0);
+        acc.searches = Math.max(acc.searches, t.searches || 0);
+        acc.votes = Math.max(acc.votes, t.votes || 0);
+        return acc;
+      },
+      { views: 0, interactions: 0, searches: 0, votes: 0 }
+    );
 
-  const withScores = results.map((t) => ({
-    ...t,
-    hotness: calculateHotnessScore(t, maxValues),
-  }));
+    const withScores = results.map((t) => ({
+      ...t,
+      hotness: calculateHotnessScore(t, maxValues),
+    }));
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify(
-      { count: withScores.length, trends: withScores },
-      null,
-      2
-    ),
-  };
-});
+    return {
+      statusCode: 200,
+      body: JSON.stringify(
+        { success: true, count: withScores.length, trends: withScores },
+        null,
+        2
+      ),
+    };
+  } catch (err) {
+    console.error("❌ Handler error:", err.message);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        success: false,
+        error: "Failed to fetch trends",
+        message: err.message,
+      }),
+    };
+  }
+};
