@@ -666,7 +666,7 @@
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign In': 'Đăng nhập', 'Sign Out': 'Đăng xuất',
                 'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google',
                 'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại',
-                'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': 'Phân tích chuyên sâu', 'Deep Dive': 'Phân tích chuyên sâu', 'Summary': 'Tóm tắt',
+                'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': 'Phân tích', 'Deep Dive': 'Phân tích chuyên sâu', 'Summary': 'Tóm tắt',
                 'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium',
                 'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.',
                 'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Top 5 Hot Trends': 'Top 5 Xu Hướng Nóng Nhất', 'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi', 'Category Leaderboards': 'Bảng xếp hạng danh mục', 'About TrendPulse': 'Giới thiệu TrendPulse',
@@ -694,7 +694,7 @@
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
                 'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google',
                 'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now',
-                'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': 'Deep Dive', 'Deep Dive': 'Deep Dive', 'Summary': 'Summary',
+                'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': 'Analyze', 'Deep Dive': 'Deep Dive', 'Summary': 'Summary',
                 'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences', 'Premium Access Required': 'Premium Access Required',
                 'Please sign in with a company or school email to view the Trending Board.': 'Please sign in with a company or school email to view the Trending Board.', 'Log In': 'Log In', 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.',
                 'Trending Board Dashboard': 'Trending Board Dashboard', 'Top 5 Hot Trends': 'Top 5 Hot Trends', 'Your Followed Trends': 'Your Followed Trends', 'Category Leaderboards': 'Category Leaderboards', 'About TrendPulse': 'About TrendPulse',
@@ -979,7 +979,7 @@
                     <div class="trend-actions">
                         <a href="${DOMPurify.sanitize(trend.source || '#')}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a>
                         <button class="btn btn-outline btn-summary" data-trend-id="${trend.id}" data-analysis-type="summary">${t('Summary')}</button> <!-- NEW: Summary button -->
-                        <button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}" data-analysis-type="detailed">${t('Deep Dive')}</button> <!-- Changed text to Deep Dive -->
+                        <button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}" data-analysis-type="detailed">${t('🔍 Analyze')}</button> <!-- Changed text to 'Analyze' -->
                         <button class="btn btn-follow ${isFollowed ? 'followed' : ''}" data-trend-id="${trend.id}">${isFollowed ? t('Following') : t('❤️ Follow')}</button>
                     </div>
                 </div>`;
@@ -1445,7 +1445,7 @@
             return `${id}|${getLocalizedTrendText(trend).title || ''}|${trend.source || ''}`.toLowerCase(); 
         }
         function loadSeenTrends() { try { return JSON.parse(localStorage.getItem('seenTrends') || '[]'); } catch { return []; } }
-        function saveSeenTrendKey(key) { try { const seen = new Set(loadSeenTrends()); if (!seen.has(key)) localStorage.setItem('seenTrends', JSON.stringify([...seen, key])); } catch {} }
+        function saveSeenTrendKey(key) { try { const seen = new Set(loadSeenTrends()); if (!seen.has(key)) localStorage.setItem('seenTrends', JSON_INTRESOURCE, JSON.stringify([...seen, key])); } catch {} }
 
         function applyTrendOrdering() {
             const seenKeys = new Set(loadSeenTrends());
@@ -1537,9 +1537,7 @@
                         <div><h4>${t('Interest Over Time')}</h4></div>`;
                     renderAnalysisChart(generateChartDataFromScore(parsedSummaryData.successScore).historicalData, generateChartDataFromScore(parsedSummaryData.successScore).futureProjection);
                 }
-                else { 
-                    renderDetailedAnalysis(DOMPurify.sanitize(data, { USE_PROFILES: { html: true } })); // Đối với detailed vẫn là markdown string, cần sanitize sau khi chuyển đổi từ Markdown sang HTML
-                }
+                else { renderDetailedAnalysis(DOMPurify.sanitize(data, { USE_PROFILES: { html: true } })); } // Đối với detailed vẫn là markdown string, cần sanitize sau khi chuyển đổi từ Markdown sang HTML
             } catch (err) {
                 if (modalBody) {
                     modalBody.classList.add('error-message');
@@ -2149,7 +2147,9 @@
                 trendId = trendCard.dataset.trendId;
                 if (targetElement.closest('.btn-summary')) {
                     analysisType = 'summary';
-                } else if (targetElement.closest('.analyze-trend-btn') || targetElement.closest('.trend-title')) {
+                } else if (targetElement.closest('.analyze-trend-btn')) { // Analyze button -> Deep Dive
+                    analysisType = 'detailed';
+                } else if (targetElement.closest('.trend-title')) { // Title click -> Deep Dive
                     analysisType = 'detailed';
                 }
             } else if (leaderboardItem) { // Nếu click vào một mục trong leaderboard (Trending Board hoặc For U)
@@ -2510,4 +2510,3 @@
     </script>
 </body>
 </html>
-```
