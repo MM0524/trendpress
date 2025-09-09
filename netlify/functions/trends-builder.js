@@ -234,7 +234,7 @@ const fetchers_AI = [
   () => fetchAndParseXmlFeed("https://www.euronews.com/next/rss", "Euronews Next (AI)", "AI", "eu", ["EU","AI"]),
   () => fetchAndParseXmlFeed("https://www.lemonde.fr/technologies/rss_full.xml", "Le Monde Tech/AI", "AI", "fr", ["France","AI"]),
   () => fetchAndParseXmlFeed("https://technode.com/feed/", "TechNode AI", "AI", "cn", ["China","AI"]),
-  () => fetchAndParseXmlFeed("https://vnexpress.net/rss/khoa-hoc.rss", "VNExpress AI", "AI", "vn", ["Vietnam","AI"]),
+  () => fetchAndParseXmlFeed("https://vietnamnet.vn/rss/cong-nghe.rss", "Vietnamnet", "AI", "vn", ["Vietnam","AI"]),
 ];
 
 // --- Archaeology ---
@@ -284,7 +284,7 @@ const fetchers_Cybersecurity = [
   () => fetchAndParseXmlFeed("https://www.ssi.gouv.fr/feed/", "ANSSI / SSI France", "Cybersecurity", "fr", ["France","Security"]),
   () => fetchAndParseXmlFeed("https://www.kaspersky.com/blog/rss", "Kaspersky Lab Blog", "Cybersecurity", "ru", ["Russia","Security"]),
   () => fetchAndParseXmlFeed("https://www.cert.org.cn/rss", "CN-CERT", "Cybersecurity", "cn", ["China","Security"]),
-  () => fetchAndParseXmlFeed("https://vnexpress.net/rss/so-hoa.rss", "VNExpress Cyber", "Cybersecurity", "vn", ["Vietnam","Security"]),
+  () => fetchAndParseXmlFeed("https://ictnews.vietnamnet.vn/rss/bao-mat", "ICT News", "Cybersecurity", "vn", ["Vietnam","Security"]),
 ];
 
 // --- Education ---
@@ -351,7 +351,7 @@ const fetchers_Finance = [
   () => fetchAndParseXmlFeed("https://www.lesechos.fr/rss", "Les Echos Finance", "Finance", "fr", ["France","Finance"]),
   () => fetchAndParseXmlFeed("https://www.kommersant.ru/RSS/news.xml", "Kommersant Finance", "Finance", "ru", ["Russia","Finance"]),
   () => fetchAndParseXmlFeed("https://www.caixinglobal.com/rss", "Caixin Finance", "Finance", "cn", ["China","Finance"]),
-  () => fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF Finance", "Finance", "vn", ["Vietnam","Finance"]),
+  () => fetchAndParseXmlFeed("https://vnexpress.net/rss/kinh-doanh.rss", "VNExpress Finance", "Finance", "vn", ["Vietnam","Finance"]),
 ];
 
 // --- Food ---
@@ -362,7 +362,7 @@ const fetchers_Food = [
   () => fetchAndParseXmlFeed("https://www.cuisineaz.com/rss", "CuisineAZ", "Food", "fr", ["France","Food"]),
   () => fetchAndParseXmlFeed("https://www.povarenok.ru/rss", "Povarenok", "Food", "ru", ["Russia","Food"]),
   () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/food.xml", "ChinaDaily Food", "Food", "cn", ["China","Food"]),
-  () => fetchAndParseXmlFeed("https://monngonmoingay.com/feed/", "Món Ngon Mỗi Ngày", "Food", "vn", ["Vietnam","Food"]),
+  () => fetchAndParseXmlFeed("https://www.vietnamplus.vn/amthuc.rss", "Vietnamplus", "Food", "vn", ["Vietnam","Food"]),
 ];
 
 // --- Gaming ---
@@ -443,7 +443,7 @@ const fetchers_Science = [
   () => fetchAndParseXmlFeed("https://www.cnrs.fr/en/rss", "CNRS News", "Science", "fr", ["France","Science"]),
   () => fetchAndParseXmlFeed("https://tass.com/rss/science.xml", "TASS Science", "Science", "ru", ["Russia","Science"]),
   () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/science.xml", "ChinaDaily Science", "Science", "cn", ["China","Science"]),
-  () => fetchAndParseXmlFeed("https://vnexpress.net/rss/khoa-hoc.rss", "VNExpress Science", "Science", "vn", ["Vietnam","Science"]),
+  () => fetchAndParseXmlFeed("https://vietnamnet.vn/rss/khoa-hoc.rss", "Vietnamnet Science", "Science", "vn", ["Vietnam","Science"]),
 ];
 
 // --- Sneakers ---
@@ -495,6 +495,7 @@ const fetchers_Toys = [
   () => fetchAndParseXmlFeed("https://kidscreen.com/feed/", "Kidscreen", "Toys", "global", ["Kids", "Entertainment"]),
   () => fetchAndParseXmlFeed("https://www.russpress.ru/rss", "RussPress Toys", "Toys", "ru", ["Russia","Toys"]),
   () => fetchAndParseXmlFeed("https://www.chinatoy.org/rss", "China Toy", "Toys", "cn", ["China","Toys"]),
+  () => fetchAndParseXmlFeed("https://vnexpress.net/rss/gia-dinh.rss", "VNExpress Toy", "Toys", "vn", ["Vietnam","Toys"]),
 ];
 
 
