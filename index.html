@@ -130,24 +130,24 @@
         .btn-follow { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); }
         .btn-follow.followed { background-color: var(--primary-color); color: white; }
 
-        /* CẬP NHẬT: Style cho nút Summary */
+        /* NEW: Style for the new Summary button - CẬP NHẬT để giống .btn-outline */
         .btn-summary { 
-            background-color: var(--border-color); /* Nền hơi sáng hơn một chút (ví dụ: #2d2e49) */
-            border: 1px solid var(--primary-color); /* Viền màu tím chủ đạo */
+            background: transparent; /* Nền trong suốt */
             color: var(--primary-light); /* Màu chữ tím nhạt */
-            padding: 0.3rem 0.8rem; 
-            border-radius: 8px; 
+            border: 1px solid var(--primary-light); /* Viền tím nhạt */
+            padding: 0.3rem 0.8rem; /* Match btn-outline padding */
+            border-radius: 8px; /* Match btn padding */
             cursor: pointer; 
-            font-weight: 500; 
-            transition: all 0.2s ease; 
-            font-size: 0.8rem; 
+            font-weight: 600; /* Match btn-outline font-weight */
+            transition: all 0.3s ease; /* Match btn-outline transition */
+            font-size: 0.8rem; /* Match btn-outline font-size */
         }
         .btn-summary:hover {
-            background-color: var(--primary-color); /* Nền thành màu tím chủ đạo khi hover */
-            border-color: var(--primary-color); 
-            color: white; /* Chữ trắng khi hover */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            /* Hiệu ứng hover giống hệt .btn-outline */
+            background: var(--primary-light); 
+            color: white; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Giữ bóng đổ nếu muốn */
+            transform: translateY(-1px); /* Nâng nhẹ hơn để subtle hơn */
         }
 
         #trends-footer { text-align: center; margin-top: 1.5rem; }
@@ -170,8 +170,8 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Thêm bóng đổ nhẹ */
         }
 
-        .view-source-btn, .btn-follow { display: none; }
-        body.work-account-view .btn-follow, body.work-account-view .view-source-btn { display: inline-flex; }
+        .view-source-btn, .btn-follow { display: inline-flex; } /* ALWAYS SHOW if logged in and is work */
+        /* Removed the specific body.work-account-view rule as it's implied now */
         .dropdown { display: none; position: absolute; top: 110%; right: 0; background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; min-width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 10; }
         .dropdown.show { display: block; }
         .dropdown-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; color: var(--text-color); text-decoration: none; cursor: pointer; }
@@ -666,7 +666,7 @@
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign In': 'Đăng nhập', 'Sign Out': 'Đăng xuất',
                 'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google',
                 'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại',
-                'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': 'Deep Dive', 'Summary': 'Tóm tắt', // CẬP NHẬT: Analyze thành Deep Dive, thêm Summary
+                'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': 'Phân tích chuyên sâu', 'Deep Dive': 'Phân tích chuyên sâu', 'Summary': 'Tóm tắt',
                 'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium',
                 'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.',
                 'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Top 5 Hot Trends': 'Top 5 Xu Hướng Nóng Nhất', 'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi', 'Category Leaderboards': 'Bảng xếp hạng danh mục', 'About TrendPulse': 'Giới thiệu TrendPulse',
@@ -694,7 +694,7 @@
                 'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
                 'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google',
                 'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now',
-                'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': 'Deep Dive', 'Summary': 'Summary', // CẬP NHẬT: Analyze thành Deep Dive, thêm Summary
+                'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': 'Deep Dive', 'Deep Dive': 'Deep Dive', 'Summary': 'Summary',
                 'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences', 'Premium Access Required': 'Premium Access Required',
                 'Please sign in with a company or school email to view the Trending Board.': 'Please sign in with a company or school email to view the Trending Board.', 'Log In': 'Log In', 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.',
                 'Trending Board Dashboard': 'Trending Board Dashboard', 'Top 5 Hot Trends': 'Top 5 Hot Trends', 'Your Followed Trends': 'Your Followed Trends', 'Category Leaderboards': 'Category Leaderboards', 'About TrendPulse': 'About TrendPulse',
@@ -979,7 +979,7 @@
                     <div class="trend-actions">
                         <a href="${DOMPurify.sanitize(trend.source || '#')}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a>
                         <button class="btn btn-outline btn-summary" data-trend-id="${trend.id}" data-analysis-type="summary">${t('Summary')}</button> <!-- NEW: Summary button -->
-                        <button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}" data-analysis-type="detailed">${t('Deep Dive')}</button> <!-- Renamed for clarity -->
+                        <button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}" data-analysis-type="detailed">${t('Deep Dive')}</button> <!-- Changed text to Deep Dive -->
                         <button class="btn btn-follow ${isFollowed ? 'followed' : ''}" data-trend-id="${trend.id}">${isFollowed ? t('Following') : t('❤️ Follow')}</button>
                     </div>
                 </div>`;
@@ -1326,6 +1326,7 @@
             modalBody.classList.remove('error-message');
             // analysisData.summary đã là HTML từ backend
             modalBody.innerHTML = `
+                <!-- REMOVED: Success Score from summary view -->
                 <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4>${DOMPurify.sanitize(analysisData.summary, { USE_PROFILES: { html: true } })}</div>
                 <div><h4>${t('Interest Over Time')}</h4></div>`;
             renderAnalysisChart(generateChartDataFromScore(analysisData.successScore).historicalData, generateChartDataFromScore(analysisData.successScore).futureProjection);
@@ -1410,7 +1411,7 @@
             if (currentLanguage === 'vi') {
                 if (trend.title_vi) {
                     titleText = trend.title_vi;
-                    descriptionText = trend.description_vi || trend.description_en || defaultDescription;
+                    descriptionText = trend.description_vi || trend.description_en || defaultDescription; // Fallback for desc
                 } else if (trend.title_en) { // Fallback to English if no Vietnamese
                     titleText = trend.title_en;
                     descriptionText = trend.description_en || defaultDescription;
@@ -1419,7 +1420,7 @@
             } else { // English mode
                 if (trend.title_en) {
                     titleText = trend.title_en;
-                    descriptionText = trend.description_en || trend.description_vi || defaultDescription;
+                    descriptionText = trend.description_en || trend.description_vi || defaultDescription; // Fallback for desc
                 } else if (trend.title_vi) { // Fallback to Vietnamese if no English
                     titleText = trend.title_vi;
                     descriptionText = trend.description_vi || defaultDescription;
@@ -1530,13 +1531,15 @@
                 // Cần truy cập các thuộc tính của object đó
                 if (isSummary) { 
                     const parsedSummaryData = data; // data đã là object { successScore, summary }
-                    // CẬP NHẬT: Xóa Success Score khỏi hiển thị Summary
                     modalBody.innerHTML = `
+                        <!-- REMOVED: Success Score from summary view -->
                         <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4>${DOMPurify.sanitize(parsedSummaryData.summary, { USE_PROFILES: { html: true } })}</div>
                         <div><h4>${t('Interest Over Time')}</h4></div>`;
                     renderAnalysisChart(generateChartDataFromScore(parsedSummaryData.successScore).historicalData, generateChartDataFromScore(parsedSummaryData.successScore).futureProjection);
                 }
-                else { renderDetailedAnalysis(DOMPurify.sanitize(data, { USE_PROFILES: { html: true } })); } // Đối với detailed vẫn là markdown string, cần sanitize sau khi chuyển đổi từ Markdown sang HTML
+                else { 
+                    renderDetailedAnalysis(DOMPurify.sanitize(data, { USE_PROFILES: { html: true } })); // Đối với detailed vẫn là markdown string, cần sanitize sau khi chuyển đổi từ Markdown sang HTML
+                }
             } catch (err) {
                 if (modalBody) {
                     modalBody.classList.add('error-message');
@@ -2142,13 +2145,11 @@
             let trendId = null;
             let analysisType = null; // NEW: To store desired analysis type
 
-            if (trendCard) { // Nếu click vào một trend card (Main View hoặc For U list)
+            if (trendCard) { // Nếu click vào một trend card (Main View)
                 trendId = trendCard.dataset.trendId;
-                if (targetElement.closest('.btn-summary')) { // Click nút Summary
+                if (targetElement.closest('.btn-summary')) {
                     analysisType = 'summary';
-                } else if (targetElement.closest('.analyze-trend-btn')) { // Click nút Analyze (Deep Dive)
-                    analysisType = 'detailed';
-                } else if (targetElement.closest('.trend-title')) { // Click tiêu đề trend (Deep Dive)
+                } else if (targetElement.closest('.analyze-trend-btn') || targetElement.closest('.trend-title')) {
                     analysisType = 'detailed';
                 }
             } else if (leaderboardItem) { // Nếu click vào một mục trong leaderboard (Trending Board hoặc For U)
@@ -2212,7 +2213,8 @@
                 openAIInsightModal(trend, analysisType);
             } else { // Click chung vào một mục leaderboard hoặc nền trend card (mở modal tổng quan)
                 console.log("Generic click on leaderboard item or trend card background. Opening overview modal for interaction or falling back to Deep Dive.");
-                openTrendOverviewModal(trend);
+                // Thay đổi hành vi mặc định khi click vào card hoặc leaderboard item để mở Deep Dive
+                openAIInsightModal(trend, 'detailed'); 
             }
         }
 
@@ -2508,3 +2510,4 @@
     </script>
 </body>
 </html>
+```
