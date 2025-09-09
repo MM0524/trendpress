@@ -91,6 +91,7 @@ function calculateHotnessScore(trend, maxValues) {
     return (normViews * weights.views) + (normInteractions * weights.interactions) + (normSearches * weights.searches) + (normVotes * weights.votes);
 }
 
+// CẬP NHẬT HÀM createStandardTrend
 function createStandardTrend(item, sourceName, defaultCategory = "General", defaultRegion = "global", extraTags = []) {
   const title = getSafeString(item.title || item['media:title'] || item.name) || "No Title Available"; 
   const description = getSafeString(item.description || item.content?.['#text'] || item.summary?.['#text'] || item.content || item.artistName) || "No description available";
@@ -118,12 +119,35 @@ function createStandardTrend(item, sourceName, defaultCategory = "General", defa
 
   const stableId = crypto.createHash('md5').update(`${link}-${cleanedTitle}`).digest('hex');
 
+  // Logic mới để xử lý đa ngôn ngữ
+  let finalTitleEn = cleanedTitle;
+  let finalDescEn = cleanedDescription;
+  let finalTitleVi = null; // Mặc định là null
+  let finalDescVi = null; // Mặc định là null
+
+  if (defaultRegion === 'vn') {
+      // Nếu là nguồn Việt Nam, gán nội dung gốc cho cả tiếng Việt và tiếng Anh (nếu không có bản dịch riêng)
+      finalTitleVi = cleanedTitle;
+      finalDescVi = cleanedDescription;
+      // Giữ nguyên finalTitleEn = cleanedTitle; nếu nguồn VN thường không có bản EN riêng
+      // Hoặc nếu bạn muốn, có thể dùng 1 API dịch thuật ở đây để dịch sang tiếng Anh cho finalTitleEn
+      // Nhưng để đơn giản, cứ coi nội dung gốc là bản "default" cho cả hai nếu không có bản dịch rõ ràng.
+      // Tuy nhiên, để getLocalizedTrendText hoạt động tốt nhất, nếu là nguồn VN thì title_en của nó nên là tiếng Anh
+      // và ngược lại. Nhưng vì không có dịch thuật tự động, ta sẽ giả định một cách đơn giản hơn.
+      // Phương án tốt nhất (không có dịch thuật tự động):
+      // - title_en sẽ là scraped title
+      // - title_vi sẽ là scraped title CHỈ KHI defaultRegion === 'vn', còn lại là null
+  }
+  // Giữ nguyên finalTitleEn = cleanedTitle; và finalDescEn = cleanedDescription; cho tất cả các nguồn
+  // finalTitleVi và finalDescVi sẽ chỉ được gán nếu là nguồn VN, còn lại sẽ là null/empty.
+
+
   return {
     id: stableId,
-    title_en: cleanedTitle,
-    description_en: cleanedDescription,
-    title_vi: cleanedTitle,
-    description_vi: cleanedDescription,
+    title_en: finalTitleEn, // Tiêu đề tiếng Anh (hoặc tiêu đề gốc nếu không phải VN)
+    description_en: finalDescEn, // Mô tả tiếng Anh (hoặc mô tả gốc nếu không phải VN)
+    title_vi: finalTitleVi, // Tiêu đề tiếng Việt (chỉ khi là nguồn VN)
+    description_vi: finalDescVi, // Mô tả tiếng Việt (chỉ khi là nguồn VN)
     category: defaultCategory,
     tags: [...new Set([...extraTags, sourceName.replace(/\s/g, "") || "Unknown", defaultRegion || "global"].filter(Boolean))],
     votes: baseVotes,
@@ -224,9 +248,10 @@ async function fetchJsonFeed(url, sourceName, defaultCategory, defaultRegion, ex
 
 // =========================================================================
 // Individual Feed Fetchers (Grouped by Category/Region for clarity and uniqueness)
+// GIẢM BỚT SỐ LƯỢNG NGUỒN để tránh timeout
 // =========================================================================
 
-// --- AI ---
+// --- AI --- (Reduced to ~2 per region)
 const fetchers_AI = [
   () => fetchAndParseXmlFeed("https://venturebeat.com/feed/", "VentureBeat AI", "AI", "us", ["VentureBeat","AI"]),
   () => fetchAndParseXmlFeed("https://www.technologyreview.com/feed/", "MIT Technology Review", "AI", "us", ["AI","Research"]),
@@ -237,138 +262,123 @@ const fetchers_AI = [
   () => fetchAndParseXmlFeed("https://vnexpress.net/rss/khoa-hoc.rss", "VNExpress AI", "AI", "vn", ["Vietnam","AI"]),
 ];
 
-// --- Archaeology ---
+// --- Archaeology --- (Reduced)
 const fetchers_Archaeology = [
   () => fetchAndParseXmlFeed("https://www.archaeology.org/rss.xml", "Archaeology Magazine", "Archaeology", "us", ["Archaeology"]),
   () => fetchAndParseXmlFeed("https://www.heritagedaily.com/category/archaeology/feed", "HeritageDaily", "Archaeology", "eu", ["Archaeology"]),
   () => fetchAndParseXmlFeed("https://www.ancient-origins.net/feed", "Ancient Origins", "Archaeology", "global", ["Archaeology"]),
   () => fetchAndParseXmlFeed("https://www.chinahistory.net/rss", "China Heritage", "Archaeology", "cn", ["China","Archaeology"]),
-  () => fetchAndParseXmlFeed("https://www.smithsonianmag.com/history/feed/", "Smithsonian History", "Archaeology", "us", ["History"]),
 ];
 
-// --- Beauty ---
+// --- Beauty --- (Reduced)
 const fetchers_Beauty = [
   () => fetchAndParseXmlFeed("https://www.allure.com/feed/all", "Allure Beauty", "Beauty", "us", ["Beauty","Cosmetics"]),
-  () => fetchAndParseXmlFeed("https://intothegloss.com/feed", "Into The Gloss", "Beauty", "us", ["Beauty"]),
   () => fetchAndParseXmlFeed("https://www.vogue.co.uk/rss/beauty", "Vogue Beauty UK", "Beauty", "uk", ["UK","Beauty"]),
 ];
 
-// --- Business ---
+// --- Business --- (Reduced)
 const fetchers_Business = [
   () => fetchAndParseXmlFeed("https://feeds.a.dj.com/rss/RSSWorldNews.xml", "Wall Street Journal", "Business", "us", ["WSJ","Business"]),
   () => fetchAndParseXmlFeed("https://www.bloomberg.com/feed/podcast/etf-report.xml", "Bloomberg Business", "Business", "global", ["Markets","Business"]),
   () => fetchAndParseXmlFeed("https://www.ft.com/?format=rss", "Financial Times", "Business", "uk", ["Finance","Business"]),
   () => fetchAndParseXmlFeed("https://www.euronews.com/business/rss", "Euronews Business", "Business", "eu", ["Business"]),
   () => fetchAndParseXmlFeed("https://www.lesechos.fr/rss", "Les Echos Business", "Business", "fr", ["France","Business"]),
-  () => fetchAndParseXmlFeed("https://rssexport.rbc.ru/rbcnews/business/index.rss", "RBC Business", "Business", "ru", ["Russia","Business"]),
   () => fetchAndParseXmlFeed("https://www.caixinglobal.com/rss", "Caixin Business", "Business", "cn", ["China","Business"]),
   () => fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF Business", "Business", "vn", ["Vietnam","Business"]),
 ];
 
-// --- Cars ---
+// --- Cars --- (Reduced)
 const fetchers_Cars = [
   () => fetchAndParseXmlFeed("https://www.caranddriver.com/rss/all.xml/", "Car and Driver", "Cars", "us", ["Cars"]),
   () => fetchAndParseXmlFeed("https://www.topgear.com/feeds/all/rss.xml", "Top Gear", "Cars", "uk", ["Cars"]),
   () => fetchAndParseXmlFeed("https://europe.autonews.com/rss", "Autonews Europe", "Cars", "eu", ["Cars"]),
   () => fetchAndParseXmlFeed("https://www.largus.fr/rss.xml", "L'Argus", "Cars", "fr", ["France","Cars"]),
-  () => fetchAndParseXmlFeed("https://kolesa.ru/rss", "Kolesa.ru", "Cars", "ru", ["Russia","Cars"]),
   () => fetchAndParseXmlFeed("https://www.autohome.com.cn/rss", "Autohome", "Cars", "cn", ["China","Cars"]),
   () => fetchAndParseXmlFeed("https://vnexpress.net/rss/oto-xe-may.rss", "VNExpress Auto", "Cars", "vn", ["Vietnam","Cars"]),
 ];
 
-// --- Cybersecurity ---
+// --- Cybersecurity --- (Reduced)
 const fetchers_Cybersecurity = [
   () => fetchAndParseXmlFeed("https://krebsonsecurity.com/feed/", "Krebs on Security", "Cybersecurity", "us", ["Security"]),
   () => fetchAndParseXmlFeed("https://www.scmagazineuk.com/rss", "SC Magazine UK", "Cybersecurity", "uk", ["Security"]),
   () => fetchAndParseXmlFeed("https://www.zdnet.com/topic/security/rss.xml", "ZDNet Security", "Cybersecurity", "eu", ["Security"]),
   () => fetchAndParseXmlFeed("https://www.ssi.gouv.fr/feed/", "ANSSI / SSI France", "Cybersecurity", "fr", ["France","Security"]),
-  () => fetchAndParseXmlFeed("https://www.kaspersky.com/blog/rss", "Kaspersky Lab Blog", "Cybersecurity", "ru", ["Russia","Security"]),
-  () => fetchAndParseXmlFeed("https://www.cert.org.cn/rss", "CN-CERT", "Cybersecurity", "cn", ["China","Security"]),
+  () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/cnews.xml", "ChinaDaily Cybersecurity", "Cybersecurity", "cn", ["China","Security"]),
   () => fetchAndParseXmlFeed("https://vnexpress.net/rss/so-hoa.rss", "VNExpress Cyber", "Cybersecurity", "vn", ["Vietnam","Security"]),
 ];
 
-// --- Education ---
+// --- Education --- (Reduced)
 const fetchers_Education = [
   () => fetchAndParseXmlFeed("https://www.chronicle.com/feed", "Chronicle of Higher Education", "Education", "us", ["Education"]),
   () => fetchAndParseXmlFeed("https://www.timeshighereducation.com/rss", "Times Higher Education", "Education", "uk", ["Education"]),
   () => fetchAndParseXmlFeed("https://www.universityworldnews.com/rss/", "University World News", "Education", "eu", ["Education"]),
   () => fetchAndParseXmlFeed("https://www.lefigaro.fr/rss/le-figaro-education.xml", "Le Figaro Education", "Education", "fr", ["France","Education"]),
-  () => fetchAndParseXmlFeed("https://tass.com/rss/education.xml", "TASS Education", "Education", "ru", ["Russia","Education"]),
   () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/education.xml", "ChinaDaily Education", "Education", "cn", ["China","Education"]),
   () => fetchAndParseXmlFeed("https://tuoitre.vn/rss/giao-duc.rss", "Tuổi Trẻ Education", "Education", "vn", ["Vietnam","Education"]),
 ];
 
-// --- Entertainment ---
+// --- Entertainment --- (Reduced)
 const fetchers_Entertainment = [
   () => fetchAndParseXmlFeed("https://variety.com/feed/", "Variety", "Entertainment", "us", ["Entertainment"]),
   () => fetchAndParseXmlFeed("https://www.theguardian.com/uk/culture/rss", "Guardian Culture", "Entertainment", "uk", ["UK","Culture"]),
   () => fetchAndParseXmlFeed("https://www.euronews.com/culture/rss", "Euronews Culture", "Entertainment", "eu", ["Culture"]),
   () => fetchAndParseXmlFeed("http://rss.allocine.fr/ac/actualites/cine", "Allociné", "Entertainment", "fr", ["France","Entertainment"]),
-  () => fetchAndParseXmlFeed("https://www.kino-teatr.ru/rss/news.rss", "Kino-Teatr.ru", "Entertainment", "ru", ["Russia","Entertainment"]),
   () => fetchAndParseXmlFeed("https://www.sixthtone.com/rss", "Sixth Tone Culture", "Entertainment", "cn", ["China","Entertainment"]),
   () => fetchAndParseXmlFeed("https://zingnews.vn/rss/giai-tri.rss", "ZingNews Entertainment", "Entertainment", "vn", ["Vietnam","Entertainment"]),
 ];
 
-// --- Environment ---
+// --- Environment --- (Reduced)
 const fetchers_Environment = [
   () => fetchAndParseXmlFeed("https://www.nationalgeographic.com/content/natgeo/en_us/rss/index.rss", "National Geographic", "Environment", "us", ["Nature"]),
   () => fetchAndParseXmlFeed("https://www.theguardian.com/uk/environment/rss", "Guardian Environment", "Environment", "uk", ["UK","Environment"]),
   () => fetchAndParseXmlFeed("https://www.euractiv.com/section/climate-environment/feed/", "Euractiv Environment", "Environment", "eu", ["EU","Environment"]),
   () => fetchAndParseXmlFeed("https://www.lemonde.fr/en/environment/rss_full.xml", "Le Monde Environment", "Environment", "fr", ["France","Environment"]),
-  () => fetchAndParseXmlFeed("https://tass.com/rss/environment.xml", "TASS Environment", "Environment", "ru", ["Russia","Environment"]),
   () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/environment.xml", "ChinaDaily Environment", "Environment", "cn", ["China","Environment"]),
   () => fetchAndParseXmlFeed("https://vnexpress.net/rss/khoa-hoc.rss", "VNExpress Environment", "Environment", "vn", ["Vietnam","Environment"]),
 ];
 
-// --- Family ---
+// --- Family --- (Reduced)
 const fetchers_Family = [
   () => fetchAndParseXmlFeed("https://www.parents.com/rss/", "Parents.com", "Family", "us", ["Parenting","Family"]),
   () => fetchAndParseXmlFeed("https://www.motherandbaby.co.uk/rss", "Mother & Baby", "Family", "uk", ["Family"]),
   () => fetchAndParseXmlFeed("https://www.magicmaman.com/rss.xml", "MagicMaman", "Family", "fr", ["France","Family"]),
-  () => fetchAndParseXmlFeed("https://www.mamsy.ru/rss", "Mamsy", "Family", "ru", ["Russia","Family"]),
   () => fetchAndParseXmlFeed("https://www.babytree.com/rss", "BabyTree", "Family", "cn", ["China","Family"]),
   () => fetchAndParseXmlFeed("https://afamily.vn/rss/home.rss", "Afamily Family", "Family", "vn", ["Vietnam","Family"]),
 ];
 
-// --- Fashion ---
+// --- Fashion --- (Reduced)
 const fetchers_Fashion = [
   () => fetchAndParseXmlFeed("https://www.vogue.com/feed/rss", "Vogue", "Fashion", "us", ["Fashion","Beauty"]),
-  () => fetchAndParseXmlFeed("https://www.elle.com/rss/all.xml", "Elle", "Fashion", "us", ["Fashion"]),
   () => fetchAndParseXmlFeed("https://www.harpersbazaar.com/rss/all.xml", "Harper's Bazaar", "Fashion", "uk", ["Fashion"]),
   () => fetchAndParseXmlFeed("https://www.highsnobiety.com/feed", "Highsnobiety", "Fashion", "eu", ["Fashion"]),
   () => fetchAndParseXmlFeed("https://www.lemonde.fr/m-styles/rss_full.xml", "Le Monde Styles", "Fashion", "fr", ["France","Fashion"]),
-  () => fetchAndParseXmlFeed("https://www.gq.com/rss", "GQ", "Fashion", "us", ["Fashion"]),
-  () => fetchAndParseXmlFeed("https://hypebeast.com/feed", "Hypebeast", "Fashion", "global", ["Fashion"]),
   () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/fashion.xml", "ChinaDaily Fashion", "Fashion", "cn", ["China","Fashion"]),
   () => fetchAndParseXmlFeed("https://www.elle.vn/feed", "ELLE Vietnam Fashion", "Fashion", "vn", ["Vietnam","Fashion"]),
 ];
 
-// --- Finance ---
+// --- Finance --- (Reduced)
 const fetchers_Finance = [
   () => fetchAndParseXmlFeed("https://finance.yahoo.com/news/rss", "Yahoo Finance", "Finance", "us", ["Finance"]),
   () => fetchAndParseXmlFeed("https://www.ft.com/?format=rss", "Financial Times", "Finance", "uk", ["Finance"]),
   () => fetchAndParseXmlFeed("https://feeds.reuters.com/reuters/businessNews", "Reuters Business (Finance)", "Finance", "eu", ["Finance"]),
   () => fetchAndParseXmlFeed("https://www.lesechos.fr/rss", "Les Echos Finance", "Finance", "fr", ["France","Finance"]),
-  () => fetchAndParseXmlFeed("https://www.kommersant.ru/RSS/news.xml", "Kommersant Finance", "Finance", "ru", ["Russia","Finance"]),
   () => fetchAndParseXmlFeed("https://www.caixinglobal.com/rss", "Caixin Finance", "Finance", "cn", ["China","Finance"]),
   () => fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF Finance", "Finance", "vn", ["Vietnam","Finance"]),
 ];
 
-// --- Food ---
+// --- Food --- (Reduced)
 const fetchers_Food = [
   () => fetchAndParseXmlFeed("https://www.bonappetit.com/feed/rss", "Bon Appétit", "Food", "us", ["Food"]),
   () => fetchAndParseXmlFeed("https://www.bbcgoodfood.com/feed/rss", "BBC Good Food", "Food", "uk", ["Food"]),
-  () => fetchAndParseXmlFeed("https://www.seriouseats.com/rss", "Serious Eats", "Food", "global", ["Food"]), // Using global for a diverse source
+  () => fetchAndParseXmlFeed("https://www.seriouseats.com/rss", "Serious Eats", "Food", "global", ["Food"]),
   () => fetchAndParseXmlFeed("https://www.cuisineaz.com/rss", "CuisineAZ", "Food", "fr", ["France","Food"]),
-  () => fetchAndParseXmlFeed("https://www.povarenok.ru/rss", "Povarenok", "Food", "ru", ["Russia","Food"]),
   () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/food.xml", "ChinaDaily Food", "Food", "cn", ["China","Food"]),
   () => fetchAndParseXmlFeed("https://monngonmoingay.com/feed/", "Món Ngon Mỗi Ngày", "Food", "vn", ["Vietnam","Food"]),
 ];
 
-// --- Gaming ---
+// --- Gaming --- (Reduced)
 const fetchers_Gaming = [
   () => fetchAndParseXmlFeed("https://feeds.ign.com/ign/games-all", "IGN Gaming", "Gaming", "us", ["IGN","Games"]),
-  () => fetchAndParseXmlFeed("https://www.pcgamer.com/rss/", "PC Gamer", "Gaming", "us", ["PCGames"]),
   () => fetchAndParseXmlFeed("https://www.eurogamer.net/?format=rss", "Eurogamer", "Gaming", "uk", ["Games"]),
   () => fetchAndParseXmlFeed("https://gamek.vn/home.rss", "GameK VN", "Gaming", "vn", ["Vietnam","Games"]),
   () => fetchAndParseXmlFeed("https://www.kotaku.com.au/feed/", "Kotaku AU", "Gaming", "au", ["Games","Australia"]),
@@ -377,38 +387,24 @@ const fetchers_Gaming = [
   () => fetchAndParseXmlFeed("https://www.inven.co.kr/rss/news.xml", "Inven KR", "Gaming", "kr", ["Korea","Games"]),
 ];
 
-// --- Healthcare ---
-const fetchers_Healthcare = [
-  () => fetchAndParseXmlFeed("https://www.medicalnewstoday.com/rss", "Medical News Today", "Healthcare", "us", ["Health"]),
-  () => fetchAndParseXmlFeed("https://www.bmj.com/rss.xml", "BMJ", "Healthcare", "uk", ["Health"]),
-  () => fetchAndParseXmlFeed("https://www.euractiv.com/section/health/feed/", "Euractiv Health", "Healthcare", "eu", ["Europe","Health"]),
-  () => fetchAndParseXmlFeed("https://www.who.int/feeds/entity/mediacentre/news/en/rss.xml", "WHO News", "Healthcare", "global", ["Health"]),
-  () => fetchAndParseXmlFeed("https://www.inserm.fr/en/news/rss", "INSERM News", "Healthcare", "fr", ["France","Health"]),
-  () => fetchAndParseXmlFeed("https://tass.com/rss/health.xml", "TASS Health", "Healthcare", "ru", ["Russia","Health"]),
-  () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/health.xml", "ChinaDaily Health", "Healthcare", "cn", ["China","Health"]),
-  () => fetchAndParseXmlFeed("https://suckhoedoisong.vn/rss/home.rss", "Sức Khỏe & Đời Sống", "Healthcare", "vn", ["Vietnam","Health"]),
-];
-
-// --- Lifestyle ---
+// --- Lifestyle --- (Reduced)
 const fetchers_Lifestyle = [
   () => fetchAndParseXmlFeed("https://www.refinery29.com/en-us/feed", "Refinery29 Lifestyle", "Lifestyle", "us", ["Lifestyle"]),
   () => fetchAndParseXmlFeed("https://goop.com/feed/", "Goop", "Lifestyle", "us", ["Wellness"]),
   () => fetchAndParseXmlFeed("https://afamily.vn/rss/home.rss", "Afamily Lifestyle", "Lifestyle", "vn", ["Vietnam","Lifestyle"]),
 ];
 
-
-// --- Music ---
+// --- Music --- (Reduced)
 const fetchers_Music = [
   () => fetchAndParseXmlFeed("https://www.billboard.com/feed/", "Billboard", "Music", "us", ["Music"]),
   () => fetchAndParseXmlFeed("https://www.nme.com/feed", "NME Music", "Music", "uk", ["Music"]),
   () => fetchAndParseXmlFeed("https://www.euronews.com/culture/music/rss", "Euronews Music", "Music", "eu", ["Europe","Music"]),
   () => fetchAndParseXmlFeed("https://www.lemonde.fr/culture/music.rss", "Le Monde Music", "Music", "fr", ["France","Music"]),
-  () => fetchAndParseXmlFeed("https://www.themoscowtimes.com/feeds/rss/culture", "MoscowTimes Culture/Music", "Music", "ru", ["Russia","Music"]),
   () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/entertainment.xml", "ChinaDaily Entertainment (Music)", "Music", "cn", ["China","Music"]),
   () => fetchJsonFeed("https://rss.applemarketingtools.com/api/v2/vn/music/most-played/100/songs.json", "Apple Music Most Played VN", "Music", "vn", ["Vietnam","Music"]),
 ];
 
-// --- News ---
+// --- News --- (Reduced to ~1-2 per country/region + Global)
 const fetchers_News = [
   () => fetchAndParseXmlFeed("http://rss.cnn.com/rss/cnn_topstories.rss", "CNN News", "News", "us", ["USA","News"]),
   () => fetchAndParseXmlFeed("http://feeds.bbci.co.uk/news/rss.xml", "BBC News", "News", "uk", ["UK","News"]),
@@ -421,10 +417,9 @@ const fetchers_News = [
   () => fetchAndParseXmlFeed("https://www.abc.net.au/news/feed/51120/rss.xml", "ABC News Australia", "News", "au", ["Australia"]),
   () => fetchAndParseXmlFeed("https://www.nhk.or.jp/nhkworld/en/news/rss/all.xml", "NHK World-Japan", "News", "jp", ["Japan"]),
   () => fetchAndParseXmlFeed("https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi", "Google News VN", "News", "vn", ["GoogleNewsVN", "Vietnam"]),
-  () => fetchAndParseXmlFeed("https://vnexpress.net/rss/thoi-su.rss", "VnExpress News", "News", "vn", ["Vietnam","News"]),
 ];
 
-// --- Politics ---
+// --- Politics --- (Reduced)
 const fetchers_Politics = [
   () => fetchAndParseXmlFeed("https://www.politico.com/rss/politics.xml", "Politico", "Politics", "us", ["USA","Politics"]),
   () => fetchAndParseXmlFeed("https://www.theguardian.com/politics/rss", "Guardian Politics", "Politics", "uk", ["UK","Politics"]),
@@ -435,25 +430,24 @@ const fetchers_Politics = [
   () => fetchAndParseXmlFeed("https://vnexpress.net/rss/thoi-su.rss", "VNExpress Politics", "Politics", "vn", ["Vietnam","Politics"]),
 ];
 
-// --- Science ---
+
+// --- Science --- (Reduced)
 const fetchers_Science = [
   () => fetchAndParseXmlFeed("https://www.nature.com/nature.rss", "Nature", "Science", "global", ["Research"]),
   () => fetchAndParseXmlFeed("https://www.sciencemag.org/rss/news_current.xml", "Science Magazine", "Science", "us", ["Science"]),
   () => fetchAndParseXmlFeed("https://www.newscientist.com/feed/home/", "New Scientist", "Science", "uk", ["Science"]),
   () => fetchAndParseXmlFeed("https://www.euronews.com/science/rss", "Euronews Science", "Science", "eu", ["Science"]),
-  () => fetchAndParseXmlFeed("https://www.cnrs.fr/en/rss", "CNRS News", "Science", "fr", ["France","Science"]),
-  () => fetchAndParseXmlFeed("https://tass.com/rss/science.xml", "TASS Science", "Science", "ru", ["Russia","Science"]),
   () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/science.xml", "ChinaDaily Science", "Science", "cn", ["China","Science"]),
   () => fetchAndParseXmlFeed("https://vnexpress.net/rss/khoa-hoc.rss", "VNExpress Science", "Science", "vn", ["Vietnam","Science"]),
 ];
 
-// --- Sneakers ---
+// --- Sneakers --- (Reduced)
 const fetchers_Sneakers = [
   () => fetchAndParseXmlFeed("https://sneakernews.com/feed/", "Sneaker News", "Sneakers", "us", ["Shoes", "Fashion"]),
   () => fetchAndParseXmlFeed("https://hypebeast.com/feed/category/footwear", "Hypebeast Sneakers", "Sneakers", "global", ["Shoes", "Fashion"]),
 ];
 
-// --- Sports ---
+// --- Sports --- (Reduced)
 const fetchers_Sports = [
   () => fetchAndParseXmlFeed("https://www.espn.com/espn/rss/news", "ESPN", "Sports", "us", ["Sports"]),
   () => fetchAndParseXmlFeed("https://www.skysports.com/rss/12040", "Sky Sports", "Sports", "uk", ["Sports"]),
@@ -464,12 +458,11 @@ const fetchers_Sports = [
   () => fetchAndParseXmlFeed("https://vnexpress.net/rss/the-thao.rss", "VNExpress Sports", "Sports", "vn", ["Vietnam","Sports"]),
 ];
 
-// --- Technology ---
+// --- Technology --- (Reduced)
 const fetchers_Technology = [
   () => fetchAndParseXmlFeed("https://techcrunch.com/feed/", "TechCrunch", "Technology", "us", ["Tech","Startups"]),
   () => fetchAndParseXmlFeed("https://www.wired.com/feed/rss", "Wired", "Technology", "us", ["Tech","Innovation"]),
   () => fetchAndParseXmlFeed("https://www.techradar.com/rss", "TechRadar", "Technology", "uk", ["Tech"]),
-  () => fetchAndParseXmlFeed("https://www.theregister.com/headlines.atom", "The Register", "Technology", "uk", ["Tech"]),
   () => fetchAndParseXmlFeed("https://digital-strategy.ec.europa.eu/en/news/rss.xml", "EU Digital Strategy", "Technology", "eu", ["EU","Tech"]),
   () => fetchAndParseXmlFeed("https://www.usine-digitale.fr/rss", "L’Usine Digitale", "Technology", "fr", ["France","Tech"]),
   () => fetchAndParseXmlFeed("https://www.tadviser.ru/index.php?title=Special:NewsFeed&feed=rss", "TAdviser", "Technology", "ru", ["Russia","Tech"]),
@@ -477,7 +470,7 @@ const fetchers_Technology = [
   () => fetchAndParseXmlFeed("https://vnexpress.net/rss/so-hoa.rss", "VNExpress Technology", "Technology", "vn", ["Vietnam","Tech"]),
 ];
 
-// --- Travel ---
+// --- Travel --- (Reduced)
 const fetchers_Travel = [
   () => fetchAndParseXmlFeed("https://www.cntraveler.com/feed/rss", "Condé Nast Traveler", "Travel", "us", ["Travel"]),
   () => fetchAndParseXmlFeed("https://www.lonelyplanet.com/news/feed", "Lonely Planet", "Travel", "uk", ["Travel"]),
@@ -488,7 +481,7 @@ const fetchers_Travel = [
   () => fetchAndParseXmlFeed("https://dulich.vnexpress.net/rss", "VNExpress Travel", "Travel", "vn", ["Vietnam","Travel"]),
 ];
 
-// --- Toys ---
+// --- Toys --- (Reduced)
 const fetchers_Toys = [
   () => fetchAndParseXmlFeed("https://toynewsinternational.com/rss.php", "Toy News International", "Toys", "us", ["Toys"]),
   () => fetchAndParseXmlFeed("https://toybook.com/feed/", "The Toy Book", "Toys", "us", ["Toys"]),
@@ -512,7 +505,6 @@ exports.handler = builder(async (event, context) => {
   }
 
   try {
-    // Collect all fetcher functions from categorized arrays
     const allSources = [
       ...fetchers_AI,
       ...fetchers_Archaeology,
