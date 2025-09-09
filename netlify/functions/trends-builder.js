@@ -112,10 +112,10 @@ function calculateHotnessScore(trend, maxValues) {
 // Fetchers (ví dụ giữ lại AI + thêm GoogleTrends + NewsAPI)
 // =========================
 
-// --- AI ---
-const fetchers_AI = [
-  () => fetchAndParseXmlFeed("https://venturebeat.com/feed/", "VentureBeat AI", "AI", "us", ["VentureBeat","AI"]),
-  () => fetchAndParseXmlFeed("https://vnexpress.net/rss/khoa-hoc.rss", "VNExpress AI", "AI", "vn", ["Vietnam","AI"]),
+const fetchers_Archaeology = [
+  () => fetchAndParseXmlFeed("https://www.archaeology.org/rss.xml", "Archaeology Magazine", "Archaeology", "us", ["Archaeology"]),
+  () => fetchAndParseXmlFeed("https://www.heritagedaily.com/category/archaeology/feed", "HeritageDaily", "Archaeology", "global", ["Archaeology"]), // Changed to global
+  // () => fetchAndParseXmlFeed("https://www.chinahistory.net/rss", "China Heritage", "Archaeology", "cn", ["China","Archaeology"]), // Removed
 ];
 
 // --- Google Trends ---
@@ -147,7 +147,7 @@ const fetchers_NewsAPI = [
 // =========================
 export const handler = builder(async () => {
   const allFetchers = [
-    ...fetchers_AI,
+    ...fetchers_Archaeology,
     ...fetchers_GoogleTrends,
     ...fetchers_NewsAPI,
     // 👉 bạn có thể thêm các fetchers khác ở đây
