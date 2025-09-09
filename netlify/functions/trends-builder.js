@@ -362,7 +362,6 @@ const fetchers_Food = [
   () => fetchAndParseXmlFeed("https://www.cuisineaz.com/rss", "CuisineAZ", "Food", "fr", ["France","Food"]),
   () => fetchAndParseXmlFeed("https://www.povarenok.ru/rss", "Povarenok", "Food", "ru", ["Russia","Food"]),
   () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/food.xml", "ChinaDaily Food", "Food", "cn", ["China","Food"]),
-  () => fetchAndParseXmlFeed("https://www.vietnamplus.vn/amthuc.rss", "Vietnamplus", "Food", "vn", ["Vietnam","Food"]),
 ];
 
 // --- Gaming ---
