@@ -35,8 +35,8 @@ exports.handler = async (event, context) => {
         };
       }
 
-      const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || trend.title_en || trend.title_vi || (language === 'vi' ? "Không có tiêu đề" : "No Title Provided");
-      const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || trend.description_en || trend.description_vi || (language === 'vi' ? "Không có mô tả" : "No description provided.");
+      const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || trend.title_en || (language === 'vi' ? "Không có tiêu đề" : "No Title Provided");
+      const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || trend.description_en || (language === 'vi' ? "Không có mô tả" : "No description provided.");
       const trendCategory = trend.category || (language === 'vi' ? "Chung" : "General");
       const trendRegion = trend.region === 'vn' ? (language === 'vi' ? 'Việt Nam' : 'Vietnam') : (trend.region === 'us' ? (language === 'vi' ? 'Hoa Kỳ' : 'United States') : (language === 'vi' ? 'Toàn cầu' : 'Global')); // Translate region for analysis
       const trendSubmitter = trend.submitter || (language === 'vi' ? 'Nguồn không xác định' : 'Unknown Source');
