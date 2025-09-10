@@ -586,7 +586,7 @@
     <!-- REMOVED: Login choice modal -->
     <!-- <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions">
         <button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span id="login-google-text"></span></button>
-        <button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span id="login-work-text"></span></button>
+        <button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></a>
     </div></div></div> -->
     <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
     
@@ -860,6 +860,7 @@
                     // CẬP NHẬT: result.data bây giờ là một JSON object { successScore: X, summary: "<html>" }
                     return result.data; 
                 }
+                // Dành cho 'detailed', result.data là Markdown string
                 const cleanHtml = DOMPurify.sanitize(result.data, { USE_PROFILES: { html: true } });
                 const formatDetailedInsight = (markdownText) => markdownText
                     .replace(/### (.*?)\n/g, '<h4>$1</h4>')
@@ -1899,13 +1900,15 @@
                             labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
                             // NEW: Custom onClick handler for legend items
                             onClick: (e, legendItem, legend) => {
-                                // Default Chart.js behavior: toggle visibility
-                                const index = legendItem.datasetIndex;
-                                const ci = legend.chart;
-                                ci.setDatasetVisibility(index, !ci.isDatasetVisible(index));
-                                ci.update();
+                                // REMOVED: Default Chart.js behavior (toggle visibility)
+                                // const index = legendItem.datasetIndex;
+                                // const ci = legend.chart;
+                                // ci.setDatasetVisibility(index, !ci.isDatasetVisible(index));
+                                // ci.update();
 
                                 // Custom behavior: Open Trend Overview Modal
+                                const index = legendItem.datasetIndex;
+                                const ci = legend.chart;
                                 const trendIdFromLegend = ci.data.datasets[index].trendId;
                                 if (trendIdFromLegend) {
                                     const trend = masterTrendsList.find(t => t.id === trendIdFromLegend);
@@ -2086,15 +2089,11 @@
                             legend: { 
                                 position: 'bottom', 
                                 labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
-                                // NEW: Custom onClick handler for legend items
+                                // CẬP NHẬT: Xóa hành vi ẩn/hiện mặc định
                                 onClick: (e, legendItem, legend) => {
-                                    // Default Chart.js behavior: toggle visibility
+                                    // Custom behavior: Open Trend Overview Modal
                                     const index = legendItem.datasetIndex;
                                     const ci = legend.chart;
-                                    ci.setDatasetVisibility(index, !ci.isDatasetVisible(index));
-                                    ci.update();
-
-                                    // Custom behavior: Open Trend Overview Modal
                                     const trendIdFromLegend = ci.data.datasets[index].trendId;
                                     if (trendIdFromLegend) {
                                         const trend = masterTrendsList.find(t => t.id === trendIdFromLegend);
@@ -2102,6 +2101,7 @@
                                             openTrendOverviewModal(trend);
                                         }
                                     }
+                                    // DO NOT call ci.setDatasetVisibility or ci.update() here to prevent toggling visibility
                                 }
                             }
                         },
@@ -2367,7 +2367,7 @@
             // Đã cập nhật để bao gồm các id cụ thể cho các bảng Trending Board
             [
                 DOM.trendsList, 
-                DOM.forUTrendsList, 
+                DOM.forUTrendsList, // THÊM LẮNG NGHE CHO FOR U TRENDS LIST
                 document.getElementById('for-u-leaderboards'),
                 document.getElementById('tb-topic-list'), 
                 document.getElementById('tb-query-list')  
