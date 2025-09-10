@@ -12,7 +12,6 @@ const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 // HÀM HELPER
 // =========================================================================
 
-// ... (Các hàm helper khác như fetchWithTimeout, getSafeString, decodeHtmlEntities, v.v. giữ nguyên)
 async function fetchWithTimeout(url, options = {}, ms = 10000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ms);
@@ -97,25 +96,27 @@ function inferCategoryFromName(sourceName) {
     return "News";
 }
 
-function normalizeNewsApiArticle(article, keyword, region) {
+function normalizeNewsApiArticle(article, category, region = 'global') {
     const { title, description, url, publishedAt, source } = article;
-    // Dòng kiểm tra này đã rất tốt, nó sẽ trả về null nếu title không hợp lệ
     if (!title || title === "[Removed]" || !url) return null;
-    
-    const category = inferCategoryFromName(source.name);
+
     const stableId = crypto.createHash('md5').update(url).digest('hex');
     const baseVotes = Math.floor(Math.random() * 500) + 200;
+    
+    // Tận dụng category đã biết để gắn tag
+    const keyword = category;
+
     return {
         id: stableId,
         title_en: title, description_en: description || "No description available.", title_vi: null, description_vi: null,
-        category: category, tags: [...new Set([keyword.replace(/\s/g, ''), source.name.replace(/\s/g, ''), region, category])],
+        category: category.charAt(0).toUpperCase() + category.slice(1), // Viết hoa chữ cái đầu
+        tags: [...new Set([keyword, source.name.replace(/\s/g, ''), region])],
         votes: baseVotes, views: Math.floor(baseVotes * (Math.random() * 10 + 15)),
         interactions: Math.floor(baseVotes * (Math.random() * 3 + 4)), searches: Math.floor(baseVotes * (Math.random() * 1 + 1.5)),
         source: url, date: toDateStr(publishedAt), sortKey: toSortValue(publishedAt),
         submitter: source.name || "Unknown Source", region: region,
     };
 }
-
 // =========================================================================
 // LUỒNG DỰ PHÒNG (FALLBACK): RSS
 // =========================================================================
@@ -172,30 +173,55 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
     }
 }
 
-// ... (Các hàm getTrendsFromNewsAPI và getTrendsFromRssFallback giữ nguyên)
+
 async function getTrendsFromNewsAPI() {
     if (!process.env.NEWS_API_KEY) throw new Error("NEWS_API_KEY is not configured.");
-    console.log("🚀 Starting primary flow: NewsAPI Top Headlines...");
-    const requests = [
-        { country: 'us', regionCode: 'us', pageSize: 15 },
-        { country: 'gb', regionCode: 'gb', pageSize: 15 },
-        { category: 'technology', regionCode: 'global', pageSize: 15 }
-    ];
-    const apiPromises = requests.map(params => {
-        const { regionCode, ...apiParams } = params;
-        return newsapi.v2.topHeadlines(apiParams).then(response => {
+    
+    console.log("🚀 Starting GLOBAL primary flow: Scanning all NewsAPI categories...");
+
+    // Danh sách các danh mục được NewsAPI hỗ trợ
+    const categories = ['business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology'];
+    
+    // Tạo một mảng các promise, mỗi promise là một cuộc gọi API cho một danh mục
+    const apiPromises = categories.map(category => {
+        return newsapi.v2.topHeadlines({
+            category: category,
+            language: 'en', // Lấy các nguồn tin tiếng Anh hàng đầu toàn cầu
+            pageSize: 15,   // Lấy 15 tin hot nhất cho mỗi danh mục
+        }).then(response => {
             if (response.status === 'ok' && response.articles.length > 0) {
-                console.log(`✅ Fetched ${response.articles.length} headlines for ${regionCode}`);
-                return response.articles.map(article => normalizeNewsApiArticle(article, article.title.split(' ')[0], regionCode)).filter(Boolean);
+                console.log(`✅ Fetched ${response.articles.length} headlines for category: ${category}`);
+                // Chuẩn hóa bài báo và gán đúng danh mục
+                return response.articles.map(article => normalizeNewsApiArticle(article, category, 'global')).filter(Boolean);
             }
+            console.warn(`⚠️ No articles returned for category: ${category}`);
             return [];
-        }).catch(err => { console.error(`❌ Error fetching for ${regionCode}:`, err.message); return []; });
+        }).catch(err => {
+            console.error(`❌ Error fetching headlines for category ${category}:`, err.message);
+            return []; // Trả về mảng rỗng nếu có lỗi
+        });
     });
-    const results = await Promise.all(apiPromises);
-    const allTrends = results.flat();
-    console.log(`✅ Primary flow successful. Total trends: ${allTrends.length}`);
-    return allTrends;
+
+    try {
+        // Chờ tất cả các cuộc gọi API hoàn thành song song
+        const results = await Promise.all(apiPromises);
+
+        // Gộp tất cả các mảng trend từ các kết quả lại thành một mảng duy nhất
+        const allTrends = results.flat();
+
+        if (allTrends.length === 0) {
+            console.warn("⚠️ Primary flow (NewsAPI) did not return any articles from any category.");
+        } else {
+            console.log(`✅ Primary flow successful. Total global trends from NewsAPI: ${allTrends.length}`);
+        }
+        return allTrends;
+
+    } catch (err) {
+        console.error("❌ A critical error occurred during the primary flow execution:", err.message);
+        return []; // Kích hoạt fallback nếu có lỗi nghiêm trọng
+    }
 }
+
 
 async function getTrendsFromRssFallback() {
     console.log("⚡️ Initiating RSS Fallback flow (with extensive VN sources)...");
@@ -215,6 +241,14 @@ async function getTrendsFromRssFallback() {
         () => fetchAndParseXmlFeed("https://suckhoedoisong.vn/rss/home.rss", "Sức Khỏe & Đời Sống", "Health", "vn"),
 
         // === INTERNATIONAL (for variety) ===
+        () => fetchAndParseXmlFeed("https://venturebeat.com/feed/", "VentureBeat AI", "AI", "us", ["VentureBeat","AI"]),
+        () => fetchAndParseXmlFeed("https://www.technologyreview.com/feed/", "MIT Technology Review", "AI", "global", ["AI","Research"]), // Changed to global
+        () => fetchAndParseXmlFeed("https://www.theguardian.com/technology/ai/rss", "Guardian AI", "AI", "uk", ["UK","AI"]),
+        () => fetchAndParseXmlFeed("https://www.euronews.com/next/rss", "Euronews Next (AI)", "AI", "eu", ["EU","AI"]),
+        () => fetchAndParseXmlFeed("https://technode.com/feed/", "TechNode AI", "AI", "cn", ["China","AI"]),
+        () => fetchAndParseXmlFeed("https://vnexpress.net/rss/khoa-hoc.rss", "VNExpress AI", "AI", "vn", ["Vietnam","AI"]),
+        () => fetchAndParseXmlFeed("https://www.archaeology.org/rss.xml", "Archaeology Magazine", "Archaeology", "us", ["Archaeology"]),
+        () => fetchAndParseXmlFeed("https://www.heritagedaily.com/category/archaeology/feed", "HeritageDaily", "Archaeology", "global", ["Archaeology"]),
         () => fetchAndParseXmlFeed("https://www.chinadaily.com.cn/rss/cnews.xml", "China Daily", "News", "cn"),
         () => fetchAndParseXmlFeed("https://pandaily.com/feed/", "Pandaily", "Technology", "cn"),
         () => fetchAndParseXmlFeed("https://techcrunch.com/feed/", "TechCrunch", "Technology", "us"),
