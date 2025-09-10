@@ -1,22 +1,25 @@
 // netlify/functions/analyze-trend.js
 
-// THAY ĐỔI: Import thư viện của Google AI
+// Import thư viện chính thức của Google AI
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // --- Cấu hình API ---
-// Lấy API key từ biến môi trường
+// Lấy API key từ biến môi trường của Netlify
 const geminiApiKey = process.env.GEMINI_API_KEY;
+
+// Kiểm tra xem API key có tồn tại không để tránh lỗi khi deploy
 if (!geminiApiKey) {
     console.error("FATAL: GEMINI_API_KEY is not defined in environment variables.");
 }
-// Khởi tạo client
+
+// Khởi tạo client Google AI
 const genAI = new GoogleGenerativeAI(geminiApiKey);
 // Chọn mô hình. 'gemini-pro' là một lựa chọn tốt, cân bằng giữa hiệu năng và chi phí.
 const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 
 /**
- * Tạo một prompt chi tiết và có cấu trúc cho Gemini.
+ * Tạo một prompt (chỉ dẫn) chi tiết và có cấu trúc cho Gemini.
  * @param {object} trend - Đối tượng trend.
  * @param {string} language - 'vi' hoặc 'en'.
  * @returns {string} - Prompt hoàn chỉnh.
@@ -107,34 +110,38 @@ function createDetailedAnalysisPrompt(trend, language) {
 
 exports.handler = async (event, context) => {
     const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
-
-    // THAY ĐỔI: Khai báo 'language' ở ngoài khối try-catch
-    // Gán một giá trị mặc định ('en') để phòng trường hợp không thể đọc được body.
-    let language = 'en';
+    let language = 'en'; // Khai báo ngoài try-catch với giá trị mặc định
 
     if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers };
     if (event.httpMethod === "GET") return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: "AI service is online." }) };
     if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ success: false, message: "Method Not Allowed" }) };
 
     try {
-        // THAY ĐỔI: Sử dụng 'const' cho các biến khác, nhưng gán giá trị
-        // cho biến 'language' đã được khai báo ở trên.
         const body = JSON.parse(event.body);
         const { trend, analysisType } = body;
-        language = body.language || 'en'; // Cập nhật language từ body, nếu không có thì vẫn là 'en'
+        language = body.language || 'en'; // Cập nhật ngôn ngữ từ request
 
-        if (!trend) return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "Trend data is missing." }) };
-        
+        if (!trend) {
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "Trend data is missing." }) };
+        }
+
         const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || trend.title_en || "N/A";
+        const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || trend.description_en || "N/A";
 
-        // --- PHÂN TÍCH TÓM TẮT (summary) ---
+        // Kiểm tra trend có hợp lệ không trước khi phân tích
+        if (trendTitle === "N/A" || trendDescription === "N/A") {
+            const message = language === 'vi' 
+                ? "Dữ liệu xu hướng không đầy đủ (thiếu tiêu đề hoặc mô tả) để phân tích."
+                : "Trend data is incomplete (missing title or description) for analysis.";
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: message }) };
+        }
+
+        // --- PHÂN TÍCH TÓM TẮT (summary) - Nhanh và miễn phí ---
         if (analysisType === 'summary') {
             const successScore = trend.hotnessScore ? (Math.min(99, Math.max(20, trend.hotnessScore * 100))) : (Math.floor(Math.random() * 40) + 60);
             const sentiment = successScore > 75 ? (language === 'vi' ? "tích cực" : "positive") : "neutral";
             const growthPotential = successScore > 80 ? (language === 'vi' ? "tiềm năng tăng trưởng cao" : "high potential for growth") : (language === 'vi' ? "tăng trưởng vừa phải" : "moderate growth");
-
             const htmlSummary = language === 'vi' ? `<ul style="list-style-type: disc; padding-left: 20px; text-align: left;"><li><strong>Xu hướng:</strong> "${trendTitle}" (Lĩnh vực: ${trend.category}).</li><li><strong>Điểm liên quan:</strong> <strong>${successScore.toFixed(0)}%</strong> (tâm lý ${sentiment}).</li><li><strong>Triển vọng:</strong> Xu hướng này cho thấy ${growthPotential}.</li></ul>` : `<ul style="list-style-type: disc; padding-left: 20px; text-align: left;"><li><strong>Trend:</strong> "${trendTitle}" (Domain: ${trend.category}).</li><li><strong>Relevance Score:</strong> <strong>${successScore.toFixed(0)}%</strong> (${sentiment} sentiment).</li><li><strong>Outlook:</strong> This trend shows ${growthPotential}.</li></ul>`;
-            
             const analysisResult = { successScore: parseFloat(successScore.toFixed(0)), summary: htmlSummary };
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: analysisResult }) };
         }
@@ -151,17 +158,13 @@ exports.handler = async (event, context) => {
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: detailedAnalysisContent }) };
         }
         
-        // Fallback
         return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "Invalid analysisType specified." }) };
 
     } catch (error) {
         console.error("Error processing analyze-trend request:", error);
-        
-        // Bây giờ khối `catch` này có thể truy cập biến 'language' một cách an toàn
         const userFriendlyMessage = language === 'vi' 
             ? `Đã xảy ra lỗi khi tạo phân tích AI. Vui lòng thử lại sau. (Lỗi: ${error.message})`
             : `An error occurred while generating the AI analysis. Please try again later. (Error: ${error.message})`;
-            
         return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: userFriendlyMessage }) };
     }
 };
