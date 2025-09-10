@@ -1,23 +1,55 @@
 // netlify/functions/analyze-trend.js
+// --- Class GeminiAPIManager ---
+class GeminiAPIManager {
+    constructor(apiKey) {
+        if (!apiKey) {
+            throw new Error("Gemini API key is required.");
+        }
+        this.apiKey = apiKey;
+        this.baseURL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
+        this.maxRetries = 3;
+        this.retryDelay = 1000;
+    }
 
-// Import thư viện chính thức của Google AI
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+    async generateContent(prompt) {
+        for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+            try {
+                const response = await fetch(this.baseURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        "contents": [{ "parts": [{ "text": prompt }] }]
+                    }),
+                });
 
-// --- Cấu hình API ---
-// Lấy API key từ biến môi trường của Netlify
-const geminiApiKey = process.env.GEMINI_API_KEY;
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    throw new Error(`API call failed with status ${response.status}: ${errorBody.error?.message || JSON.stringify(errorBody)}`);
+                }
 
-// Kiểm tra xem API key có tồn tại không để tránh lỗi khi deploy
-if (!geminiApiKey) {
-    console.error("FATAL: GEMINI_API_KEY is not defined in environment variables.");
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) {
+                    throw new Error("No content generated in API response.");
+                }
+                return text;
+
+            } catch (error) {
+                console.error(`Gemini API call attempt ${attempt} failed: ${error.message}`);
+                if (attempt === this.maxRetries) {
+                    throw new Error(`Gemini API call failed after ${this.maxRetries} attempts.`);
+                }
+                await new Promise(res => setTimeout(res, this.retryDelay));
+            }
+        }
+    }
 }
 
-// Khởi tạo client Google AI
-const genAI = new GoogleGenerativeAI(geminiApiKey);
-// Chọn mô hình. 'gemini-pro' là một lựa chọn tốt, cân bằng giữa hiệu năng và chi phí.
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-
+// --- Cấu hình API ---
+const geminiApiKey = process.env.GEMINI_API_KEY;
+// Khởi tạo class quản lý API
+const geminiManager = new GeminiAPIManager(geminiApiKey);
 /**
  * Tạo một prompt (chỉ dẫn) chi tiết và có cấu trúc cho Gemini.
  * @param {object} trend - Đối tượng trend.
@@ -105,7 +137,7 @@ function createDetailedAnalysisPrompt(trend, language) {
 
 
 // =========================================================================
-// HANDLER CHÍNH (Đã sửa lỗi)
+// HANDLER CHÍNH (Đã sửa lỗi logic ngôn ngữ)
 // =========================================================================
 
 exports.handler = async (event, context) => {
@@ -125,14 +157,17 @@ exports.handler = async (event, context) => {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "Trend data is missing." }) };
         }
 
-        const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || trend.title_en || "N/A";
-        const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || trend.description_en || "N/A";
+        // ================== THAY ĐỔI QUAN TRỌNG Ở ĐÂY ==================
+        // Logic mới để lấy tiêu đề và mô tả một cách thông minh, có dự phòng.
+        const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || (language === 'vi' ? trend.title_en : trend.title_vi) || "N/A";
+        const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || (language === 'vi' ? trend.description_en : trend.description_vi) || "N/A";
+        // ====================================================================
 
-        // Kiểm tra trend có hợp lệ không trước khi phân tích
-        if (trendTitle === "N/A" || trendDescription === "N/A") {
+        // Kiểm tra trend có hợp lệ không TRƯỚC KHI phân tích
+        if (trendTitle === "N/A") {
             const message = language === 'vi' 
-                ? "Dữ liệu xu hướng không đầy đủ (thiếu tiêu đề hoặc mô tả) để phân tích."
-                : "Trend data is incomplete (missing title or description) for analysis.";
+                ? "Dữ liệu xu hướng không đầy đủ (thiếu tiêu đề) để phân tích."
+                : "Trend data is incomplete (missing title) for analysis.";
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: message }) };
         }
 
@@ -151,7 +186,10 @@ exports.handler = async (event, context) => {
             if (!geminiApiKey) {
                 throw new Error("Gemini API key is not configured on the server.");
             }
-            const prompt = createDetailedAnalysisPrompt(trend, language);
+            // Tạo một object trend "sạch" để gửi cho AI, đảm bảo nó có đủ thông tin
+            const cleanTrendForAI = { ...trend, title: trendTitle, description: trendDescription };
+            const prompt = createDetailedAnalysisPrompt(cleanTrendForAI, language); // Sử dụng trend đã được làm sạch
+            
             const result = await model.generateContent(prompt);
             const response = await result.response;
             const detailedAnalysisContent = response.text();
