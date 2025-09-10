@@ -1,4 +1,5 @@
 // netlify/functions/analyze-trend.js
+
 // --- Class GeminiAPIManager ---
 class GeminiAPIManager {
     constructor(apiKey) {
@@ -48,102 +49,28 @@ class GeminiAPIManager {
 
 // --- Cấu hình API ---
 const geminiApiKey = process.env.GEMINI_API_KEY;
-// Khởi tạo class quản lý API
 const geminiManager = new GeminiAPIManager(geminiApiKey);
-/**
- * Tạo một prompt (chỉ dẫn) chi tiết và có cấu trúc cho Gemini.
- * @param {object} trend - Đối tượng trend.
- * @param {string} language - 'vi' hoặc 'en'.
- * @returns {string} - Prompt hoàn chỉnh.
- */
+
+
+// --- Hàm tạo Prompt ---
 function createDetailedAnalysisPrompt(trend, language) {
-    const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || trend.title_en;
-    const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || trend.description_en;
-
+    const trendTitle = trend.title;
+    const trendDescription = trend.description;
     if (language === 'vi') {
-        return `
-            Bạn là một chuyên gia phân tích xu hướng marketing kỹ thuật số. Nhiệm vụ của bạn là cung cấp một bản phân tích chuyên sâu về xu hướng sau đây.
-            
-            **Thông tin xu hướng:**
-            - Tên xu hướng: "${trendTitle}"
-            - Mô tả ngắn: "${trendDescription}"
-            - Lĩnh vực: "${trend.category}"
-            - Nguồn: "${trend.submitter}"
-            - Ngày ghi nhận: "${new Date(trend.date).toLocaleDateString('vi-VN')}"
-
-            **Yêu cầu phân tích (Sử dụng định dạng HTML):**
-
-            1.  **Tổng quan & Tóm tắt Xu hướng:**
-                - Bắt đầu với thẻ \`<h4>Tổng quan & Tóm tắt Xu hướng</h4>\`.
-                - Viết một đoạn văn (trong thẻ \`<p>\`) giải thích chi tiết xu hướng này là gì, dựa vào mô tả đã cho nhưng diễn giải sâu hơn.
-
-            2.  **Phân tích Động lực Xu hướng:**
-                - Bắt đầu với thẻ \`<h4>Phân tích Động lực Xu hướng</h4>\`.
-                - Tạo một thẻ \`<h5>Tại sao nó lại nổi bật?</h5>\` và một đoạn văn giải thích các nguyên nhân khả thi (ví dụ: sự kiện văn hóa, đột phá công nghệ, ảnh hưởng từ người nổi tiếng).
-                - Tạo một thẻ \`<h5>Nó lan truyền bằng cách nào?</h5>\` và một đoạn văn mô tả các kênh lan truyền chính (ví dụ: mạng xã hội, báo chí, diễn đàn).
-
-            3.  **Đối tượng và Lĩnh vực phù hợp:**
-                - Bắt đầu với thẻ \`<h4>Đối tượng và Lĩnh vực phù hợp</h4>\`.
-                - Viết một đoạn văn mô tả tệp khách hàng/người dùng mục tiêu lý tưởng của xu hướng này (tuổi tác, sở thích, hành vi).
-
-            4.  **Đề xuất Nền tảng & Chiến lược Nội dung:**
-                - Bắt đầu với thẻ \`<h4>Đề xuất Nền tảng & Chiến lược Nội dung</h4>\`.
-                - Đề xuất 2 nền tảng mạng xã hội phù hợp nhất. Với mỗi nền tảng:
-                    - Dùng thẻ \`<h5>1. Nền tảng đề xuất: <strong class="ai-highlight">[Tên Nền Tảng]</strong></h5>\`.
-                    - Dùng danh sách \`<ul>\` với các mục \`<li>\` để liệt kê:
-                        - \`<strong>Lý do phù hợp:</strong> [Giải thích tại sao nền tảng này lại tốt cho xu hướng]\`
-                        - \`<strong>Ý tưởng nội dung:</strong> [Đưa ra một ý tưởng nội dung cụ thể, có thể hành động được]\`
-            
-            **QUAN TRỌNG:** Chỉ trả lời bằng mã HTML hợp lệ, gói gọn trong các thẻ \`<div class="ai-section">...</div>\` cho mỗi phần chính. Không thêm \`<html>\`, \`<body>\` hay markdown.
-        `;
+        return `Bạn là một chuyên gia phân tích xu hướng marketing. Phân tích xu hướng sau đây. Thông tin: Tên="${trendTitle}", Mô tả="${trendDescription}", Lĩnh vực="${trend.category}". Yêu cầu: 1. Tổng quan. 2. Tại sao nổi bật & lan truyền thế nào?. 3. Đối tượng phù hợp. 4. Đề xuất 2 nền tảng & chiến lược nội dung. QUAN TRỌNG: Chỉ trả lời bằng HTML hợp lệ, gói gọn trong các thẻ <div class="ai-section">...</div>.`;
     } else {
-        return `
-            You are an expert digital marketing trend analyst. Your task is to provide a deep dive analysis of the following trend.
-            
-            **Trend Information:**
-            - Trend Name: "${trendTitle}"
-            - Short Description: "${trendDescription}"
-            - Field/Category: "${trend.category}"
-            - Source: "${trend.submitter}"
-            - Date Noted: "${new Date(trend.date).toLocaleDateString('en-US')}"
-
-            **Analysis Requirements (Use HTML format):**
-
-            1.  **Trend Overview & Summary:**
-                - Start with an \`<h4>Trend Overview & Summary</h4>\` tag.
-                - Write a paragraph (in a \`<p>\` tag) explaining in detail what this trend is, elaborating on the given description.
-
-            2.  **Trend Dynamics Analysis:**
-                - Start with an \`<h4>Trend Dynamics Analysis</h4>\` tag.
-                - Create an \`<h5>Why is it trending?</h5>\` tag followed by a paragraph explaining the likely causes (e.g., cultural events, tech breakthroughs, celebrity influence).
-                - Create an \`<h5>How is it spreading?</h5>\` tag followed by a paragraph describing the main channels of propagation (e.g., social media, press, forums).
-
-            3.  **Target Audience & Relevant Fields:**
-                - Start with an \`<h4>Target Audience & Relevant Fields</h4>\` tag.
-                - Write a paragraph describing the ideal target audience/customer for this trend (age, interests, behaviors).
-
-            4.  **Platform & Content Strategy Recommendations:**
-                - Start with an \`<h4>Platform & Content Strategy Recommendations</h4>\` tag.
-                - Recommend the 2 most suitable social media platforms. For each platform:
-                    - Use an \`<h5>1. Recommended Platform: <strong class="ai-highlight">[Platform Name]</strong></h5>\` tag.
-                    - Use a \`<ul>\` list with \`<li>\` items for:
-                        - \`<strong>Why it fits:</strong> [Explain why this platform is good for the trend]\`
-                        - \`<strong>Content Idea:</strong> [Provide a specific, actionable content idea]\`
-            
-            **IMPORTANT:** Respond ONLY with valid HTML, wrapped in \`<div class="ai-section">...</div>\` tags for each main section. Do not include \`<html>\`, \`<body>\`, or markdown.
-        `;
+        return `You are a marketing trend analyst. Analyze the following trend. Info: Name="${trendTitle}", Description="${trendDescription}", Category="${trend.category}". Requirements: 1. Overview. 2. Why it's trending & how it's spreading. 3. Target audience. 4. Recommend 2 platforms & content strategies. IMPORTANT: Respond ONLY with valid HTML wrapped in <div class="ai-section"> tags.`;
     }
 }
 
 
 // =========================================================================
-// HANDLER CHÍNH (Đã sửa lỗi logic ngôn ngữ)
+// HANDLER CHÍNH
 // =========================================================================
 
 exports.handler = async (event, context) => {
     const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
-    let language = 'en'; // Khai báo ngoài try-catch với giá trị mặc định
-
+    let language = 'en';
     if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers };
     if (event.httpMethod === "GET") return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: "AI service is online." }) };
     if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ success: false, message: "Method Not Allowed" }) };
@@ -151,29 +78,23 @@ exports.handler = async (event, context) => {
     try {
         const body = JSON.parse(event.body);
         const { trend, analysisType } = body;
-        language = body.language || 'en'; // Cập nhật ngôn ngữ từ request
+        language = body.language || 'en';
 
         if (!trend) {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "Trend data is missing." }) };
         }
 
-        // ================== THAY ĐỔI QUAN TRỌNG Ở ĐÂY ==================
-        // Logic mới để lấy tiêu đề và mô tả một cách thông minh, có dự phòng.
         const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || (language === 'vi' ? trend.title_en : trend.title_vi) || "N/A";
         const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || (language === 'vi' ? trend.description_en : trend.description_vi) || "N/A";
-        // ====================================================================
 
-        // Kiểm tra trend có hợp lệ không TRƯỚC KHI phân tích
         if (trendTitle === "N/A") {
-            const message = language === 'vi' 
-                ? "Dữ liệu xu hướng không đầy đủ (thiếu tiêu đề) để phân tích."
-                : "Trend data is incomplete (missing title) for analysis.";
+            const message = language === 'vi' ? "Dữ liệu xu hướng thiếu tiêu đề để phân tích." : "Trend data is missing a title for analysis.";
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: message }) };
         }
-
-        // --- PHÂN TÍCH TÓM TẮT (summary) - Nhanh và miễn phí ---
+        
         if (analysisType === 'summary') {
-            const successScore = trend.hotnessScore ? (Math.min(99, Math.max(20, trend.hotnessScore * 100))) : (Math.floor(Math.random() * 40) + 60);
+            // Logic summary (giữ nguyên, không thay đổi)
+             const successScore = trend.hotnessScore ? (Math.min(99, Math.max(20, trend.hotnessScore * 100))) : (Math.floor(Math.random() * 40) + 60);
             const sentiment = successScore > 75 ? (language === 'vi' ? "tích cực" : "positive") : "neutral";
             const growthPotential = successScore > 80 ? (language === 'vi' ? "tiềm năng tăng trưởng cao" : "high potential for growth") : (language === 'vi' ? "tăng trưởng vừa phải" : "moderate growth");
             const htmlSummary = language === 'vi' ? `<ul style="list-style-type: disc; padding-left: 20px; text-align: left;"><li><strong>Xu hướng:</strong> "${trendTitle}" (Lĩnh vực: ${trend.category}).</li><li><strong>Điểm liên quan:</strong> <strong>${successScore.toFixed(0)}%</strong> (tâm lý ${sentiment}).</li><li><strong>Triển vọng:</strong> Xu hướng này cho thấy ${growthPotential}.</li></ul>` : `<ul style="list-style-type: disc; padding-left: 20px; text-align: left;"><li><strong>Trend:</strong> "${trendTitle}" (Domain: ${trend.category}).</li><li><strong>Relevance Score:</strong> <strong>${successScore.toFixed(0)}%</strong> (${sentiment} sentiment).</li><li><strong>Outlook:</strong> This trend shows ${growthPotential}.</li></ul>`;
@@ -181,18 +102,19 @@ exports.handler = async (event, context) => {
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: analysisResult }) };
         }
         
-        // --- PHÂN TÍCH CHUYÊN SÂU (detailed) - Gọi API Gemini ---
         else if (analysisType === 'detailed') {
             if (!geminiApiKey) {
                 throw new Error("Gemini API key is not configured on the server.");
             }
-            // Tạo một object trend "sạch" để gửi cho AI, đảm bảo nó có đủ thông tin
-            const cleanTrendForAI = { ...trend, title: trendTitle, description: trendDescription };
-            const prompt = createDetailedAnalysisPrompt(cleanTrendForAI, language); // Sử dụng trend đã được làm sạch
             
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const detailedAnalysisContent = response.text();
+            const cleanTrendForAI = { ...trend, title: trendTitle, description: trendDescription };
+            const prompt = createDetailedAnalysisPrompt(cleanTrendForAI, language);
+            
+            // ================== ĐÂY LÀ DÒNG CODE ĐÚNG ==================
+            // Gọi AI thông qua class quản lý mới, không dùng "model" nữa
+            const detailedAnalysisContent = await geminiManager.generateContent(prompt);
+            // ==========================================================
+            
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: detailedAnalysisContent }) };
         }
         
