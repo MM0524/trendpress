@@ -12,6 +12,7 @@ const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 // HÀM HELPER
 // =========================================================================
 
+// ... (Các hàm helper khác như fetchWithTimeout, getSafeString, decodeHtmlEntities, v.v. giữ nguyên)
 async function fetchWithTimeout(url, options = {}, ms = 10000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ms);
@@ -65,10 +66,8 @@ function calculateHotnessScore(trend, maxValues) {
     return (normViews * weights.views) + (normInteractions * weights.interactions) + (normSearches * weights.searches) + (normVotes * weights.votes);
 }
 
-/**
- * Suy luận category từ tên của nguồn tin tức (đã mở rộng).
- */
 function inferCategoryFromName(sourceName) {
+    // ... (Hàm này giữ nguyên như phiên bản trước)
     if (!sourceName) return "News";
     const name = sourceName.toLowerCase();
     const categoryMap = {
@@ -100,7 +99,9 @@ function inferCategoryFromName(sourceName) {
 
 function normalizeNewsApiArticle(article, keyword, region) {
     const { title, description, url, publishedAt, source } = article;
+    // Dòng kiểm tra này đã rất tốt, nó sẽ trả về null nếu title không hợp lệ
     if (!title || title === "[Removed]" || !url) return null;
+    
     const category = inferCategoryFromName(source.name);
     const stableId = crypto.createHash('md5').update(url).digest('hex');
     const baseVotes = Math.floor(Math.random() * 500) + 200;
@@ -116,39 +117,17 @@ function normalizeNewsApiArticle(article, keyword, region) {
 }
 
 // =========================================================================
-// LUỒNG CHÍNH: NEWSAPI
-// =========================================================================
-
-async function getTrendsFromNewsAPI() {
-    if (!process.env.NEWS_API_KEY) throw new Error("NEWS_API_KEY is not configured.");
-    console.log("🚀 Starting primary flow: NewsAPI Top Headlines...");
-    const requests = [
-        { country: 'us', regionCode: 'us', pageSize: 15 },
-        { country: 'gb', regionCode: 'gb', pageSize: 15 },
-        { category: 'technology', regionCode: 'global', pageSize: 15 }
-    ];
-    const apiPromises = requests.map(params => {
-        const { regionCode, ...apiParams } = params;
-        return newsapi.v2.topHeadlines(apiParams).then(response => {
-            if (response.status === 'ok' && response.articles.length > 0) {
-                console.log(`✅ Fetched ${response.articles.length} headlines for ${regionCode}`);
-                return response.articles.map(article => normalizeNewsApiArticle(article, article.title.split(' ')[0], regionCode)).filter(Boolean);
-            }
-            return [];
-        }).catch(err => { console.error(`❌ Error fetching for ${regionCode}:`, err.message); return []; });
-    });
-    const results = await Promise.all(apiPromises);
-    const allTrends = results.flat();
-    console.log(`✅ Primary flow successful. Total trends: ${allTrends.length}`);
-    return allTrends;
-}
-
-// =========================================================================
 // LUỒNG DỰ PHÒNG (FALLBACK): RSS
 // =========================================================================
 
 function createStandardTrend(item, sourceName, defaultCategory = "General", defaultRegion = "global", extraTags = []) {
-    const title = getSafeString(item.title) || "No Title Available";
+    const title = getSafeString(item.title); // Không cần "|| No Title Available" nữa
+    
+    // THAY ĐỔI QUAN TRỌNG: Kiểm tra và loại bỏ ngay tại đây
+    if (!title) {
+        return null; // Nếu không có tiêu đề, không tạo trend này
+    }
+
     const description = getSafeString(item.description) || "No description available";
     let link = getSafeString(item.link);
     if (Array.isArray(item.link)) {
@@ -183,11 +162,39 @@ async function fetchAndParseXmlFeed(url, sourceName, defaultCategory, defaultReg
         const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "", textNodeName: "#text", isArray: (name) => ["item", "entry", "link"].includes(name) });
         const parsed = parser.parse(text);
         const rawItems = parsed?.rss?.channel?.item || parsed?.feed?.entry || [];
-        return rawItems.map(item => createStandardTrend(item, sourceName, defaultCategory, defaultRegion, extraTags));
+        
+        // THAY ĐỔI: Lọc bỏ các kết quả null ngay sau khi tạo
+        return rawItems.map(item => createStandardTrend(item, sourceName, defaultCategory, defaultRegion, extraTags)).filter(Boolean);
+
     } catch (err) {
         console.error(`❌ RSS Error for ${sourceName} (${url}):`, err.message);
         return [];
     }
+}
+
+// ... (Các hàm getTrendsFromNewsAPI và getTrendsFromRssFallback giữ nguyên)
+async function getTrendsFromNewsAPI() {
+    if (!process.env.NEWS_API_KEY) throw new Error("NEWS_API_KEY is not configured.");
+    console.log("🚀 Starting primary flow: NewsAPI Top Headlines...");
+    const requests = [
+        { country: 'us', regionCode: 'us', pageSize: 15 },
+        { country: 'gb', regionCode: 'gb', pageSize: 15 },
+        { category: 'technology', regionCode: 'global', pageSize: 15 }
+    ];
+    const apiPromises = requests.map(params => {
+        const { regionCode, ...apiParams } = params;
+        return newsapi.v2.topHeadlines(apiParams).then(response => {
+            if (response.status === 'ok' && response.articles.length > 0) {
+                console.log(`✅ Fetched ${response.articles.length} headlines for ${regionCode}`);
+                return response.articles.map(article => normalizeNewsApiArticle(article, article.title.split(' ')[0], regionCode)).filter(Boolean);
+            }
+            return [];
+        }).catch(err => { console.error(`❌ Error fetching for ${regionCode}:`, err.message); return []; });
+    });
+    const results = await Promise.all(apiPromises);
+    const allTrends = results.flat();
+    console.log(`✅ Primary flow successful. Total trends: ${allTrends.length}`);
+    return allTrends;
 }
 
 async function getTrendsFromRssFallback() {
@@ -223,17 +230,15 @@ async function getTrendsFromRssFallback() {
 // =========================================================================
 // BUILDER HANDLER CHÍNH
 // =========================================================================
-
 exports.handler = builder(async (event, context) => {
+    // ... (Handler chính giữ nguyên)
     const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
     try {
-        // Luôn chạy cả hai luồng để có dữ liệu đa dạng nhất
         const primaryPromise = getTrendsFromNewsAPI();
         const fallbackPromise = getTrendsFromRssFallback();
 
         const [primaryTrends, fallbackTrends] = await Promise.all([primaryPromise, fallbackPromise]);
 
-        // Gộp kết quả và loại bỏ trùng lặp
         const trendMap = new Map();
         [...primaryTrends, ...fallbackTrends].forEach(t => { if (t && t.id) trendMap.set(t.id, t) });
         let finalTrends = Array.from(trendMap.values());
@@ -262,7 +267,7 @@ exports.handler = builder(async (event, context) => {
 
         return {
             statusCode: 200,
-            headers: { ...headers, "Cache-Control": "public, max-age=1800, must-revalidate" }, // Cache 30 phút
+            headers: { ...headers, "Cache-Control": "public, max-age=1800, must-revalidate" },
             body: JSON.stringify({ success: true, trends: sortedTrends }),
         };
     } catch (err) {
