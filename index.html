@@ -1445,7 +1445,7 @@
             return `${id}|${getLocalizedTrendText(trend).title || ''}|${trend.source || ''}`.toLowerCase(); 
         }
         function loadSeenTrends() { try { return JSON.parse(localStorage.getItem('seenTrends') || '[]'); } catch { return []; } }
-        function saveSeenTrendKey(key) { try { const seen = new Set(loadSeenTrends()); if (!seen.has(key)) localStorage.setItem('seenTrends', JSON_INTRESOURCE, JSON.stringify([...seen, key])); } catch {} }
+        function saveSeenTrendKey(key) { try { const seen = new Set(loadSeenTrends()); if (!seen.has(key)) localStorage.setItem('seenTrends', JSON.stringify([...seen, key])); } catch {} }
 
         function applyTrendOrdering() {
             const seenKeys = new Set(loadSeenTrends());
@@ -1878,7 +1878,8 @@
                 tension: 0.4,
                 fill: false,
                 pointRadius: 3,
-                pointHoverRadius: 5
+                pointHoverRadius: 5,
+                trendId: trendItem.id // NEW: Store trend ID in dataset
             }));
 
             if (datasets.length === 0 || datasets.every(dataset => dataset.data.every(val => val === 0))) {
@@ -1893,8 +1894,27 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom', labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 } },
-                        tooltip: { callbacks: { label: (ctx) => `${t('Engagement')}: ${formatNumber(ctx.parsed.y)}` } }
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
+                            // NEW: Custom onClick handler for legend items
+                            onClick: (e, legendItem, legend) => {
+                                // Default Chart.js behavior: toggle visibility
+                                const index = legendItem.datasetIndex;
+                                const ci = legend.chart;
+                                ci.setDatasetVisibility(index, !ci.isDatasetVisible(index));
+                                ci.update();
+
+                                // Custom behavior: Open Trend Overview Modal
+                                const trendIdFromLegend = ci.data.datasets[index].trendId;
+                                if (trendIdFromLegend) {
+                                    const trend = masterTrendsList.find(t => t.id === trendIdFromLegend);
+                                    if (trend) {
+                                        openTrendOverviewModal(trend);
+                                    }
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: { grid: { display: false }, ticks: { color: '#8a8da0' } },
@@ -2024,7 +2044,8 @@
                             tension: 0.4,
                             fill: false,
                             pointRadius: 3,
-                            pointHoverRadius: 5
+                            pointHoverRadius: 5,
+                            trendId: mostRelevantTrendForTerm.id // NEW: Store trend ID in dataset
                         });
                     }
                 }
@@ -2044,7 +2065,8 @@
                         tension: 0.4,
                         fill: false,
                         pointRadius: 3,
-                        pointHoverRadius: 5
+                        pointHoverRadius: 5,
+                        trendId: trendItem.id // NEW: Store trend ID in dataset
                     });
                 });
                 
@@ -2061,8 +2083,27 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { position: 'bottom', labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 } },
-                            tooltip: { callbacks: { label: (ctx) => `${t('Engagement')}: ${formatNumber(ctx.parsed.y)}` } }
+                            legend: { 
+                                position: 'bottom', 
+                                labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
+                                // NEW: Custom onClick handler for legend items
+                                onClick: (e, legendItem, legend) => {
+                                    // Default Chart.js behavior: toggle visibility
+                                    const index = legendItem.datasetIndex;
+                                    const ci = legend.chart;
+                                    ci.setDatasetVisibility(index, !ci.isDatasetVisible(index));
+                                    ci.update();
+
+                                    // Custom behavior: Open Trend Overview Modal
+                                    const trendIdFromLegend = ci.data.datasets[index].trendId;
+                                    if (trendIdFromLegend) {
+                                        const trend = masterTrendsList.find(t => t.id === trendIdFromLegend);
+                                        if (trend) {
+                                            openTrendOverviewModal(trend);
+                                        }
+                                    }
+                                }
+                            }
                         },
                         scales: {
                             x: { grid: { display: false }, ticks: { color: '#8a8da0' } },
@@ -2326,7 +2367,7 @@
             // Đã cập nhật để bao gồm các id cụ thể cho các bảng Trending Board
             [
                 DOM.trendsList, 
-                DOM.forUTrendsList, // THÊM LẮNG NGHE CHO FOR U TRENDS LIST
+                DOM.forUTrendsList, 
                 document.getElementById('for-u-leaderboards'),
                 document.getElementById('tb-topic-list'), 
                 document.getElementById('tb-query-list')  
