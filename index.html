@@ -2020,12 +2020,17 @@
             if (user.tbSearchTerms.length > 0) {
                 let trendsMatchingSearch = [];
                 for (const term of user.tbSearchTerms) {
-                    const matched = trendsToConsiderForStatus.filter(trend =>
-                        getLocalizedTrendText(trend).title.toLowerCase().includes(term.toLowerCase()) || 
-                        (trend.tags && trend.tags.some(tag => tag.toLowerCase().includes(term.toLowerCase())))
-                    );
-                    trendsMatchingSearch.push(...matched);
-                }
+                   const termLower = term.toLowerCase();
+                   const matched = trendsToConsiderForStatus.filter(trend => {
+                        const localized = getLocalizedTrendText(trend);
+                        const titleMatch = localized.title.toLowerCase().includes(termLower);
+                        const descriptionMatch = localized.description.toLowerCase().includes(termLower); // <-- THÊM DÒNG NÀY
+                        const tagMatch = (trend.tags && trend.tags.some(tag => tag.toLowerCase().includes(termLower)));
+            
+                return titleMatch || descriptionMatch || tagMatch; // <-- CẬP NHẬT ĐIỀU KIỆN
+                });
+                trendsMatchingSearch.push(...matched);
+            }
                 trendsMatchingSearch = Array.from(new Set(trendsMatchingSearch.map(t => t.id))).map(id => trendsToConsiderForStatus.find(t => t.id === id));
                 
                 trendsToDraw = trendsMatchingSearch; 
@@ -2551,3 +2556,4 @@
     </script>
 </body>
 </html>
+
