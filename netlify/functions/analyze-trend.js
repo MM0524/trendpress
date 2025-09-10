@@ -102,22 +102,32 @@ function createDetailedAnalysisPrompt(trend, language) {
 
 
 // =========================================================================
-// HANDLER CHÍNH
+// HANDLER CHÍNH (Đã sửa lỗi)
 // =========================================================================
 
 exports.handler = async (event, context) => {
     const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+
+    // THAY ĐỔI: Khai báo 'language' ở ngoài khối try-catch
+    // Gán một giá trị mặc định ('en') để phòng trường hợp không thể đọc được body.
+    let language = 'en';
+
     if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers };
     if (event.httpMethod === "GET") return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: "AI service is online." }) };
     if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ success: false, message: "Method Not Allowed" }) };
 
     try {
-        const { trend, analysisType, language } = JSON.parse(event.body);
+        // THAY ĐỔI: Sử dụng 'const' cho các biến khác, nhưng gán giá trị
+        // cho biến 'language' đã được khai báo ở trên.
+        const body = JSON.parse(event.body);
+        const { trend, analysisType } = body;
+        language = body.language || 'en'; // Cập nhật language từ body, nếu không có thì vẫn là 'en'
+
         if (!trend) return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "Trend data is missing." }) };
         
         const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || trend.title_en || "N/A";
 
-        // --- PHÂN TÍCH TÓM TẮT (summary) - Giữ lại logic cũ để nhanh và tiết kiệm ---
+        // --- PHÂN TÍCH TÓM TẮT (summary) ---
         if (analysisType === 'summary') {
             const successScore = trend.hotnessScore ? (Math.min(99, Math.max(20, trend.hotnessScore * 100))) : (Math.floor(Math.random() * 40) + 60);
             const sentiment = successScore > 75 ? (language === 'vi' ? "tích cực" : "positive") : "neutral";
@@ -134,16 +144,10 @@ exports.handler = async (event, context) => {
             if (!geminiApiKey) {
                 throw new Error("Gemini API key is not configured on the server.");
             }
-
-            // 1. Tạo prompt chi tiết
             const prompt = createDetailedAnalysisPrompt(trend, language);
-            
-            // 2. Gửi yêu cầu đến Gemini
             const result = await model.generateContent(prompt);
             const response = await result.response;
             const detailedAnalysisContent = response.text();
-
-            // 3. Trả về kết quả
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: detailedAnalysisContent }) };
         }
         
@@ -152,10 +156,12 @@ exports.handler = async (event, context) => {
 
     } catch (error) {
         console.error("Error processing analyze-trend request:", error);
-        // Trả về lỗi thân thiện hơn cho người dùng
+        
+        // Bây giờ khối `catch` này có thể truy cập biến 'language' một cách an toàn
         const userFriendlyMessage = language === 'vi' 
             ? `Đã xảy ra lỗi khi tạo phân tích AI. Vui lòng thử lại sau. (Lỗi: ${error.message})`
             : `An error occurred while generating the AI analysis. Please try again later. (Error: ${error.message})`;
+            
         return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: userFriendlyMessage }) };
     }
 };
