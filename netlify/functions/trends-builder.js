@@ -107,7 +107,8 @@ function normalizeNewsApiArticle(article, keyword, region) {
 }
 
 /**
- * Lấy trends bằng cách sử dụng luồng Google Trends -> NewsAPI.
+ * LẤY TRENDS TRỰC TIẾP TỪ NEWSAPI TOP HEADLINES (ỔN ĐỊNH)
+ * Luồng này không còn phụ thuộc vào Google Trends.
  * @returns {Promise<Array>} - Một mảng các đối tượng trend.
  */
 async function getTrendsFromNewsAPI() {
@@ -115,67 +116,39 @@ async function getTrendsFromNewsAPI() {
     throw new Error("NEWS_API_KEY is not configured in environment variables.");
   }
 
-  console.log("🚀 Starting primary flow: Google Trends -> NewsAPI...");
+  console.log("🚀 Starting primary flow: NewsAPI Top Headlines...");
 
-  // 1. Lấy từ khóa thịnh hành từ Google Trends bằng realTimeTrends
-  let trendingKeywords = [];
   try {
-    // THAY ĐỔI: Chuyển sang realTimeTrends
-    const trendsResult = await googleTrends.realTimeTrends({
-      geo: 'US', // Bạn có thể đổi sang 'VN' nhưng dữ liệu có thể ít hơn
-      category: 'all', // Lấy từ tất cả các danh mục
+    // 1. Lấy các tin tức hàng đầu từ NewsAPI cho một khu vực cụ thể (ví dụ: US)
+    const response = await newsapi.v2.topHeadlines({
+      country: 'us', // Lấy tin tức hàng đầu tại Mỹ. Bạn có thể đổi sang 'gb', 'ca', v.v.
+      pageSize: 30, // Lấy khoảng 30 tin tức hàng đầu
     });
-    const parsedResult = JSON.parse(trendsResult);
-    // THAY ĐỔI: Cập nhật cách lấy dữ liệu từ kết quả trả về
-    const stories = parsedResult.storySummaries?.trendingStories || [];
-    
-    // Lấy tối đa 7 từ khóa để tránh gọi quá nhiều API
-    trendingKeywords = stories.slice(0, 7).map(story => story.title);
-    
-    console.log(`✅ Got top keywords from Google Trends (real-time): ${trendingKeywords.join(', ')}`);
-  } catch (err) {
-    // Bắt lỗi cụ thể để log chi tiết hơn
-    if (err instanceof SyntaxError) {
-        console.error("❌ Failed to parse JSON from Google Trends. Response was likely HTML (blocked request).", err.message);
-    } else {
-        console.error("❌ An unexpected error occurred while fetching from Google Trends:", err.message);
+
+    if (response.status !== 'ok' || response.articles.length === 0) {
+      console.warn("⚠️ No articles returned from NewsAPI top-headlines.");
+      return []; // Trả về mảng rỗng để có thể kích hoạt fallback nếu cần
     }
+
+    console.log(`✅ Fetched ${response.articles.length} top headlines from NewsAPI.`);
+
+    // 2. Chuẩn hóa các bài báo này thành đối tượng trend
+    // Từ khóa (keyword) bây giờ có thể lấy từ chính title của bài báo
+    const allTrends = response.articles
+      .map(article => {
+        // Lấy 1-2 từ khóa chính từ tiêu đề để làm tag
+        const titleKeywords = article.title.split(' ')[0] || "Headlines";
+        return normalizeNewsApiArticle(article, titleKeywords, 'us');
+      })
+      .filter(Boolean); // Lọc ra các kết quả null (ví dụ: bài báo có title là "[Removed]")
+
+    console.log(`✅ Normalized ${allTrends.length} articles into trends.`);
+    return allTrends;
+
+  } catch (err) {
+    console.error("❌ An error occurred while fetching from NewsAPI Top Headlines:", err.message);
     return []; // Trả về mảng rỗng để kích hoạt fallback
   }
-
-  if (trendingKeywords.length === 0) {
-    console.warn("⚠️ No keywords returned from Google Trends.");
-    return [];
-  }
-
-  // 2. Với mỗi từ khóa, tìm kiếm bài báo trên NewsAPI (giữ nguyên logic này)
-  const articlePromises = trendingKeywords.map(keyword =>
-    newsapi.v2.everything({
-      q: `"${keyword}"`, // Tìm kiếm chính xác từ khóa để kết quả liên quan hơn
-      sortBy: 'relevancy',
-      pageSize: 5, 
-      language: 'en'
-    }).then(response => {
-      if (response.status === 'ok') {
-        return response.articles
-          .map(article => normalizeNewsApiArticle(article, keyword, 'us'))
-          .filter(Boolean); 
-      }
-      return [];
-    }).catch(err => {
-        console.warn(`⚠️ Failed to fetch news for keyword "${keyword}":`, err.message);
-        return [];
-    })
-  );
-
-  const settledResults = await Promise.allSettled(articlePromises);
-  
-  const allTrends = settledResults
-    .filter(result => result.status === 'fulfilled')
-    .flatMap(result => result.value); 
-
-  console.log(`✅ Fetched a total of ${allTrends.length} articles from NewsAPI.`);
-  return allTrends;
 }
 
 // =========================================================================
