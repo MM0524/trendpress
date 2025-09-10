@@ -117,16 +117,29 @@ async function getTrendsFromNewsAPI() {
 
   console.log("🚀 Starting primary flow: Google Trends -> NewsAPI...");
 
-  // 1. Lấy từ khóa thịnh hành từ Google Trends
+  // 1. Lấy từ khóa thịnh hành từ Google Trends bằng realTimeTrends
   let trendingKeywords = [];
   try {
-    const trendsResult = await googleTrends.dailyTrends({ geo: 'US' });
+    // THAY ĐỔI: Chuyển sang realTimeTrends
+    const trendsResult = await googleTrends.realTimeTrends({
+      geo: 'US', // Bạn có thể đổi sang 'VN' nhưng dữ liệu có thể ít hơn
+      category: 'all', // Lấy từ tất cả các danh mục
+    });
     const parsedResult = JSON.parse(trendsResult);
-    const dailyTrends = parsedResult.default.trendingSearchesDays[0]?.trendingSearches || [];
-    trendingKeywords = dailyTrends.slice(0, 5).map(t => t.title.query); // Lấy top 5 từ khóa
-    console.log(`✅ Got top keywords from Google Trends: ${trendingKeywords.join(', ')}`);
+    // THAY ĐỔI: Cập nhật cách lấy dữ liệu từ kết quả trả về
+    const stories = parsedResult.storySummaries?.trendingStories || [];
+    
+    // Lấy tối đa 7 từ khóa để tránh gọi quá nhiều API
+    trendingKeywords = stories.slice(0, 7).map(story => story.title);
+    
+    console.log(`✅ Got top keywords from Google Trends (real-time): ${trendingKeywords.join(', ')}`);
   } catch (err) {
-    console.error("❌ Failed to fetch from Google Trends:", err.message);
+    // Bắt lỗi cụ thể để log chi tiết hơn
+    if (err instanceof SyntaxError) {
+        console.error("❌ Failed to parse JSON from Google Trends. Response was likely HTML (blocked request).", err.message);
+    } else {
+        console.error("❌ An unexpected error occurred while fetching from Google Trends:", err.message);
+    }
     return []; // Trả về mảng rỗng để kích hoạt fallback
   }
 
@@ -135,19 +148,18 @@ async function getTrendsFromNewsAPI() {
     return [];
   }
 
-  // 2. Với mỗi từ khóa, tìm kiếm bài báo trên NewsAPI
+  // 2. Với mỗi từ khóa, tìm kiếm bài báo trên NewsAPI (giữ nguyên logic này)
   const articlePromises = trendingKeywords.map(keyword =>
     newsapi.v2.everything({
-      q: keyword,
+      q: `"${keyword}"`, // Tìm kiếm chính xác từ khóa để kết quả liên quan hơn
       sortBy: 'relevancy',
-      pageSize: 5, // Lấy 5 bài báo hàng đầu cho mỗi từ khóa
+      pageSize: 5, 
       language: 'en'
     }).then(response => {
       if (response.status === 'ok') {
-        // Chuẩn hóa mỗi bài báo
         return response.articles
           .map(article => normalizeNewsApiArticle(article, keyword, 'us'))
-          .filter(Boolean); // Lọc ra các kết quả null
+          .filter(Boolean); 
       }
       return [];
     }).catch(err => {
@@ -160,7 +172,7 @@ async function getTrendsFromNewsAPI() {
   
   const allTrends = settledResults
     .filter(result => result.status === 'fulfilled')
-    .flatMap(result => result.value); // Gộp tất cả các mảng trend lại
+    .flatMap(result => result.value); 
 
   console.log(`✅ Fetched a total of ${allTrends.length} articles from NewsAPI.`);
   return allTrends;
