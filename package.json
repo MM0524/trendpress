@@ -12,6 +12,6 @@
     "node-fetch": "^2.6.7",
     "google-trends-api": "^4.9.2", 
     "newsapi": "^2.4.1",
-    "@google/generative-ai": "^0.7.1"  // <-- DÒNG NÀY SẼ ĐƯỢC THÊM VÀO
+    "@google/generative-ai": "^0.7.1" 
   }
 }
