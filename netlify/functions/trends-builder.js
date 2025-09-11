@@ -9,73 +9,6 @@ const googleTrends = require('google-trends-api');
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
 // =========================================================================
-// GOOGLE TRENDS FLOW (MULTI-REGION)
-// =========================================================================
-async function getTrendsFromGoogleTrends() {
-    console.log("📊 Fetching data from Google Trends (multi-region)...");
-
-    const regions = [
-        { code: "VN", label: "Vietnam" },
-        { code: "US", label: "United States" },
-        { code: "GB", label: "United Kingdom" },
-        { code: "JP", label: "Japan" },
-        { code: "IN", label: "India" },
-        { code: "AU", label: "Australia" },
-    ];
-
-    const promises = regions.map(async region => {
-        try {
-            const results = await googleTrends.dailyTrends({
-                geo: region.code,
-                trendDate: new Date(),
-            });
-
-            const parsed = JSON.parse(results);
-            const trends = parsed.default.trendingSearchesDays?.[0]?.trendingSearches || [];
-
-            return trends.map(item => {
-                const title = item.title.query;
-                const articles = item.articles || [];
-                const firstArticle = articles[0] || {};
-                const link = firstArticle.url || `https://www.google.com/search?q=${encodeURIComponent(title)}`;
-                const description = firstArticle.snippet || "Trending on Google";
-
-                const stableId = crypto.createHash('md5').update(title + link + region.code).digest('hex');
-                const baseVotes = Math.floor(Math.random() * 800) + 300;
-
-                return {
-                    id: stableId,
-                    title_en: title,
-                    description_en: description,
-                    title_vi: region.code === "VN" ? title : null,
-                    description_vi: region.code === "VN" ? description : null,
-                    category: "Trending",
-                    tags: ["GoogleTrends", region.label],
-                    votes: baseVotes,
-                    views: Math.floor(baseVotes * (Math.random() * 10 + 15)),
-                    interactions: Math.floor(baseVotes * (Math.random() * 3 + 4)),
-                    searches: Math.floor(baseVotes * (Math.random() * 1 + 2)),
-                    source: link,
-                    date: toDateStr(new Date()),
-                    sortKey: toSortValue(new Date()),
-                    submitter: "Google Trends",
-                    region: region.code.toLowerCase(),
-                };
-            });
-        } catch (err) {
-            console.error(`❌ Error fetching Google Trends for ${region.label}:`, err.message);
-            return [];
-        }
-    });
-
-    const results = await Promise.all(promises);
-    const allTrends = results.flat();
-    console.log(`✅ Google Trends returned ${allTrends.length} total items from ${regions.length} regions`);
-
-    return allTrends;
-}
-
-// =========================================================================
 // HÀM HELPER
 // =========================================================================
 
@@ -161,6 +94,69 @@ function inferCategoryFromName(sourceName) {
         }
     }
     return "News";
+}
+
+// =========================================================================
+// GOOGLE TRENDS
+// =========================================================================
+
+async function getTrendsFromGoogleTrends() {
+  try {
+    console.log("🚀 Fetching Google Trends (Global + VN)...");
+
+    const [globalDaily, vnDaily] = await Promise.all([
+      googleTrends.dailyTrends({ geo: "US" }),
+      googleTrends.dailyTrends({ geo: "VN" }),
+    ]);
+
+    const parsedGlobal = JSON.parse(globalDaily);
+    const parsedVN = JSON.parse(vnDaily);
+
+    const mapToTrend = (item, region) => {
+      const stableId = crypto
+        .createHash("md5")
+        .update(`${item.title.query}-${region}`)
+        .digest("hex");
+
+      return {
+        id: stableId,
+        title_en: region === "vn" ? null : item.title.query,
+        title_vi: region === "vn" ? item.title.query : null,
+        description_en: item.articles?.[0]?.title || "Trending search",
+        description_vi: null,
+        category: "Trending",
+        tags: [region, "google-trends"],
+        votes: Math.floor(Math.random() * 500) + 200,
+        views: Math.floor(Math.random() * 5000) + 1000,
+        interactions: Math.floor(Math.random() * 2000) + 500,
+        searches: Math.floor(Math.random() * 3000) + 800,
+        source: item.articles?.[0]?.url || "https://trends.google.com",
+        date: toDateStr(),
+        sortKey: Date.now(),
+        submitter: "Google Trends",
+        region,
+      };
+    };
+
+    const globalTrends =
+      parsedGlobal.default.trendingSearchesDays[0]?.trendingSearches.map((t) =>
+        mapToTrend(t, "global")
+      ) || [];
+
+    const vnTrends =
+      parsedVN.default.trendingSearchesDays[0]?.trendingSearches.map((t) =>
+        mapToTrend(t, "vn")
+      ) || [];
+
+    console.log(
+      `✅ Google Trends fetched: ${globalTrends.length} global + ${vnTrends.length} vn`
+    );
+
+    return [...globalTrends, ...vnTrends];
+  } catch (err) {
+    console.error("❌ Google Trends API error:", err.message);
+    return [];
+  }
 }
 
 function normalizeNewsApiArticle(article, category, region = 'global') {
@@ -331,52 +327,70 @@ async function getTrendsFromRssFallback() {
 // =========================================================================
 // BUILDER HANDLER CHÍNH
 // =========================================================================
-exports.handler = builder(async (event, context) => {
-    // ... (Handler chính giữ nguyên)
-    const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
-    try {
-        const primaryPromise = getTrendsFromNewsAPI();
-        const fallbackPromise = getTrendsFromRssFallback();
+export const handler = builder(async (event, context) => {
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+  };
 
-        const [primaryTrends, fallbackTrends] = await Promise.all([primaryPromise, fallbackPromise]);
+  try {
+    const [primaryTrends, fallbackTrends, googleTrendsData] = await Promise.all([
+      getTrendsFromNewsAPI(),
+      getTrendsFromRssFallback(),
+      getTrendsFromGoogleTrends(),
+    ]);
 
-        const trendMap = new Map();
-        [...primaryTrends, ...fallbackTrends].forEach(t => { if (t && t.id) trendMap.set(t.id, t) });
-        let finalTrends = Array.from(trendMap.values());
+    const trendMap = new Map();
+    [...primaryTrends, ...fallbackTrends, ...googleTrendsData].forEach((t) => {
+      if (t && t.id) trendMap.set(t.id, t);
+    });
 
-        if (finalTrends.length === 0) {
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify({ success: true, trends: [], message: "No trends found from any source." }),
-            };
-        }
+    let finalTrends = Array.from(trendMap.values());
 
-        const maxValues = {
-            views: Math.max(1, ...finalTrends.map(t => t.views || 0)),
-            interactions: Math.max(1, ...finalTrends.map(t => t.interactions || 0)),
-            searches: Math.max(1, ...finalTrends.map(t => t.searches || 0)),
-            votes: Math.max(1, ...finalTrends.map(t => t.votes || 0)),
-        };
-        const preprocessedTrends = finalTrends.map(trend => ({
-            ...trend,
-            hotnessScore: calculateHotnessScore(trend, maxValues),
-            type: trend.type || (Math.random() > 0.5 ? 'topic' : 'query')
-        }));
-
-        const sortedTrends = preprocessedTrends.filter(Boolean).sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0));
-
-        return {
-            statusCode: 200,
-            headers: { ...headers, "Cache-Control": "public, max-age=1800, must-revalidate" },
-            body: JSON.stringify({ success: true, trends: sortedTrends }),
-        };
-    } catch (err) {
-        console.error("trends-builder handler CRITICAL error:", err);
-        return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({ success: false, error: "Failed to build trends", message: err.message }),
-        };
+    if (finalTrends.length === 0) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: true,
+          trends: [],
+          message: "No trends found from any source.",
+        }),
+      };
     }
+
+    const maxValues = {
+      views: Math.max(1, ...finalTrends.map((t) => t.views || 0)),
+      interactions: Math.max(1, ...finalTrends.map((t) => t.interactions || 0)),
+      searches: Math.max(1, ...finalTrends.map((t) => t.searches || 0)),
+      votes: Math.max(1, ...finalTrends.map((t) => t.votes || 0)),
+    };
+
+    const preprocessedTrends = finalTrends.map((trend) => ({
+      ...trend,
+      hotnessScore: calculateHotnessScore(trend, maxValues),
+      type: trend.type || (Math.random() > 0.5 ? "topic" : "query"),
+    }));
+
+    const sortedTrends = preprocessedTrends
+      .filter(Boolean)
+      .sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0));
+
+    return {
+      statusCode: 200,
+      headers: { ...headers, "Cache-Control": "public, max-age=1800" },
+      body: JSON.stringify({ success: true, trends: sortedTrends }),
+    };
+  } catch (err) {
+    console.error("trends-builder handler CRITICAL error:", err);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        success: false,
+        error: "Failed to build trends",
+        message: err.message,
+      }),
+    };
+  }
 });
