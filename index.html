@@ -682,8 +682,468 @@
             }
             renderUserTrendsChart(customTimeframeForChart);
         }
+
+        function populateCustomTimeframeOptions(status) {
+            const customTimeframeSelect = DOM.tbCustomTimeframeSelect;
+            if (!customTimeframeSelect) return;
+
+            let options = [];
+            let defaultSelection = '';
+
+            switch(status) {
+                case 'hottest':
+                case 'latest':
+                case 'outdated':
+                    options = [
+                        { value: '1h', textKey: 'Last 1 hour' },
+                        { value: '6h', textKey: 'Last 6 hours' },
+                        { value: '24h', textKey: 'Last 24 hours' },
+                        { value: '3d', textKey: 'Last 3 days' },
+                        { value: '7d', textKey: 'Last 7 days' },
+                        { value: '1m', textKey: 'Last 30 days' },
+                        { value: '3m', textKey: 'Last 90 days' },
+                        { value: '12m', textKey: 'Last 1 year' }
+                    ];
+                    defaultSelection = '7d';
+                    break;
+                case 'predictive':
+                    options = [
+                        { value: 'next3d', textKey: 'Next 3 days' },
+                        { value: 'next5d', textKey: 'Next 5 days' },
+                        { value: 'next7d', textKey: 'Next 7 days' }
+                    ];
+                    defaultSelection = 'next7d';
+            }
+            customTimeframeSelect.innerHTML = options.map(opt => 
+                `<option value="${opt.value}">${t(opt.textKey)}</option>`
+            ).join('');
+            
+            customTimeframeSelect.value = currentTrendStatus.customTimeframe;
+            if (!customTimeframeSelect.value || !options.some(opt => opt.value === customTimeframeSelect.value)) { 
+                customTimeframeSelect.value = defaultSelection;
+            }
+            currentTrendStatus.customTimeframe = customTimeframeSelect.value;
+        }
+
+        function preprocessTrends(trends) {
+            if (!trends || trends.length === 0) return [];
+            
+            const maxValues = {
+                views: Math.max(1, ...trends.map(trendItem => trendItem.views || 0)),
+                interactions: Math.max(1, ...trends.map(trendItem => trendItem.interactions || 0)),
+                searches: Math.max(1, ...trends.map(trendItem => trendItem.searches || 0)),
+                votes: Math.max(1, ...trends.map(trendItem => trendItem.votes || 0)),
+            };
+            
+            trends.forEach((trendItem, i) => {
+                trendItem.hotnessScore = calculateHotnessScore(trendItem, maxValues);
+                trendItem.type = trendItem.type || (i % 3 === 0 ? 'topic' : 'query');
+            });
+            return trends;
+        }
+
+        function calculateHotnessScore(trend, maxValues) {
+            const weights = { views: 0.2, interactions: 0.4, searches: 0.3, votes: 0.1 };
+            const normViews = (trend.views / maxValues.views) || 0;
+            const normInteractions = (trend.interactions / maxValues.interactions) || 0;
+            const normSearches = (trend.searches / maxValues.searches) || 0;
+            const normVotes = (trend.votes / maxValues.votes) || 0;
+            return (normViews * weights.views) + (normInteractions * weights.interactions) + (normSearches * weights.searches) + (normVotes * weights.votes);
+        }
+
+        function applyTranslations() {
+            i18nBindings.forEach(b => {
+                const el = document.querySelector(b.selector);
+                if (el) {
+                    if (b.attr) {
+                        el.setAttribute(b.attr, t(b.key));
+                    } else {
+                        el.textContent = t(b.key);
+                    }
+                }
+            });
+            document.querySelector('.footer-bottom p').textContent = `© 2024 TrendPulse. ${t('All rights reserved.')}`;
+            document.getElementById('ai-status-text').textContent = t('AI: Checking...');
+            if (DOM.tbTopicListHeader && DOM.tbTopicListHeader.children[0]) DOM.tbTopicListHeader.children[0].textContent = t('Trending Topics');
+            if (DOM.tbQueryListHeader && DOM.tbQueryListHeader.children[0]) DOM.tbQueryListHeader.children[0].textContent = t('Trending Queries');
+            populateRegionsFilter(DOM.mainRegionFilter);
+            populateRegionsFilter(DOM.tbRegionFilter); 
+            populateMainTimeframeFilter();
+            populateSourceFilter();
+            const currentStatus = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
+            if (DOM.tbStatusSelect) {
+                DOM.tbStatusSelect.innerHTML = `<option value="hottest">${t('Hottest')}</option><option value="latest">${t('Latest')}</option><option value="outdated">${t('Outdated')}</option><option value="predictive">${t('Predictive')}</option>`;
+                DOM.tbStatusSelect.value = currentStatus;
+            }
+            populateCustomTimeframeOptions(currentTrendStatus.status);
+            populateCategoryFilters();
+        }
+
+        function updateLanguageToggleUI() {
+            document.getElementById('language-toggle').textContent = currentLanguage === 'vi' ? 'VN' : 'EN';
+        }
+
+        function createTrendCardContent(trend) {
+            if (!trend || (!trend.title_en && !trend.title_vi)) return '';
+            const { title: localizedTitle, description: localizedDesc } = getLocalizedTrendText(trend);
+            const isFollowed = user.followedTrends.includes(trend.id);
+            const cleanTitle = DOMPurify.sanitize(localizedTitle, { USE_PROFILES: { html: true } });
+            const cleanDescription = DOMPurify.sanitize(localizedDesc, { USE_PROFILES: { html: true } });
+            return `<div class="trend-card-header"><h3 class="trend-title" data-trend-id="${trend.id}">${cleanTitle}</h3><div class="trend-meta"><span class="trend-meta-submitter">by ${DOMPurify.sanitize(trend.submitter || 'Anon')}</span><span class="trend-meta-date">on ${new Date(trend.date).toLocaleDateString(currentLanguage)}</span></div></div><p class="trend-description">${cleanDescription}</p><div class="trend-footer"><div class="trend-tags"><span class="tag category">${t(trend.category)}</span>${(trend.tags || []).map(tag => `<span class="tag hashtag" data-tag="${DOMPurify.sanitize(tag)}">#${DOMPurify.sanitize(tag)}</span>`).join('')}</div><div class="trend-actions"><a href="${DOMPurify.sanitize(trend.source || '#')}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a><button class="btn btn-outline btn-summary" data-trend-id="${trend.id}" data-analysis-type="summary">${t('Summary')}</button><button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}" data-analysis-type="detailed">${t('🔍 Analyze')}</button><button class="btn btn-follow ${isFollowed ? 'followed' : ''}" data-trend-id="${trend.id}">${isFollowed ? t('Following') : t('❤️ Follow')}</button></div></div>`;
+        }
         
-        // ... (phần còn lại của code JavaScript đầy đủ)
+        function createTrendCard(trend, delay = 0) {
+            const trendCard = document.createElement('div');
+            trendCard.className = 'trend-card';
+            trendCard.dataset.trendId = trend.id;
+            trendCard.innerHTML = createTrendCardContent(trend);
+            setTimeout(() => trendCard.classList.add('animated'), delay);
+            return trendCard;
+        }
+
+        function getVisibleTrends() {
+            let sourceList = [...masterTrendsList];
+            if (currentFilter.type === 'category' && currentFilter.value !== 'All') sourceList = sourceList.filter(trendItem => trendItem?.category === currentFilter.value);
+            if (currentFilter.hashtag) sourceList = sourceList.filter(trendItem => trendItem?.tags?.includes(currentFilter.hashtag));
+            if (currentFilter.searchTerm) {
+                const term = currentFilter.searchTerm.toLowerCase();
+                sourceList = sourceList.filter(trendItem => trendItem && ((trendItem.title_vi?.toLowerCase().includes(term)) || (trendItem.description_vi?.toLowerCase().includes(term)) || (trendItem.title_en?.toLowerCase().includes(term)) || (trendItem.description_en?.toLowerCase().includes(term))));
+            }
+            if (currentFilter.region && currentFilter.region !== 'global') sourceList = sourceList.filter(trend => trend.region === currentFilter.region);
+            if (currentFilter.timeframe && currentFilter.timeframe !== 'all') sourceList = sourceList.filter(trend => isTrendRelevantForTimeframe(trend, currentFilter.timeframe));
+            if (currentFilter.source && currentFilter.source !== 'All') sourceList = sourceList.filter(trend => trend.submitter === currentFilter.source);
+
+            if (currentView === 'forU') {
+                const preferenceTrends = sourceList.filter(trendItem => trendItem && user.preferences.includes(trendItem.category));
+                const followedTrendsData = sourceList.filter(trendItem => trendItem && user.followedTrends.includes(trendItem.id));
+                const combined = [...followedTrendsData, ...preferenceTrends];
+                const uniqueTrendIds = new Set(combined.map(trendItem => trendItem.id));
+                return Array.from(uniqueTrendIds).map(id => sourceList.find(trendItem => trendItem.id === id)).filter(Boolean).sort((a,b) => b.hotnessScore - a.hotnessScore);
+            }
+            return sourceList.filter(Boolean);
+        }
+
+        function displayTrends() {
+            if (currentView === 'trendingBoard') return;
+            const listElement = currentView === 'main' ? DOM.trendsList : DOM.forUTrendsList;
+            const footerButton = currentView === 'main' ? DOM.loadMoreBtn : DOM.forULoadMoreBtn;
+            allTrends = getVisibleTrends();
+            if (!listElement) return;
+            listElement.innerHTML = '';
+            let trendsRendered = 0;
+            const numToDisplay = Math.min(displayedTrends[currentView] || TRENDS_PER_PAGE, allTrends.length);
+            if (numToDisplay === 0 && allTrends.length === 0) listElement.innerHTML = `<p class="modal-body" style="text-align: center;">${t('No trends found.')}</p>`;
+            for (let i = 0; i < numToDisplay; i++) {
+                listElement.appendChild(createTrendCard(allTrends[i], i * 50));
+                trendsRendered++;
+            }
+            displayedTrends[currentView] = trendsRendered;
+            if (footerButton) footerButton.classList.toggle('hidden', displayedTrends[currentView] >= allTrends.length);
+            if (currentView === 'forU') generateCategoryLeaderboards('for-u-leaderboards', user.preferences.length > 0 ? user.preferences : categories.slice(0, 3));
+            updateClearFilterButtonVisibility();
+        }
+
+        function updateClearFilterButtonVisibility() {
+            const hasActiveFilter = (currentFilter.value !== 'All' || currentFilter.searchTerm || currentFilter.hashtag || currentFilter.region !== 'global' || currentFilter.timeframe !== '12m' || currentFilter.source !== 'All');
+            if (DOM.clearFilterBtn) DOM.clearFilterBtn.classList.toggle('hidden', !hasActiveFilter);
+        }
+
+        async function clearMainViewFilters() {
+            currentFilter = { type: 'category', value: 'All', searchTerm: '', hashtag: '', region: 'global', timeframe: '12m', source: 'All' };
+            if (DOM.searchInput) DOM.searchInput.value = '';
+            if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
+            updateUIForFilter();
+        }
+
+        function loadMoreTrends() {
+            displayedTrends[currentView] += TRENDS_PER_PAGE;
+            displayTrends();
+        }
+
+        async function switchView(view) {
+            currentView = view;
+            localStorage.setItem('currentView', view);
+            displayedTrends.main = 0;
+            displayedTrends.forU = 0;
+            [DOM.mainViewContainer, DOM.forUViewContainer, DOM.trendingBoardContainer].forEach(c => c?.classList.add('hidden'));
+            if (view === 'main') DOM.mainViewContainer?.classList.remove('hidden');
+            else if (view === 'forU') DOM.forUViewContainer?.classList.remove('hidden');
+            else if (view === 'trendingBoard') {
+                DOM.trendingBoardContainer?.classList.remove('hidden');
+                if(DOM.tbCategoryFilter) DOM.tbCategoryFilter.value = 'All';
+                if(DOM.tbRegionFilter) DOM.tbRegionFilter.value = 'global';
+                user.tbSearchTerms = [];
+                if(DOM.tbSearchInput) DOM.tbSearchInput.value = '';
+                if(DOM.tbCompareInput) DOM.tbCompareInput.value = '';
+                if(DOM.tbStatusSelect) DOM.tbStatusSelect.value = 'hottest';
+                currentTrendStatus.status = 'hottest';
+                currentTrendStatus.customTimeframe = '7d';
+                populateCustomTimeframeOptions(currentTrendStatus.status);
+                await createHotTrendsChart();
+            }
+            if (view !== 'trendingBoard') displayTrends();
+            updateActiveNav(view);
+            if (DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active')) DOM.hamburgerMenu.click();
+        }
+
+        function updateAuthUI() {
+            if (DOM.body) DOM.body.className = 'logged-in work-account-view';
+            if (DOM.userMenu) DOM.userMenu.classList.remove('hidden');
+            if (DOM.userEmailBtn) DOM.userEmailBtn.textContent = user.email;
+            if (DOM.dropdownHeader) DOM.dropdownHeader.textContent = user.email;
+            if (DOM.navForU) DOM.navForU.classList.remove('hidden');
+            DOM.dropdownWorkSchool.classList.add('hidden');
+            displayTrends();
+        }
+        
+        function populateRegionsFilter(selectElement) {
+            if (!selectElement) return;
+            const dynamicRegions = [...new Set(masterTrendsList.map(item => item.region))].filter(Boolean).sort();
+            let optionsHtml = `<option value="global">${t('Global')}</option>`;
+            const regionsToAdd = ['vn', 'us', 'uk', 'in', 'jp', 'de', 'fr', 'ca', 'au', 'eu', 'cn', 'kr'];
+            regionsToAdd.forEach(code => {
+                if (dynamicRegions.includes(code)) optionsHtml += `<option value="${code}">${t(code.toUpperCase()) || code}</option>`;
+            });
+            const currentSelection = selectElement.value;
+            selectElement.innerHTML = optionsHtml;
+            selectElement.value = Array.from(selectElement.options).some(opt => opt.value === currentSelection) ? currentSelection : 'global';
+        }
+
+        function populateMainTimeframeFilter() {
+            if (!DOM.mainTimeframeFilter) return;
+            DOM.mainTimeframeFilter.innerHTML = `<option value="1h">${t('Last 1 hour')}</option><option value="6h">${t('Last 6 hours')}</option><option value="24h">${t('Last 24 hours')}</option><option value="3d">${t('Last 3 days')}</option><option value="7d">${t('Last 7 days')}</option><option value="1m">${t('Last 30 days')}</option><option value="3m">${t('Last 90 days')}</option><option value="12m">${t('Last 1 year')}</option>`;
+            DOM.mainTimeframeFilter.value = currentFilter.timeframe || '12m';
+        }
+
+        function populateSourceFilter() {
+            if (!DOM.mainSourceFilter) return;
+            const uniqueSources = [...new Set(masterTrendsList.map(item => item.submitter))].filter(Boolean).sort();
+            let optionsHtml = `<option value="All">${t('All Sources')}</option>`;
+            uniqueSources.forEach(source => optionsHtml += `<option value="${source}">${source}</option>`);
+            DOM.mainSourceFilter.innerHTML = optionsHtml;
+            DOM.mainSourceFilter.value = currentFilter.source || 'All';
+        }
+
+        function populateCategoryFilters() {
+            categories = [...new Set(masterTrendsList.map(item => item.category))].sort();
+            const allOptionText = t('All Categories');
+            if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.innerHTML = [`<button class="filter-btn ${currentFilter.value === 'All' ? 'active' : ''}" data-filter="All">${allOptionText}</button>`, ...categories.map(cat => `<button class="filter-btn ${cat === currentFilter.value ? 'active' : ''}" data-filter="${cat}">${t(cat)}</button>`)].join('');
+            if (DOM.tbCategoryFilter) {
+                const currentCategory = DOM.tbCategoryFilter.value;
+                DOM.tbCategoryFilter.innerHTML = `<option value="All">${allOptionText}</option>${categories.map(cat => `<option value="${cat}">${t(cat)}</option>`).join('')}`;
+                DOM.tbCategoryFilter.value = currentCategory;
+            }
+        }
+
+        function populatePreferenceCheckboxes() {
+            if (DOM.preferencesGrid) DOM.preferencesGrid.innerHTML = categories.map(cat => `<div class="preference-item"><label><input type="checkbox" name="preference" value="${cat}" ${user.preferences.includes(cat) ? 'checked' : ''}> ${t(cat)}</label></div>`).join('');
+        }
+
+        function updateUIForFilter() {
+            if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter.value));
+            if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.hashtag === currentFilter.hashtag));
+            if (DOM.searchInput) DOM.searchInput.value = currentFilter.searchTerm;
+            if (DOM.mainRegionFilter) DOM.mainRegionFilter.value = currentFilter.region;
+            if (DOM.mainTimeframeFilter) DOM.mainTimeframeFilter.value = currentFilter.timeframe;
+            if (DOM.mainSourceFilter) DOM.mainSourceFilter.value = currentFilter.source;
+            displayedTrends.main = 0;
+            displayTrends();
+            updateClearFilterButtonVisibility();
+        }
+
+        function populateHashtagFilters() {
+            const hashtagCounts = masterTrendsList.reduce((acc, trend) => { (trend.tags || []).forEach(tag => { if (tag) acc[tag] = (acc[tag] || 0) + 1; }); return acc; }, {});
+            const popularHashtags = Object.entries(hashtagCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(entry => entry[0]);
+            if (DOM.hashtagList) DOM.hashtagList.innerHTML = popularHashtags.map(tag => `<button class="hashtag-btn ${currentFilter.hashtag === tag ? 'active' : ''}" data-hashtag="${tag}">#${tag}</button>`).join('');
+        }
+
+        function generateCategoryLeaderboards(containerId, categoriesToShow) { /* ... */ }
+        function renderSummaryAnalysis(analysisData) { /* ... */ }
+        function renderDetailedAnalysis(htmlContent) { /* ... */ }
+        function renderAnalysisChart(historicalData, futureProjection) { /* ... */ }
+        function getCombinedMetric(trend) { return (trend.views || 0) + (trend.interactions || 0) + (trend.searches || 0); }
+        function truncateText(text = '', maxLength = 180) { return !text || text.length <= maxLength ? text : text.slice(0, text.lastIndexOf(' ', maxLength) || maxLength) + '…'; }
+        function makeTrendKey(trend) { return `${trend.id}|${getLocalizedTrendText(trend).title || ''}|${trend.source || ''}`.toLowerCase(); }
+        function loadSeenTrends() { try { return JSON.parse(localStorage.getItem('seenTrends') || '[]'); } catch { return []; } }
+        function saveSeenTrendKey(key) { try { const seen = new Set(loadSeenTrends()); if (!seen.has(key)) localStorage.setItem('seenTrends', JSON.stringify([...seen, key])); } catch {} }
+        function applyTrendOrdering() {
+            const seenKeys = new Set(loadSeenTrends());
+            const unseen = [], seen = [];
+            masterTrendsList.forEach(item => (seenKeys.has(makeTrendKey(item)) ? seen : unseen).push(item));
+            masterTrendsList = [...shuffleArray(unseen), ...seen];
+        }
+        function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+        function generateChartDataFromScore(score, baseMetric = 500) { /* ... */ }
+        function getColorPalette(count) {
+            const base = [{ stroke: '#A100FF' }, { stroke: '#00C8FF' }, { stroke: '#00E696' }, { stroke: '#FFB400' }, { stroke: '#FF6384' }];
+            while (base.length < count) base.push({ stroke: `hsl(${Math.random() * 360}, 90%, 60%)` });
+            return base;
+        }
+        function formatNumber(n) { if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'; if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K'; return String(n); }
+        async function checkAIStatus() { /* ... */ }
+        function updateActiveNav(activeView) { /* ... */ }
+        async function openAIInsightModal(trend, analysisType) { /* ... */ }
+        function openTrendOverviewModal(trend) { /* ... */ }
+        function isTrendRelevantForTimeframe(trend, timeframe) { /* ... */ }
+        function generateChartLabels(timeframe) { /* ... */ }
+        function generateSeriesForTimeframe(trend, labels, timeframe) { /* ... */ }
+        async function renderTBDashboard(timeframe) { /* ... */ }
+        async function renderUserTrendsChart(timeframe) { /* ... */ }
+
+        async function initializeApp() {
+            applyTranslations();
+            updateLanguageToggleUI();
+            if (DOM.mainViewContainer) DOM.mainViewContainer.classList.toggle('hidden', currentView !== 'main');
+            if (DOM.forUViewContainer) DOM.forUViewContainer.classList.toggle('hidden', currentView !== 'forU');
+            if (DOM.trendingBoardContainer) DOM.trendingBoardContainer.classList.toggle('hidden', currentView !== 'trendingBoard');
+            masterTrendsList = await fetchLiveTrends(); 
+            regions = [...new Set(masterTrendsList.map(t => t.region))].filter(Boolean).sort();
+            populateRegionsFilter(DOM.mainRegionFilter);
+            populateRegionsFilter(DOM.tbRegionFilter);
+            categories = [...new Set(masterTrendsList.map(t => t.category))].sort();
+            populateCategoryFilters();
+            populateMainTimeframeFilter();
+            populateSourceFilter();
+            populateHashtagFilters();
+            updateAuthUI();
+            checkAIStatus();
+            updateActiveNav(currentView);
+            updateClearFilterButtonVisibility();
+            if (!user.hasSetPreferences) {
+                populatePreferenceCheckboxes();
+                openModal('preferences-modal');
+            } else if (currentView === 'trendingBoard') {
+                createHotTrendsChart();
+            } else {
+                displayTrends();
+            }
+            document.getElementById('loader')?.classList.add('loader-hidden');
+        }
+
+        // Event Listeners
+        if (DOM.hamburgerMenu) DOM.hamburgerMenu.addEventListener('click', () => { if (DOM.mainNav) DOM.mainNav.classList.toggle('nav-active'); });
+        if (DOM.logo) DOM.logo.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
+        if (DOM.navTopTrends) DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
+        if (DOM.navForU) DOM.navForU.addEventListener('click', (e) => { e.preventDefault(); switchView('forU'); });
+        if (DOM.userEmailBtn) DOM.userEmailBtn.addEventListener('click', () => { if (DOM.userDropdown) DOM.userDropdown.classList.toggle('show'); });
+        if (DOM.dropdownSignOut) DOM.dropdownSignOut.addEventListener('click', (e) => {
+            e.preventDefault();
+            user = { isLoggedIn: true, email: 'guest@trendpulse.com', accountType: 'work', preferences: [], hasSetPreferences: false, followedTrends: [], tbSearchTerms: [] };
+            localStorage.removeItem('userPreferences');
+            localStorage.removeItem('userHasSetPreferences');
+            updateAuthUI();
+            if (DOM.userDropdown) DOM.userDropdown.classList.remove('show');
+            switchView('main');
+            populatePreferenceCheckboxes();
+            openModal('preferences-modal');
+        });
+        if (DOM.navAbout) DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
+        if (DOM.navTrendingBoard) DOM.navTrendingBoard.addEventListener('click', (e) => { e.preventDefault(); switchView('trendingBoard'); });
+        document.getElementById('premium-login-btn')?.addEventListener('click', (e) => { e.preventDefault(); closeModal('premium-modal'); });
+        DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => {
+            closeModal(btn.closest('.modal-overlay').id);
+            if (btn.closest('.modal-overlay').id !== 'about-modal') updateActiveNav(currentView);
+        }));
+        if (DOM.loadMoreBtn) DOM.loadMoreBtn.addEventListener('click', loadMoreTrends);
+        if (DOM.forULoadMoreBtn) DOM.forULoadMoreBtn.addEventListener('click', loadMoreTrends);
+        if (DOM.savePreferencesBtn) DOM.savePreferencesBtn.addEventListener('click', () => {
+            user.preferences = [...document.querySelectorAll('#preferences-grid input:checked')].map(cb => cb.value);
+            user.hasSetPreferences = true;
+            localStorage.setItem('userPreferences', JSON.stringify(user.preferences));
+            localStorage.setItem('userHasSetPreferences', 'true');
+            closeModal('preferences-modal');
+            switchView('forU');
+        });
+        [DOM.trendsList, DOM.forUTrendsList, document.getElementById('for-u-leaderboards'), document.getElementById('tb-topic-list'), document.getElementById('tb-query-list')].forEach(list => {
+            if (list) list.addEventListener('click', handleInteraction);
+        });
+        if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.addEventListener('click', (e) => {
+            if (e.target.matches('.filter-btn')) {
+                currentFilter.type = 'category';
+                currentFilter.value = e.target.dataset.filter;
+                currentFilter.hashtag = '';
+                if (DOM.hashtagList) DOM.hashtagList.querySelectorAll('.hashtag-btn').forEach(btn => btn.classList.remove('active'));
+                updateUIForFilter();
+            }
+        });
+        if (DOM.mainRegionFilter) DOM.mainRegionFilter.addEventListener('change', () => { currentFilter.region = DOM.mainRegionFilter.value; updateUIForFilter(); });
+        if (DOM.mainTimeframeFilter) DOM.mainTimeframeFilter.addEventListener('change', () => { currentFilter.timeframe = DOM.mainTimeframeFilter.value; updateUIForFilter(); });
+        if (DOM.mainSourceFilter) DOM.mainSourceFilter.addEventListener('change', () => { currentFilter.source = DOM.mainSourceFilter.value; updateUIForFilter(); });
+        if (DOM.clearFilterBtn) DOM.clearFilterBtn.addEventListener('click', clearMainViewFilters);
+        const debouncedSearch = debounce(() => { currentFilter.searchTerm = DOM.searchInput ? DOM.searchInput.value : ''; displayedTrends.main = 0; displayTrends(); }, 300);
+        if (DOM.searchInput) DOM.searchInput.addEventListener('input', debouncedSearch);
+        if (DOM.hashtagList) DOM.hashtagList.addEventListener('click', (e) => {
+            if (e.target.matches('.hashtag-btn')) {
+                const hashtag = e.target.dataset.hashtag;
+                currentFilter.hashtag = currentFilter.hashtag === hashtag ? '' : hashtag;
+                currentFilter.type = 'hashtag';
+                currentFilter.value = 'All';
+                if (DOM.filterButtonsContainer) DOM.filterButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                displayedTrends.main = 0;
+                displayTrends();
+                updateUIForFilter();
+            }
+        });
+        if (DOM.tbSearchInput) DOM.tbSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && e.target.value.trim()) { createHotTrendsChart(e.target.value.trim()); e.target.value = ''; } });
+        if (DOM.tbCompareInput) DOM.tbCompareInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && e.target.value.trim()) { createHotTrendsChart(null, e.target.value.trim()); e.target.value = ''; } });
+        if (DOM.tbSearchChipsContainer) DOM.tbSearchChipsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('tb-search-chip-remove')) {
+                user.tbSearchTerms = user.tbSearchTerms.filter(term => term !== e.target.dataset.term);
+                createHotTrendsChart();
+            }
+        });
+        if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
+        if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart());
+        if (DOM.tbStatusSelect) DOM.tbStatusSelect.addEventListener('change', () => { currentTrendStatus.status = DOM.tbStatusSelect.value; populateCustomTimeframeOptions(currentTrendStatus.status); createHotTrendsChart(); });
+        if (DOM.tbCustomTimeframeSelect) DOM.tbCustomTimeframeSelect.addEventListener('change', () => { currentTrendStatus.customTimeframe = DOM.tbCustomTimeframeSelect.value; createHotTrendsChart(); });
+        document.addEventListener('click', (e) => {
+            if (DOM.userMenu && DOM.userDropdown && !DOM.userMenu.contains(e.target)) DOM.userDropdown.classList.remove('show');
+            if (DOM.mainNav && DOM.hamburgerMenu && DOM.mainNav.classList.contains('nav-active') && !DOM.mainNav.contains(e.target) && !DOM.hamburgerMenu.contains(e.target)) DOM.hamburgerMenu.click();
+        });
+        if (DOM.trendOverviewBody) DOM.trendOverviewBody.addEventListener('click', (e) => {
+            const trendId = DOM.trendOverviewBody.dataset.currentTrendId;
+            if (!trendId) return;
+            const trend = masterTrendsList.find(t => t.id === trendId);
+            if (!trend) return;
+            if (e.target.closest('.btn-summary') || e.target.closest('.analyze-trend-btn') || e.target.closest('.trend-title')) {
+                const analysisType = e.target.closest('.btn-summary') ? 'summary' : 'detailed';
+                openAIInsightModal(trend, analysisType);
+            } else if (e.target.closest('.btn-follow')) {
+                handleInteraction(e);
+            } else if (e.target.matches('.tag.hashtag')) {
+                currentFilter.type = 'hashtag';
+                currentFilter.value = 'All';
+                currentFilter.hashtag = e.target.dataset.tag;
+                currentFilter.searchTerm = '';
+                switchView('main');
+                closeModal('trend-overview-modal');
+            }
+        });
+        document.getElementById('language-toggle')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi';
+            localStorage.setItem('lang', currentLanguage);
+            applyTranslations();
+            updateLanguageToggleUI();
+            masterTrendsList = await fetchLiveTrends();
+            populateRegionsFilter(DOM.mainRegionFilter);
+            populateRegionsFilter(DOM.tbRegionFilter);
+            categories = [...new Set(masterTrendsList.map(item => item.category))].sort();
+            populateCategoryFilters();
+            populateMainTimeframeFilter();
+            populateSourceFilter();
+            populateHashtagFilters();
+            if (currentView === 'trendingBoard') await createHotTrendsChart();
+            else displayTrends();
+        });
+        const storedPreferences = localStorage.getItem('userPreferences');
+        if (storedPreferences) {
+            try { user.preferences = JSON.parse(storedPreferences); user.hasSetPreferences = true; } 
+            catch (e) { localStorage.removeItem('userPreferences'); localStorage.removeItem('userHasSetPreferences'); }
+        }
+        if (localStorage.getItem('userHasSetPreferences') === 'true') user.hasSetPreferences = true;
+        
+        initializeApp();
     });
 </script>
 </body>
