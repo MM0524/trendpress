@@ -1798,7 +1798,7 @@
             }
         }
 
-async function renderUserTrendsChart(timeframe) {
+        async function renderUserTrendsChart(timeframe) {
             const chartContainer = DOM.userTrendsChartContainer;
             const chartTitleEl = DOM.userTrendsChartTitle;
             const canvas = document.getElementById('user-trends-chart');
@@ -1839,35 +1839,46 @@ async function renderUserTrendsChart(timeframe) {
             const labels = generateChartLabels(timeframe);
             const palette = getColorPalette(trendsToChart.length);
 
-            const datasets = trendsToChart.map((trendItem, idx) => ({
-                label: truncateText(getLocalizedTrendText(trendItem).title, 30),
-                data: generateSeriesForTimeframe(trendItem, labels, timeframe),
-                borderColor: palette[idx].stroke,
-                backgroundColor: (context) => { // MỚI: Thêm gradient fill
-                    const chart = context.chart;
-                    const {ctx, chartArea} = chart;
-                    if (!chartArea) return null;
-                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                    gradient.addColorStop(0, 'rgba(161, 0, 255, 0)');
-                    gradient.addColorStop(1, `${palette[idx].stroke}40`); // 40 là mã hex cho độ mờ 25%
-                    return gradient;
-                },
-                tension: 0.4,
-                fill: true, // MỚI: Bật fill
-                pointRadius: 1,
-                pointBackgroundColor: palette[idx].stroke,
-                pointHoverRadius: 6, // MỚI: Tăng kích thước điểm khi hover
-                pointHoverBorderWidth: 2,
-                pointHoverBorderColor: 'white',
-                trendId: trendItem.id
-            }));
-
-            if (datasets.length === 0 || datasets.every(dataset => dataset.data.every(val => val === 0))) {
-                chartContainer.classList.add('hidden');
-                return;
-            }
+            const datasets = trendsToChart.map((trendItem, idx) => {
+                const color = palette[idx % palette.length].stroke; // Dùng modulo để an toàn
+                return {
+                    label: truncateText(getLocalizedTrendText(trendItem).title, 30),
+                    data: generateSeriesForTimeframe(trendItem, labels, timeframe),
+                    borderColor: color,
+                    backgroundColor: (context) => {
+                        const chart = context.chart;
+                        const {ctx, chartArea} = chart;
+                        if (!chartArea) return null;
+                        
+                        // ===== SỬA LỖI TẠI ĐÂY =====
+                        let transparentColorEnd;
+                        if (color.startsWith('hsl')) {
+                            // Chuyển hsl(h, s, l) thành hsla(h, s, l, 0.25)
+                            transparentColorEnd = color.replace('hsl', 'hsla').replace(')', ', 0.25)');
+                        } else {
+                            // Giữ nguyên cách cũ cho màu HEX
+                            transparentColorEnd = `${color}40`;
+                        }
+                        
+                        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                        gradient.addColorStop(0, 'rgba(161, 0, 255, 0)');
+                        gradient.addColorStop(1, transparentColorEnd); 
+                        // ============================
+                        
+                        return gradient;
+                    },
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 1,
+                    pointBackgroundColor: color,
+                    pointHoverRadius: 6,
+                    pointHoverBorderWidth: 2,
+                    pointHoverBorderColor: 'white',
+                    trendId: trendItem.id
+                };
+            });
             
-            // THAY ĐỔI: Sửa lại cách tính suggestedMax và thêm nhiều tùy chọn giao diện
+            // ... phần còn lại của hàm giữ nguyên ...
             const allDataPoints = datasets.flatMap(ds => ds.data);
             const maxDataValue = Math.max(...allDataPoints, 0);
 
@@ -1877,57 +1888,36 @@ async function renderUserTrendsChart(timeframe) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: { // MỚI: Cải thiện tương tác
-                        mode: 'index',
-                        intersect: false,
-                    },
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { 
                             position: 'bottom', 
                             labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
-                             onHover: (event) => { // MỚI: Đổi con trỏ chuột
-                                event.native.target.style.cursor = 'pointer';
-                            },
-                            onLeave: (event) => {
-                                event.native.target.style.cursor = 'default';
-                            },
+                            onHover: (event) => { event.native.target.style.cursor = 'pointer'; },
+                            onLeave: (event) => { event.native.target.style.cursor = 'default'; },
                             onClick: (e, legendItem, legend) => {
                                 const index = legendItem.datasetIndex;
                                 const ci = legend.chart;
                                 const trendIdFromLegend = ci.data.datasets[index].trendId;
                                 if (trendIdFromLegend) {
                                     const trend = masterTrendsList.find(t => t.id === trendIdFromLegend);
-                                    if (trend) {
-                                        openTrendOverviewModal(trend);
-                                    }
+                                    if (trend) openTrendOverviewModal(trend);
                                 }
                             }
                         },
-                        tooltip: { // MỚI: Tooltip đẹp hơn
-                            enabled: true,
-                            backgroundColor: 'var(--surface-color)',
-                            titleColor: 'var(--primary-light)',
-                            bodyColor: 'var(--text-color)',
-                            borderColor: 'var(--border-color)',
-                            borderWidth: 1,
-                            padding: 10,
-                            displayColors: true,
-                            boxPadding: 4,
-                            callbacks: {
-                                label: function(context) {
-                                    return ` ${context.dataset.label}: ${formatNumber(context.parsed.y)}`;
-                                }
-                            }
+                        tooltip: {
+                            enabled: true, backgroundColor: 'var(--surface-color)', titleColor: 'var(--primary-light)',
+                            bodyColor: 'var(--text-color)', borderColor: 'var(--border-color)', borderWidth: 1,
+                            padding: 10, displayColors: true, boxPadding: 4,
+                            callbacks: { label: function(context) { return ` ${context.dataset.label}: ${formatNumber(context.parsed.y)}`; } }
                         }
                     },
                     scales: {
                         x: { grid: { display: false }, ticks: { color: '#8a8da0' } },
                         y: { 
-                            grid: { color: 'rgba(255, 255, 255, 0.05)'}, // MỚI: làm mờ grid
+                            grid: { color: 'rgba(255, 255, 255, 0.05)'},
                             ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, 
-                            beginAtZero: true,
-                            min: 0,
-                            // THAY ĐỔI QUAN TRỌNG: Sửa lỗi tính toán thang đo
+                            beginAtZero: true, min: 0,
                             suggestedMax: maxDataValue * 1.2 || 1000
                         }
                     }
@@ -2025,28 +2015,44 @@ async function renderUserTrendsChart(timeframe) {
             const customTimeframeForChart = user.tbSearchTerms.length > 0 ? '7d' : DOM.tbCustomTimeframeSelect.value;
             const labels = generateChartLabels(customTimeframeForChart);
             const palette = getColorPalette(trendsToDraw.length || 5);
-            const datasets = trendsToDraw.map((trendItem, i) => ({
-                label: truncateText(getLocalizedTrendText(trendItem).title, 30),
-                data: generateSeriesForTimeframe(trendItem, labels, customTimeframeForChart),
-                borderColor: palette[i % palette.length].stroke,
-                 backgroundColor: (context) => { // MỚI: Thêm gradient fill
-                    const chart = context.chart;
-                    const {ctx, chartArea} = chart;
-                    if (!chartArea) return null;
-                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                    gradient.addColorStop(0, 'rgba(161, 0, 255, 0)');
-                    gradient.addColorStop(1, `${palette[i % palette.length].stroke}40`);
-                    return gradient;
-                },
-                tension: 0.4,
-                fill: true, // MỚI: Bật fill
-                pointRadius: 1,
-                pointBackgroundColor: palette[i % palette.length].stroke,
-                pointHoverRadius: 6,
-                pointHoverBorderWidth: 2,
-                pointHoverBorderColor: 'white',
-                trendId: trendItem.id
-            }));
+            const datasets = trendsToDraw.map((trendItem, i) => {
+                const color = palette[i % palette.length].stroke; // Dùng modulo để an toàn
+                return {
+                    label: truncateText(getLocalizedTrendText(trendItem).title, 30),
+                    data: generateSeriesForTimeframe(trendItem, labels, customTimeframeForChart),
+                    borderColor: color,
+                    backgroundColor: (context) => {
+                        const chart = context.chart;
+                        const {ctx, chartArea} = chart;
+                        if (!chartArea) return null;
+                        
+                        // ===== SỬA LỖI TẠI ĐÂY =====
+                        let transparentColorEnd;
+                        if (color.startsWith('hsl')) {
+                            // Chuyển hsl(h, s, l) thành hsla(h, s, l, 0.25)
+                            transparentColorEnd = color.replace('hsl', 'hsla').replace(')', ', 0.25)');
+                        } else {
+                            // Giữ nguyên cách cũ cho màu HEX
+                            transparentColorEnd = `${color}40`;
+                        }
+                        
+                        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                        gradient.addColorStop(0, 'rgba(161, 0, 255, 0)');
+                        gradient.addColorStop(1, transparentColorEnd);
+                        // ============================
+                        
+                        return gradient;
+                    },
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 1,
+                    pointBackgroundColor: color,
+                    pointHoverRadius: 6,
+                    pointHoverBorderWidth: 2,
+                    pointHoverBorderColor: 'white',
+                    trendId: trendItem.id
+                };
+            });
 
             // THAY ĐỔI QUAN TRỌNG: Áp dụng các tùy chọn giao diện và tương tác
             const allDataPoints = datasets.flatMap(ds => ds.data);
@@ -2522,4 +2528,5 @@ async function renderUserTrendsChart(timeframe) {
     </script>
 </body>
 </html>
+
 
