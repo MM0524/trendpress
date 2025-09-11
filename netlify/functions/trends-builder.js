@@ -1,5 +1,5 @@
 // netlify/functions/trends-builder.js
-const fetch = require("node-fetch");
+const res = await fetch("https://newsapi.org/v2/top-headlines?...");
 const { XMLParser } = require("fast-xml-parser");
 const crypto = require('crypto');
 const NewsAPI = require('newsapi');
