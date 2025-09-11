@@ -1,143 +1,129 @@
 // netlify/functions/fetch-trends.js
-const fetch = require("node-fetch");
-// No need for XMLParser, crypto, or individual fetch functions here anymore.
+const NewsAPI = require('newsapi');
+const crypto = require('crypto');
 
-// IMPORTANT: This helper must match the one in index.html for preprocessTrends
-function calculateHotnessScore(trend, maxValues) {
-    const weights = { views: 0.2, interactions: 0.4, searches: 0.3, votes: 0.1 };
-    const normViews = (trend.views / maxValues.views) || 0;
-    const normInteractions = (trend.interactions / maxValues.interactions) || 0;
-    const normSearches = (trend.searches / maxValues.searches) || 0;
-    const normVotes = (trend.votes / maxValues.votes) || 0;
-    return (normViews * weights.views) + (normInteractions * weights.interactions) + (normSearches * weights.searches) + (normVotes * weights.votes);
+// Khởi tạo NewsAPI client với API key từ biến môi trường
+const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
+
+// Các hàm helper để chuẩn hóa dữ liệu trả về từ NewsAPI
+function toDateStr(d) {
+    const dt = d ? new Date(d) : new Date();
+    return isNaN(dt.getTime()) ? new Date().toISOString().split("T")[0] : dt.toISOString().split("T")[0];
 }
 
-function preprocessTrends(trends) {
+function toSortValue(d) {
+    const dt = d ? new Date(d) : null;
+    return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0;
+}
+
+function normalizeNewsApiArticle(article) {
+    const { title, description, url, publishedAt, source } = article;
+    if (!title || title === "[Removed]" || !url) return null;
+
+    const stableId = crypto.createHash('md5').update(url).digest('hex');
+    const baseVotes = Math.floor(Math.random() * 500) + 200; // Mock data
+    
+    return {
+        id: stableId,
+        title_en: title,
+        description_en: description || "No description available.",
+        title_vi: null, // Dữ liệu từ API tìm kiếm động mặc định là tiếng Anh
+        description_vi: null,
+        category: "Search", // Gán một category đặc biệt để nhận biết đây là kết quả tìm kiếm
+        tags: [source.name.replace(/\s/g, '')],
+        votes: baseVotes,
+        views: Math.floor(baseVotes * (Math.random() * 10 + 15)),
+        interactions: Math.floor(baseVotes * (Math.random() * 3 + 4)),
+        searches: Math.floor(baseVotes * (Math.random() * 1 + 1.5)),
+        source: url,
+        date: toDateStr(publishedAt),
+        sortKey: toSortValue(publishedAt),
+        submitter: source.name || "Unknown Source",
+        region: 'global', // Kết quả tìm kiếm thường là toàn cầu
+    };
+}
+
+// Hàm tính toán Hotness Score cho một tập hợp các trends
+function preprocessAndCalculateHotness(trends) {
     if (!trends || trends.length === 0) return [];
     
-    // Tính toán maxValues dựa trên TẤT CẢ các trends được truyền vào hàm này
-    // (trong trường hợp này là master list từ builder)
     const maxValues = {
-        views: Math.max(1, ...trends.map(trendItem => trendItem.views || 0)),
-        interactions: Math.max(1, ...trends.map(trendItem => trendItem.interactions || 0)),
-        searches: Math.max(1, ...trends.map(trendItem => trendItem.searches || 0)),
-        votes: Math.max(1, ...trends.map(trendItem => trendItem.votes || 0)),
+        views: Math.max(1, ...trends.map(t => t.views || 0)),
+        interactions: Math.max(1, ...trends.map(t => t.interactions || 0)),
+        searches: Math.max(1, ...trends.map(t => t.searches || 0)),
+        votes: Math.max(1, ...trends.map(t => t.votes || 0)),
     };
     
-    trends.forEach((trendItem, i) => {
-        // Đảm bảo id có sẵn từ backend
-        // trendItem.id = trendItem.id || `temp-id-${i}`; // Không cần tạo ID tạm nữa nếu backend gửi về ổn định
-        
-        trendItem.hotnessScore = calculateHotnessScore(trendItem, maxValues);
-        trendItem.type = trendItem.type || (i % 3 === 0 ? 'topic' : 'query');
+    const weights = { views: 0.2, interactions: 0.4, searches: 0.3, votes: 0.1 };
+    
+    trends.forEach(trend => {
+        const normViews = (trend.views / maxValues.views) || 0;
+        const normInteractions = (trend.interactions / maxValues.interactions) || 0;
+        const normSearches = (trend.searches / maxValues.searches) || 0;
+        const normVotes = (trend.votes / maxValues.votes) || 0;
+        trend.hotnessScore = (normViews * weights.views) + (normInteractions * weights.interactions) + (normSearches * weights.searches) + (normVotes * weights.votes);
     });
+
     return trends;
 }
 
-
 exports.handler = async (event) => {
-  const headers = {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 204, headers };
-  }
-
-  try {
-    const { region, category, timeframe, searchTerm, hashtag, source } = event.queryStringParameters || {}; // CẬP NHẬT: Thêm 'source' filter
-
-    // Gọi Builder Function để lấy danh sách master trends đã được cache (hoặc mới build)
-    // Builder function được expose tại /.netlify/builders/trends-builder
-    const builderUrl = `${process.env.URL || "http://localhost:8888"}/.netlify/builders/trends-builder`;
-    console.log("Calling trends-builder function:", builderUrl);
+    const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
     
-    const builderRes = await fetch(builderUrl);
-    
-    if (!builderRes.ok) {
-        const errorText = await builderRes.text();
-        console.error("Error fetching from trends-builder:", builderRes.status, errorText);
-        throw new Error(`Failed to fetch master trends list (builder status: ${builderRes.status})`);
+    if (event.httpMethod !== "GET") {
+        return { statusCode: 405, headers, body: JSON.stringify({ success: false, message: "Method Not Allowed" }) };
     }
 
-    const data = await builderRes.json();
-    if (!data.success || !Array.isArray(data.trends)) {
-        throw new Error(data.message || "Failed to get valid trends data from builder.");
-    }
+    try {
+        const { searchTerm } = event.queryStringParameters;
 
-    // Builder function đã thực hiện preprocess, nhưng chúng ta sẽ preprocess lại
-    // trên master list để đảm bảo 'hotnessScore' được tính toán dựa trên tập dữ liệu đầy đủ
-    // nếu logic tính toán hotnessScore của client/backend cần giá trị tương đối.
-    // Nếu Builder đã gửi về hotnessScore cuối cùng, bước này có thể bỏ qua để tối ưu.
-    let allFetchedTrends = preprocessTrends(data.trends);
+        // Nếu không có searchTerm, function này sẽ báo lỗi
+        if (!searchTerm || searchTerm.trim() === '') {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ success: false, message: "searchTerm parameter is required." }),
+            };
+        }
 
-    // Áp dụng các bộ lọc động từ client
-    let filteredTrends = allFetchedTrends;
+        if (!process.env.NEWS_API_KEY) {
+            throw new Error("NEWS_API_KEY is not configured on the server.");
+        }
 
-    if (region && region !== "global") {
-      filteredTrends = filteredTrends.filter(t => t.region && t.region.toLowerCase() === region.toLowerCase());
-    }
-    if (category && category !== "All") { 
-      filteredTrends = filteredTrends.filter(t => t.category && t.category.toLowerCase() === category.toLowerCase());
-    }
-    if (source && source !== "All") { // NEW: Apply source filter
-      filteredTrends = filteredTrends.filter(t => t.submitter && t.submitter === source);
-    }
-    if (timeframe && timeframe !== "all") { // Logic timeframe này giống như ở client-side
-      const now = new Date();
-      let cutoffDate = new Date(now);
-      switch (timeframe) {
-        case "1h": cutoffDate.setHours(now.getHours() - 1); break;
-        case "6h": cutoffDate.setHours(now.getHours() - 6); break;
-        case "24h": cutoffDate.setHours(now.getHours() - 24); break;
-        case "3d": cutoffDate.setDate(now.getDate() - 3); break;
-        case "7d": cutoffDate.setDate(now.getDate() - 7); break;
-        case "1m": cutoffDate.setDate(now.getDate() - 30); break;
-        case "3m": cutoffDate.setDate(now.getDate() - 90); break;
-        case "12m": cutoffDate.setFullYear(now.getFullYear() - 1); break;
-      }
-      cutoffDate.setHours(0, 0, 0, 0); // Normalize to start of day
-      filteredTrends = filteredTrends.filter(t => {
-        const trendDate = new Date(t.date);
-        trendDate.setHours(0, 0, 0, 0); // Normalize to start of day
-        return trendDate >= cutoffDate;
-      });
-    }
-    if (searchTerm) {
-      const termLower = searchTerm.toLowerCase();
-      filteredTrends = filteredTrends.filter(t =>
-        (t.title_en && t.title_en.toLowerCase().includes(termLower)) ||
-        (t.description_en && t.description_en.toLowerCase().includes(termLower)) ||
-        (t.title_vi && t.title_vi.toLowerCase().includes(termLower)) ||
-        (t.description_vi && t.description_vi.toLowerCase().includes(termLower)) ||
-        (t.tags && t.tags.some(tag => tag.toLowerCase().includes(termLower)))
-      );
-    }
-    if (hashtag) {
-      const hashtagLower = hashtag.toLowerCase();
-      filteredTrends = filteredTrends.filter(t =>
-        t.tags && t.tags.some(tag => tag.toLowerCase() === hashtagLower)
-      );
-    }
+        console.log(`🚀 Performing live search on NewsAPI for: "${searchTerm}"`);
 
-    filteredTrends = filteredTrends
-      .filter(Boolean)
-      .sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0));
+        // Gọi trực tiếp NewsAPI để tìm kiếm bằng endpoint 'everything'
+        const response = await newsapi.v2.everything({
+            q: searchTerm,
+            sortBy: 'relevancy', // Sắp xếp theo độ liên quan
+            pageSize: 20,       // Lấy 20 kết quả hàng đầu
+            language: 'en'      // Tìm kiếm trên các nguồn tiếng Anh
+        });
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ success: true, trends: filteredTrends }),
-    };
-  } catch (err) {
-    console.error("fetch-trends handler error:", err);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ success: false, error: "Failed to fetch trends", message: err.message }),
-    };
-  }
+        if (response.status !== 'ok') {
+            throw new Error(response.message || "Failed to fetch from NewsAPI");
+        }
+
+        // Chuẩn hóa kết quả trả về
+        let searchResults = response.articles
+            .map(article => normalizeNewsApiArticle(article))
+            .filter(Boolean);
+
+        // Tính toán Hotness Score cho tập kết quả vừa tìm được
+        searchResults = preprocessAndCalculateHotness(searchResults);
+        
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ success: true, trends: searchResults }),
+        };
+
+    } catch (err) {
+        console.error("fetch-trends handler error:", err);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ success: false, error: "Failed to perform search", message: err.message }),
+        };
+    }
 };
