@@ -1,5 +1,4 @@
 // netlify/functions/trends-builder.js
-const { builder } = require("@netlify/functions");
 const fetch = require("node-fetch");
 const { XMLParser } = require("fast-xml-parser");
 const crypto = require('crypto');
@@ -327,7 +326,7 @@ async function getTrendsFromRssFallback() {
 // =========================================================================
 // BUILDER HANDLER CHÍNH
 // =========================================================================
-export const handler = builder(async (event, context) => {
+export async function handler(event, context) {
   const headers = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
@@ -393,4 +392,4 @@ export const handler = builder(async (event, context) => {
       }),
     };
   }
-});
+}
