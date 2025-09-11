@@ -4,15 +4,82 @@ const fetch = require("node-fetch");
 const { XMLParser } = require("fast-xml-parser");
 const crypto = require('crypto');
 const NewsAPI = require('newsapi');
-
+const googleTrends = require('google-trends-api');
 // Khởi tạo NewsAPI client với API key từ biến môi trường
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
+
+// =========================================================================
+// GOOGLE TRENDS FLOW (MULTI-REGION)
+// =========================================================================
+async function getTrendsFromGoogleTrends() {
+    console.log("📊 Fetching data from Google Trends (multi-region)...");
+
+    const regions = [
+        { code: "VN", label: "Vietnam" },
+        { code: "US", label: "United States" },
+        { code: "GB", label: "United Kingdom" },
+        { code: "JP", label: "Japan" },
+        { code: "IN", label: "India" },
+        { code: "AU", label: "Australia" },
+    ];
+
+    const promises = regions.map(async region => {
+        try {
+            const results = await googleTrends.dailyTrends({
+                geo: region.code,
+                trendDate: new Date(),
+            });
+
+            const parsed = JSON.parse(results);
+            const trends = parsed.default.trendingSearchesDays?.[0]?.trendingSearches || [];
+
+            return trends.map(item => {
+                const title = item.title.query;
+                const articles = item.articles || [];
+                const firstArticle = articles[0] || {};
+                const link = firstArticle.url || `https://www.google.com/search?q=${encodeURIComponent(title)}`;
+                const description = firstArticle.snippet || "Trending on Google";
+
+                const stableId = crypto.createHash('md5').update(title + link + region.code).digest('hex');
+                const baseVotes = Math.floor(Math.random() * 800) + 300;
+
+                return {
+                    id: stableId,
+                    title_en: title,
+                    description_en: description,
+                    title_vi: region.code === "VN" ? title : null,
+                    description_vi: region.code === "VN" ? description : null,
+                    category: "Trending",
+                    tags: ["GoogleTrends", region.label],
+                    votes: baseVotes,
+                    views: Math.floor(baseVotes * (Math.random() * 10 + 15)),
+                    interactions: Math.floor(baseVotes * (Math.random() * 3 + 4)),
+                    searches: Math.floor(baseVotes * (Math.random() * 1 + 2)),
+                    source: link,
+                    date: toDateStr(new Date()),
+                    sortKey: toSortValue(new Date()),
+                    submitter: "Google Trends",
+                    region: region.code.toLowerCase(),
+                };
+            });
+        } catch (err) {
+            console.error(`❌ Error fetching Google Trends for ${region.label}:`, err.message);
+            return [];
+        }
+    });
+
+    const results = await Promise.all(promises);
+    const allTrends = results.flat();
+    console.log(`✅ Google Trends returned ${allTrends.length} total items from ${regions.length} regions`);
+
+    return allTrends;
+}
 
 // =========================================================================
 // HÀM HELPER
 // =========================================================================
 
-async function fetchWithTimeout(url, options = {}, ms = 10000) {
+async function fetchWithTimeout(url, options = {}, ms = 20000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ms);
     try {
