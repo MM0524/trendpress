@@ -1,129 +1,125 @@
-// netlify/functions/fetch-trends.js
-const NewsAPI = require('newsapi');
-const crypto = require('crypto');
-
-// Khởi tạo NewsAPI client với API key từ biến môi trường
-const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
-
-// Các hàm helper để chuẩn hóa dữ liệu trả về từ NewsAPI
-function toDateStr(d) {
-    const dt = d ? new Date(d) : new Date();
-    return isNaN(dt.getTime()) ? new Date().toISOString().split("T")[0] : dt.toISOString().split("T")[0];
-}
-
-function toSortValue(d) {
-    const dt = d ? new Date(d) : null;
-    return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0;
-}
-
-function normalizeNewsApiArticle(article) {
-    const { title, description, url, publishedAt, source } = article;
-    if (!title || title === "[Removed]" || !url) return null;
-
-    const stableId = crypto.createHash('md5').update(url).digest('hex');
-    const baseVotes = Math.floor(Math.random() * 500) + 200; // Mock data
-    
-    return {
-        id: stableId,
-        title_en: title,
-        description_en: description || "No description available.",
-        title_vi: null, // Dữ liệu từ API tìm kiếm động mặc định là tiếng Anh
-        description_vi: null,
-        category: "Search", // Gán một category đặc biệt để nhận biết đây là kết quả tìm kiếm
-        tags: [source.name.replace(/\s/g, '')],
-        votes: baseVotes,
-        views: Math.floor(baseVotes * (Math.random() * 10 + 15)),
-        interactions: Math.floor(baseVotes * (Math.random() * 3 + 4)),
-        searches: Math.floor(baseVotes * (Math.random() * 1 + 1.5)),
-        source: url,
-        date: toDateStr(publishedAt),
-        sortKey: toSortValue(publishedAt),
-        submitter: source.name || "Unknown Source",
-        region: 'global', // Kết quả tìm kiếm thường là toàn cầu
-    };
-}
-
-// Hàm tính toán Hotness Score cho một tập hợp các trends
-function preprocessAndCalculateHotness(trends) {
-    if (!trends || trends.length === 0) return [];
-    
-    const maxValues = {
-        views: Math.max(1, ...trends.map(t => t.views || 0)),
-        interactions: Math.max(1, ...trends.map(t => t.interactions || 0)),
-        searches: Math.max(1, ...trends.map(t => t.searches || 0)),
-        votes: Math.max(1, ...trends.map(t => t.votes || 0)),
-    };
-    
-    const weights = { views: 0.2, interactions: 0.4, searches: 0.3, votes: 0.1 };
-    
-    trends.forEach(trend => {
-        const normViews = (trend.views / maxValues.views) || 0;
-        const normInteractions = (trend.interactions / maxValues.interactions) || 0;
-        const normSearches = (trend.searches / maxValues.searches) || 0;
-        const normVotes = (trend.votes / maxValues.votes) || 0;
-        trend.hotnessScore = (normViews * weights.views) + (normInteractions * weights.interactions) + (normSearches * weights.searches) + (normVotes * weights.votes);
-    });
-
-    return trends;
-}
-
-exports.handler = async (event) => {
-    const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
-    
-    if (event.httpMethod !== "GET") {
-        return { statusCode: 405, headers, body: JSON.stringify({ success: false, message: "Method Not Allowed" }) };
+// netlify/functions/analyze-trend.js
+// --- Class GeminiAPIManager ---
+class GeminiAPIManager {
+    constructor(apiKey) {
+        if (!apiKey) {
+            throw new Error("Gemini API key is required.");
+        }
+        this.apiKey = apiKey;
+        this.baseURL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
+        this.maxRetries = 3;
+        this.retryDelay = 1000;
     }
+    async generateContent(prompt) {
+        for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+            try {
+                const response = await fetch(this.baseURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        "contents": [{ "parts": [{ "text": prompt }] }]
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    throw new Error(`API call failed with status ${response.status}: ${errorBody.error?.message || JSON.stringify(errorBody)}`);
+                }
+
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) {
+                    throw new Error("No content generated in API response.");
+                }
+                return text;
+
+            } catch (error) {
+                console.error(`Gemini API call attempt ${attempt} failed: ${error.message}`);
+                if (attempt === this.maxRetries) {
+                    throw new Error(`Gemini API call failed after ${this.maxRetries} attempts.`);
+                }
+                await new Promise(res => setTimeout(res, this.retryDelay));
+            }
+        }
+    }
+}
+
+// --- Cấu hình API ---
+const geminiApiKey = process.env.GEMINI_API_KEY;
+const geminiManager = new GeminiAPIManager(geminiApiKey);
+
+
+// --- Hàm tạo Prompt ---
+function createDetailedAnalysisPrompt(trend, language) {
+    const trendTitle = trend.title;
+    const trendDescription = trend.description;
+    if (language === 'vi') {
+        return `Bạn là một chuyên gia phân tích xu hướng marketing. Phân tích xu hướng sau đây. Thông tin: Tên="${trendTitle}", Mô tả="${trendDescription}", Lĩnh vực="${trend.category}". Yêu cầu: 1. Tổng quan. 2. Tại sao nổi bật & lan truyền thế nào?. 3. Đối tượng phù hợp. 4. Đề xuất 2 nền tảng & chiến lược nội dung. QUAN TRỌNG: Chỉ trả lời bằng HTML hợp lệ, gói gọn trong các thẻ <div class="ai-section">...</div>.`;
+    } else {
+        return `You are a marketing trend analyst. Analyze the following trend. Info: Name="${trendTitle}", Description="${trendDescription}", Category="${trend.category}". Requirements: 1. Overview. 2. Why it's trending & how it's spreading. 3. Target audience. 4. Recommend 2 platforms & content strategies. IMPORTANT: Respond ONLY with valid HTML wrapped in <div class="ai-section"> tags.`;
+    }
+}
+
+// =========================================================================
+// HANDLER CHÍNH
+// =========================================================================
+
+exports.handler = async (event, context) => {
+const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+    let language = 'en';
+    if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers };
+    if (event.httpMethod === "GET") return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: "AI service is online." }) };
+    if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ success: false, message: "Method Not Allowed" }) };
 
     try {
-        const { searchTerm } = event.queryStringParameters;
+        const body = JSON.parse(event.body);
+        const { trend, analysisType } = body;
+        language = body.language || 'en';
+        if (!trend) {
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "Trend data is missing." }) };
+                    }
+                    const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || (language === 'vi' ? trend.title_en : trend.title_vi) || "N/A";
+        const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || (language === 'vi' ? trend.description_en : trend.description_vi) || "N/A";
 
-        // Nếu không có searchTerm, function này sẽ báo lỗi
-        if (!searchTerm || searchTerm.trim() === '') {
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({ success: false, message: "searchTerm parameter is required." }),
-            };
+        if (trendTitle === "N/A") {
+            const message = language === 'vi' ? "Dữ liệu xu hướng thiếu tiêu đề để phân tích." : "Trend data is missing a title for analysis.";
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: message }) };
         }
-
-        if (!process.env.NEWS_API_KEY) {
-            throw new Error("NEWS_API_KEY is not configured on the server.");
-        }
-
-        console.log(`🚀 Performing live search on NewsAPI for: "${searchTerm}"`);
-
-        // Gọi trực tiếp NewsAPI để tìm kiếm bằng endpoint 'everything'
-        const response = await newsapi.v2.everything({
-            q: searchTerm,
-            sortBy: 'relevancy', // Sắp xếp theo độ liên quan
-            pageSize: 20,       // Lấy 20 kết quả hàng đầu
-            language: 'en'      // Tìm kiếm trên các nguồn tiếng Anh
-        });
-
-        if (response.status !== 'ok') {
-            throw new Error(response.message || "Failed to fetch from NewsAPI");
-        }
-
-        // Chuẩn hóa kết quả trả về
-        let searchResults = response.articles
-            .map(article => normalizeNewsApiArticle(article))
-            .filter(Boolean);
-
-        // Tính toán Hotness Score cho tập kết quả vừa tìm được
-        searchResults = preprocessAndCalculateHotness(searchResults);
         
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ success: true, trends: searchResults }),
-        };
+        if (analysisType === 'summary') {
+            // Logic summary (giữ nguyên, không thay đổi)
+             const successScore = trend.hotnessScore ? (Math.min(99, Math.max(20, trend.hotnessScore * 100))) : (Math.floor(Math.random() * 40) + 60);
+            const sentiment = successScore > 75 ? (language === 'vi' ? "tích cực" : "positive") : "neutral";
+            const growthPotential = successScore > 80 ? (language === 'vi' ? "tiềm năng tăng trưởng cao" : "high potential for growth") : (language === 'vi' ? "tăng trưởng vừa phải" : "moderate growth");
+            const htmlSummary = language === 'vi' ? `<ul style="list-style-type: disc; padding-left: 20px; text-align: left;"><li><strong>Xu hướng:</strong> "${trendTitle}" (Lĩnh vực: ${trend.category}).</li><li><strong>Điểm liên quan:</strong> <strong>${successScore.toFixed(0)}%</strong> (tâm lý ${sentiment}).</li><li><strong>Triển vọng:</strong> Xu hướng này cho thấy ${growthPotential}.</li></ul>` : `<ul style="list-style-type: disc; padding-left: 20px; text-align: left;"><li><strong>Trend:</strong> "${trendTitle}" (Domain: ${trend.category}).</li><li><strong>Relevance Score:</strong> <strong>${successScore.toFixed(0)}%</strong> (${sentiment} sentiment).</li><li><strong>Outlook:</strong> This trend shows ${growthPotential}.</li></ul>`;
+            const analysisResult = { successScore: parseFloat(successScore.toFixed(0)), summary: htmlSummary };
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: analysisResult }) };
+        }
+        
+        else if (analysisType === 'detailed') {
+            if (!geminiApiKey) {
+                throw new Error("Gemini API key is not configured on the server.");
+            }
+            
+            const cleanTrendForAI = { ...trend, title: trendTitle, description: trendDescription };
+            const prompt = createDetailedAnalysisPrompt(cleanTrendForAI, language);
+            
+            // ================== ĐÂY LÀ DÒNG CODE ĐÚNG ==================
+            // Gọi AI thông qua class quản lý mới, không dùng "model" nữa
+            const detailedAnalysisContent = await geminiManager.generateContent(prompt);
+            // ==========================================================
+            
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: detailedAnalysisContent }) };
+                    }
 
-    } catch (err) {
-        console.error("fetch-trends handler error:", err);
-        return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({ success: false, error: "Failed to perform search", message: err.message }),
-        };
-    }
+        return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "Invalid analysisType specified." }) };
+
+    } catch (error) {
+        console.error("Error processing analyze-trend request:", error);
+        const userFriendlyMessage = language === 'vi' 
+            ? `Đã xảy ra lỗi khi tạo phân tích AI. Vui lòng thử lại sau. (Lỗi: ${error.message})`
+            : `An error occurred while generating the AI analysis. Please try again later. (Error: ${error.message})`;
+        return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: userFriendlyMessage }) };
+        }
 };
