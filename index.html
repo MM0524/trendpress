@@ -1903,170 +1903,173 @@
             });
         }
 
-// Thay thế toàn bộ hàm createHotTrendsChart cũ bằng hàm này
+// ====================================================================================
+// HÀM createHotTrendsChart PHIÊN BẢN HOÀN CHỈNH
+// ====================================================================================
+    async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
+            const canvas = document.getElementById('hot-trends-chart');
+            if (!canvas) {
+                console.error("Missing DOM element: #hot-trends-chart");
+                return;
+            }
+            if (hotTrendsChart) hotTrendsChart.destroy();
 
-async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
-    const canvas = document.getElementById('hot-trends-chart');
-    if (!canvas) {
-        console.error("Missing DOM element: #hot-trends-chart");
-        return;
-    }
-    if (hotTrendsChart) hotTrendsChart.destroy();
+            // 1. LẤY TẤT CẢ GIÁ TRỊ FILTER TỪ GIAO DIỆN
+            const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All';
+            const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
+            const status = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
+            const customTimeframe = DOM.tbCustomTimeframeSelect ? DOM.tbCustomTimeframeSelect.value : '7d';
 
-    const selectedCategory = DOM.tbCategoryFilter ? DOM.tbCategoryFilter.value : 'All';
-    const selectedRegion = DOM.tbRegionFilter ? DOM.tbRegionFilter.value : 'global';
-    const status = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
-    const customTimeframe = DOM.tbCustomTimeframeSelect ? DOM.tbCustomTimeframeSelect.value : '7d';
+            // Xử lý search term và chips
+            if (newSearchTerm) {
+                const term = newSearchTerm.trim();
+                if (term && !user.tbSearchTerms.includes(term)) user.tbSearchTerms.push(term);
+            }
+            if (compareTerm) {
+                const term = compareTerm.trim();
+                if (term && !user.tbSearchTerms.includes(term)) user.tbSearchTerms.push(term);
+            }
+            if (DOM.tbSearchChipsContainer) {
+                DOM.tbSearchChipsContainer.innerHTML = user.tbSearchTerms.map(term => `<span class="tb-search-chip">${truncateText(term, 20)}<button class="tb-search-chip-remove" data-term="${term}">&times;</button></span>`).join('');
+                DOM.tbSearchChipsContainer.classList.toggle('hidden', user.tbSearchTerms.length === 0);
+            }
 
-    if (newSearchTerm) {
-        const term = newSearchTerm.trim();
-        if (term && !user.tbSearchTerms.includes(term)) {
-            user.tbSearchTerms.push(term);
-        }
-    }
-    if (compareTerm) {
-        const term = compareTerm.trim();
-        if (term && !user.tbSearchTerms.includes(term)) {
-            user.tbSearchTerms.push(term);
-        }
-    }
+            const labels = generateChartLabels(customTimeframe);
+            const palette = getColorPalette(10);
+            let trendsToDraw = [];
 
-    if (DOM.tbSearchChipsContainer) {
-        DOM.tbSearchChipsContainer.innerHTML = user.tbSearchTerms.map(term => `
-            <span class="tb-search-chip">${truncateText(term, 20)}
-                <button class="tb-search-chip-remove" data-term="${term}">&times;</button>
-            </span>
-        `).join('');
-        DOM.tbSearchChipsContainer.classList.toggle('hidden', user.tbSearchTerms.length === 0);
-    }
+            // =====================================================================
+            // KHỐI LOGIC LỌC VÀ SẮP XẾP MỚI
+            // =====================================================================
 
-    const labels = generateChartLabels(customTimeframe);
-    const palette = getColorPalette(10); // Chuẩn bị sẵn 10 màu
-    let trendsToDraw = [];
+            // 2. LỌC CƠ BẢN (REGION & CATEGORY)
+            let filteredTrends = masterTrendsList.filter(trend =>
+                (selectedRegion === 'global' || trend.region === selectedRegion) &&
+                (selectedCategory === 'All' || trend.category === selectedCategory)
+            );
 
-    // Lọc cơ sở dữ liệu trends theo các filter dropdown
-    let trendsToConsiderForStatus = masterTrendsList.filter(trend =>
-        (selectedRegion === 'global' || trend.region === selectedRegion) &&
-        (selectedCategory === 'All' || trend.category === selectedCategory)
-    );
-    // (Bạn có thể thêm logic lọc theo status ở đây nếu cần)
+            // 3. LỌC THEO THỜI GIAN (TIME FRAME)
+            if (status !== 'predictive') {
+                filteredTrends = filteredTrends.filter(trend => isTrendRelevantForTimeframe(trend, customTimeframe));
+            } else {
+                filteredTrends = filteredTrends.filter(trend => isTrendRelevantForTimeframe(trend, '7d'));
+            }
+            
+            // 4. LỌC THEO STATUS (OUTDATED)
+            if (status === 'outdated') {
+                const now = new Date();
+                const cutoffDate = new Date(new Date().setDate(now.getDate() - 7));
+                filteredTrends = filteredTrends.filter(trend => new Date(trend.date) < cutoffDate);
+            }
+            
+            // 5. SẮP XẾP KẾT QUẢ CUỐI CÙNG DỰA TRÊN STATUS
+            let sortedTrends = [];
+            switch (status) {
+                case 'hottest':
+                case 'predictive':
+                    sortedTrends = [...filteredTrends].sort((a, b) => b.hotnessScore - a.hotnessScore);
+                    break;
+                case 'latest':
+                    sortedTrends = [...filteredTrends].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    break;
+                case 'outdated':
+                    sortedTrends = [...filteredTrends].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                    break;
+                default:
+                    sortedTrends = [...filteredTrends].sort((a, b) => b.hotnessScore - a.hotnessScore);
+            }
 
-    // =====================================================================
-    // LOGIC TÌM KIẾM MỚI VÀ HOÀN CHỈNH
-    // =====================================================================
-    if (user.tbSearchTerms.length > 0) {
-        let trendsMatchingSearch = [];
-        
-        // Vòng lặp qua từng từ khóa người dùng nhập (mỗi chip)
-        for (const term of user.tbSearchTerms) {
-            const termLower = term.toLowerCase().trim();
-            if (!termLower) continue; // Bỏ qua nếu từ khóa rỗng
+            // 6. TÌM KIẾM (NẾU CÓ)
+            if (user.tbSearchTerms.length > 0) {
+                let trendsMatchingSearch = [];
+                for (const term of user.tbSearchTerms) {
+                    const termLower = term.toLowerCase().trim();
+                    if (!termLower) continue;
+                    const termSingular = termLower.endsWith('s') ? termLower.slice(0, -1) : termLower;
+                    
+                    const matched = sortedTrends.filter(trend => {
+                        const localized = getLocalizedTrendText(trend);
+                        const titleLower = localized.title.toLowerCase();
+                        const descLower = localized.description.toLowerCase();
+                        const titleMatch = titleLower.includes(termLower) || titleLower.includes(termSingular);
+                        const descMatch = descLower.includes(termLower) || descLower.includes(termSingular);
+                        const tagMatch = (trend.tags || []).some(tag => {
+                            const tagLower = tag.toLowerCase();
+                            return tagLower.includes(termLower) || tagLower.includes(termSingular);
+                        });
+                        return titleMatch || descMatch || tagMatch;
+                    });
+                    trendsMatchingSearch.push(...matched);
+                }
+                
+                const uniqueTrendsMap = new Map();
+                trendsMatchingSearch.forEach(trend => uniqueTrendsMap.set(trend.id, trend));
+                
+                trendsToDraw = Array.from(uniqueTrendsMap.values())
+                                    .sort((a, b) => b.hotnessScore - a.hotnessScore)
+                                    .slice(0, 10);
 
-            // Xử lý số nhiều đơn giản (ví dụ: 'cars' -> 'car')
-            const termSingular = termLower.endsWith('s') ? termLower.slice(0, -1) : termLower;
+                if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
+                if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
+            } else {
+                trendsToDraw = sortedTrends.slice(0, 5);
+                if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
+                renderTBDashboard(customTimeframe);
+                if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t(status)} - ${t('Interest Over Time')}`;
+            }
+            
+            // Tạo datasets cho biểu đồ
+            const datasets = trendsToDraw.map((trendItem, i) => ({
+                label: truncateText(getLocalizedTrendText(trendItem).title, 30),
+                data: generateSeriesForTimeframe(trendItem, labels, customTimeframe),
+                borderColor: palette[i % palette.length].stroke,
+                tension: 0.4,
+                fill: false,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                trendId: trendItem.id
+            }));
 
-            const matched = trendsToConsiderForStatus.filter(trend => {
-                const localized = getLocalizedTrendText(trend);
-                const titleLower = localized.title.toLowerCase();
-                const descLower = localized.description.toLowerCase();
-
-                // Kiểm tra từ khóa (cả dạng gốc và số ít) trong title, description, và tags
-                const titleMatch = titleLower.includes(termLower) || titleLower.includes(termSingular);
-                const descMatch = descLower.includes(termLower) || descLower.includes(termSingular);
-                const tagMatch = (trend.tags || []).some(tag => {
-                    const tagLower = tag.toLowerCase();
-                    return tagLower.includes(termLower) || tagLower.includes(termSingular);
-                });
-
-                return titleMatch || descMatch || tagMatch;
-            });
-
-            // Thêm tất cả kết quả tìm được vào danh sách chung
-            trendsMatchingSearch.push(...matched);
-        }
-
-        // Loại bỏ các trend trùng lặp (nếu một trend khớp với nhiều từ khóa)
-        const uniqueTrendsMap = new Map();
-        trendsMatchingSearch.forEach(trend => {
-            uniqueTrendsMap.set(trend.id, trend);
-        });
-
-        // Lấy danh sách các trend độc nhất, sắp xếp theo độ "hot" và giới hạn 10 kết quả để biểu đồ không bị rối
-        trendsToDraw = Array.from(uniqueTrendsMap.values())
-                            .sort((a, b) => b.hotnessScore - a.hotnessScore)
-                            .slice(0, 10);
-
-        if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
-        if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
-
-    } else {
-        // Logic khi không có từ khóa tìm kiếm: Hiển thị top trends mặc định
-        trendsToDraw = trendsToConsiderForStatus.sort((a, b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
-        if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
-        renderTBDashboard(customTimeframe);
-        if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = `${t(status)} - ${t('Interest Over Time')}`;
-    }
-    // =====================================================================
-    // KẾT THÚC PHẦN NÂNG CẤP
-    // =====================================================================
-
-    // Tạo datasets cho biểu đồ từ danh sách trendsToDraw
-    const datasets = trendsToDraw.map((trendItem, i) => ({
-        label: truncateText(getLocalizedTrendText(trendItem).title, 30),
-        data: generateSeriesForTimeframe(trendItem, labels, customTimeframe),
-        borderColor: palette[i % palette.length].stroke, // Dùng modulo để màu không bị hết
-        tension: 0.4,
-        fill: false,
-        pointRadius: 3,
-        pointHoverRadius: 5,
-        trendId: trendItem.id
-    }));
-
-    if (datasets.length > 0) {
-        hotTrendsChart = new Chart(canvas.getContext('2d'), {
-            type: 'line',
-            data: { labels, datasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
-                        onClick: (e, legendItem, legend) => {
-                            const index = legendItem.datasetIndex;
-                            const ci = legend.chart;
-                            const trendIdFromLegend = ci.data.datasets[index].trendId;
-                            if (trendIdFromLegend) {
-                                const trend = masterTrendsList.find(t => t.id === trendIdFromLegend);
-                                if (trend) {
-                                    openTrendOverviewModal(trend);
+            // Render biểu đồ
+            if (datasets.length > 0) {
+                hotTrendsChart = new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { 
+                                position: 'bottom', 
+                                labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
+                                onClick: (e, legendItem, legend) => {
+                                    const index = legendItem.datasetIndex;
+                                    const trendId = legend.chart.data.datasets[index].trendId;
+                                    if (trendId) {
+                                        const trend = masterTrendsList.find(t => t.id === trendId);
+                                        if (trend) openTrendOverviewModal(trend);
+                                    }
                                 }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#8a8da0' } },
+                            y: { 
+                                grid: { color: 'rgba(255, 255, 255, 0.1)'}, 
+                                ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, 
+                                beginAtZero: true,
+                                suggestedMax: Math.max(...datasets.flatMap(d => d.data).filter(val => val !== null)) * 1.2 || 1000 
                             }
                         }
                     }
-                },
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: '#8a8da0' } },
-                    y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: {
-                            color: '#8a8da0',
-                            callback: (v) => formatNumber(v)
-                        },
-                        beginAtZero: true,
-                        suggestedMax: Math.max(...datasets.flatMap(d => d.data).filter(val => val !== null)) * 1.2 || 1000
-                    }
-                }
+                });
+            } else {
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('No trends found.');
             }
-        });
-    } else {
-        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-        if (DOM.tbChartTitle) DOM.tbChartTitle.textContent = t('No trends found.');
-    }
 
-    renderUserTrendsChart(customTimeframe);
-}
+            renderUserTrendsChart(customTimeframe);
+        }
         function populateCustomTimeframeOptions(status) {
             const customTimeframeSelect = DOM.tbCustomTimeframeSelect;
             if (!customTimeframeSelect) return;
@@ -2491,5 +2494,6 @@ async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
     </script>
 </body>
 </html>
+
 
 
