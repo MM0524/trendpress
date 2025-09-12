@@ -1870,7 +1870,7 @@
             });
         }
         
-        async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
+                async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
             
@@ -1915,10 +1915,6 @@
                 return aggregatedValues;
             };
 
-            // =============================================================
-            // === LƯU Ý: TOÀN BỘ LOGIC VẼ BIỂU ĐỒ NẰM TRONG CÁC KHỐI IF/ELSE
-            // =============================================================
-
             if (user.tbSearchTerms.length > 0) {
                 // --- CHẾ ĐỘ TÌM KIẾM ---
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
@@ -1953,7 +1949,6 @@
                     currentSearchResults = resultsByTerm.flatMap(r => (r.data.success && r.data.trends) ? r.data.trends : []);
                     if (chartTitleEl) chartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
 
-                    // --- Vẽ biểu đồ cho chế độ TÌM KIẾM ---
                     const palette = getColorPalette(trendsToDraw.length || 5);
                     const datasets = trendsToDraw.map((trendItem, i) => {
                         const color = palette[i % palette.length].stroke;
@@ -1977,6 +1972,8 @@
                     });
 
                     const allDataPoints = datasets.flatMap(ds => ds.data.filter(p => p !== null));
+                    const maxDataValue = Math.max(...allDataPoints, 0);
+
                     if (datasets.length > 0 && allDataPoints.length > 0) {
                         hotTrendsChart = new Chart(canvas.getContext('2d'), {
                             type: 'line', data: { labels, datasets },
@@ -2005,11 +2002,13 @@
                                 scales: {
                                     x: { grid: { display: false }, ticks: { color: '#8a8da0' } },
                                     y: { 
-                                    grid: { color: 'rgba(255, 255, 255, 0.05)'},
-                                    ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, 
-                                    beginAtZero: true, min: 0,
-                                    suggestedMax: maxDataValue * 1.2 || 1000}
-                        }}
+                                        grid: { color: 'rgba(255, 255, 255, 0.05)'},
+                                        ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, 
+                                        beginAtZero: true, min: 0,
+                                        suggestedMax: maxDataValue * 1.2 || 1000
+                                    }
+                                }
+                                // **** LỖI ĐÃ ĐƯỢC SỬA: Xóa dấu } thừa ở đây ****
                             }
                         });
                     } else {
@@ -2052,7 +2051,6 @@
                 renderTBDashboard(trendsForLeaderboard);
                 if (chartTitleEl) chartTitleEl.textContent = `${t(status)} - ${t('Interest Over Time')}`;
 
-                // --- Vẽ biểu đồ cho chế độ DUYỆT ---
                 const customTimeframeForChart = DOM.tbCustomTimeframeSelect.value;
                 const labels = generateChartLabels(customTimeframeForChart);
                 const palette = getColorPalette(trendsToDraw.length || 5);
@@ -2099,20 +2097,23 @@
                                         }
                                     }
                                 },
-                            tooltip: { 
+                                tooltip: { 
                                     enabled: true, backgroundColor: 'var(--surface-color)', titleColor: 'var(--primary-light)',
                                     bodyColor: 'var(--text-color)', borderColor: 'var(--border-color)', borderWidth: 1,
                                     padding: 10, displayColors: true, boxPadding: 4,
                                     callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)}` } 
-                            }
-                        },
+                                }
+                            },
                             scales: { 
                                 x: { grid: { display: false }, ticks: { color: '#8a8da0' } },
                                 y: { 
-                                grid: { color: 'rgba(255, 255, 255, 0.05)'},
-                                ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, 
-                                beginAtZero: true, min: 0,
-                                suggestedMax: maxDataValue * 1.2 || 1000}
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)'},
+                                    ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, 
+                                    beginAtZero: true, min: 0,
+                                    suggestedMax: maxDataValue * 1.2 || 1000
+                                }
+                            }
+                            // **** LỖI ĐÃ ĐƯỢC SỬA: Xóa dấu } thừa ở đây ****
                         }
                     });
                 } else {
@@ -2121,7 +2122,6 @@
                 }
             }
             
-            // Cuối cùng, gọi renderUserTrendsChart
             const finalTimeframe = user.tbSearchTerms.length > 0 ? '7d' : DOM.tbCustomTimeframeSelect.value;
             renderUserTrendsChart(finalTimeframe);
         }
@@ -2514,6 +2514,7 @@
     </script>
 </body>
 </html>
+
 
 
 
