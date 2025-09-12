@@ -72,7 +72,7 @@ function createVirtualTrendFromGoogle(searchTerm, trendsData) {
     };
 }
 
-// --- HANDLER CHÍNH ĐÃ ĐƯỢC NÂNG CẤP ---
+// --- HANDLER CHÍNH ĐÃ ĐƯỢC NÂNG CẤP HOÀN TOÀN ---
 exports.handler = async (event) => {
     const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
     
@@ -81,8 +81,7 @@ exports.handler = async (event) => {
     }
 
     try {
-        // Lấy thêm tham số timeframe từ query string
-        const { searchTerm, timeframe = '7d' } = event.queryStringParameters;
+        const { searchTerm, timeframe: rawTimeframe = '7d' } = event.queryStringParameters;
 
         if (!searchTerm || searchTerm.trim() === '') {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "searchTerm is required." }) };
@@ -91,20 +90,24 @@ exports.handler = async (event) => {
             throw new Error("NEWS_API_KEY is not configured.");
         }
 
-        // Tính toán ngày bắt đầu dựa trên timeframe
-        const startTime = new Date();
-        const timeValue = parseInt(timeframe);
-        if (timeframe.includes('d')) {
-            startTime.setDate(startTime.getDate() - timeValue);
-        } else if (timeframe.includes('m')) {
-            startTime.setMonth(startTime.getMonth() - timeValue);
-        } else if (timeframe.includes('y')) {
-            startTime.setFullYear(startTime.getFullYear() - timeValue);
-        } else { // Mặc định là 7 ngày
-            startTime.setDate(startTime.getDate() - 7);
-        }
+        // ================== LOGIC XỬ LÝ TIMEFRAME MỚI, AN TOÀN HƠN ==================
+        const TIMEFRAME_MAP_TO_DAYS = {
+            '1h': 1, '6h': 1, '24h': 1, // Coi các khung giờ là trong 1 ngày
+            '3d': 3,
+            '7d': 7,
+            '1m': 30,
+            '3m': 92,  // GIỚI HẠN: Coi 3 tháng là 30 ngày để đảm bảo API ổn định
+            '12m': 365, // GIỚI HẠN: Coi 1 năm là 30 ngày để đảm bảo API ổn định
+        };
 
-        // === BƯỚC 1: TÌM KIẾM TRÊN NEWSAPI VỚI KHUNG THỜI GIAN ĐỘNG ===
+        // Lấy số ngày từ map, nếu không có thì mặc định là 7
+        const daysAgo = TIMEFRAME_MAP_TO_DAYS[rawTimeframe] || 7;
+        
+        const startTime = new Date();
+        startTime.setDate(startTime.getDate() - daysAgo);
+        // =======================================================================
+
+        // === BƯỚC 1: TÌM KIẾM TRÊN NEWSAPI VỚI KHUNG THỜI GIAN ĐÃ CHUẨN HÓA ===
         console.log(`🚀 [Primary] Searching NewsAPI for: "${searchTerm}" from ${startTime.toISOString()}`);
         const response = await newsapi.v2.everything({
             q: searchTerm,
@@ -114,22 +117,20 @@ exports.handler = async (event) => {
             language: 'en'
         });
         
-        // ... (phần còn lại của logic NewsAPI giữ nguyên)
         let searchResults = response.articles.map(normalizeNewsApiArticle).filter(Boolean);
         if (searchResults.length > 0) {
             searchResults = preprocessAndCalculateHotness(searchResults);
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: searchResults }) };
         }
         
-        // === BƯỚC 2: TÌM KIẾM TRÊN GOOGLE TRENDS VỚI KHUNG THỜI GIAN ĐỘNG ===
+        // === BƯỚC 2: TÌM KIẾM TRÊN GOOGLE TRENDS VỚI KHUNG THỜI GIAN ĐÃ CHUẨN HÓA ===
         console.log(`⚠️ [Primary] No articles. Switching to [Fallback] Google Trends API.`);
         try {
             const trendsResponse = await googleTrends.interestOverTime({
                 keyword: searchTerm,
-                startTime: startTime, // Sử dụng ngày bắt đầu đã tính toán
+                startTime: startTime, // Sử dụng ngày bắt đầu đã tính toán an toàn
             });
             
-            // ... (phần còn lại của logic Google Trends giữ nguyên)
             const parsedResponse = JSON.parse(trendsResponse);
             const timelineData = parsedResponse.default.timelineData;
             if (!timelineData || timelineData.length === 0) {
