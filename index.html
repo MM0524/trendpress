@@ -1730,18 +1730,26 @@
         }
 
         async function renderTBDashboard(trendsForLeaderboard) {
-            const topics = trendsForLeaderboard.filter(t => t.type === 'topic').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
-            const queries = trendsForLeaderboard.filter(t => t.type === 'query').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+            const topics = trendsForLeaderboard.filter(trend => trend.type === 'topic').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+            const queries = trendsForLeaderboard.filter(trend => trend.type === 'query').sort((a,b) => b.hotnessScore - a.hotnessScore).slice(0, 5);
+
             const tbTopicList = document.getElementById('tb-topic-list');
             const tbQueryList = document.getElementById('tb-query-list');
 
             if (tbTopicList) {
-                if (topics.length === 0) tbTopicList.innerHTML = `<p class="modal-body" style="text-align: center;">${t('No trends found.')}</p>`;
-                else tbTopicList.innerHTML = `<ol>${topics.map((t, i) => `<li data-trend-id="${t.id}"><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(t).title}</span><span class="growth">${t('Rising')}</span></li>`).join('')}</ol>`;
+                if (topics.length === 0) {
+                    tbTopicList.innerHTML = `<p class="modal-body" style="text-align: center;">${t('No trends found.')}</p>`;
+                } else {
+                    tbTopicList.innerHTML = `<ol>${topics.map((trendItem, i) => `<li data-trend-id="${trendItem.id}"><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(trendItem).title}</span><span class="growth">${t('Rising')}</span></li>`).join('')}</ol>`;
+                }
             }
+            
             if (tbQueryList) {
-                if (queries.length === 0) tbQueryList.innerHTML = `<p class="modal-body" style="text-align: center;">${t('No trends found.')}</p>`;
-                else tbQueryList.innerHTML = `<ol>${queries.map((t, i) => `<li data-trend-id="${t.id}"><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(t).title}</span><span class="growth">+${Math.floor(Math.random() * 4000)}%</span></li>`).join('')}</ol>`;
+                if (queries.length === 0) {
+                    tbQueryList.innerHTML = `<p class="modal-body" style="text-align: center;">${t('No trends found.')}</p>`;
+                } else {
+                    tbQueryList.innerHTML = `<ol>${queries.map((trendItem, i) => `<li data-trend-id="${trendItem.id}"><span class="rank">${i+1}</span><span class="term">${getLocalizedTrendText(trendItem).title}</span><span class="growth">+${Math.floor(Math.random() * 4000)}%</span></li>`).join('')}</ol>`;
+                }
             }
         }
 
@@ -2432,4 +2440,5 @@
     </script>
 </body>
 </html>
+
 
