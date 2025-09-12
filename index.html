@@ -1575,7 +1575,7 @@
             return labels;
         }
         
-        function generateSeriesForTimeframe(trend, labels, timeframe) {
+                function generateSeriesForTimeframe(trend, labels, timeframe) {
             // --- PHẦN 1: Xử lý "trend ảo" từ Google Trends ---
             if (trend.isVirtual && trend.interestData) {
                 console.log("-> Generating series for VIRTUAL trend:", trend.title_en);
@@ -1726,57 +1726,6 @@
                 }
             });
 
-            return series;
-        }
-            
-            // Luồng xử lý cho trend thông thường (giữ nguyên)
-            const series = new Array(labels.length).fill(0);
-            const trendDate = new Date(trend.date || Date.now());
-            trendDate.setHours(0,0,0,0);
-            const peakMetric = getCombinedMetric(trend);
-            const now = new Date();
-            now.setHours(0,0,0,0);
-            labels.forEach((label, index) => {
-                let currentLabelDate;
-                if (timeframe.includes('h')) {
-                    let datePart = new Date(now); 
-                    const offsetMinutes = (labels.length - 1 - index) * (timeframe === '1h' ? 10 : (timeframe === '6h' ? 60 : 240));
-                    datePart.setMinutes(now.getMinutes() - offsetMinutes);
-                    currentLabelDate = new Date(datePart.getFullYear(), datePart.getMonth(), datePart.getDate(), datePart.getHours());
-                } else {
-                    let datePart = new Date(now);
-                    let daysOffset;
-                    if (timeframe.startsWith('next')) { daysOffset = index; datePart.setDate(now.getDate() + daysOffset); }
-                    else if (timeframe === '3d') { daysOffset = (labels.length - 1 - index); datePart.setDate(now.getDate() - daysOffset); }
-                    else if (timeframe === '7d') { daysOffset = (labels.length - 1 - index); datePart.setDate(now.getDate() - daysOffset); }
-                    else if (timeframe === '1m') { daysOffset = Math.round((labels.length - 1 - index) * (30 / (labels.length - 1))); datePart.setDate(now.getDate() - daysOffset); }
-                    else if (timeframe === '3m') { daysOffset = Math.round((labels.length - 1 - index) * (90 / (labels.length - 1))); datePart.setDate(now.getDate() - daysOffset); }
-                    else if (timeframe === '12m') { const monthsOffset = (labels.length - 1 - index); datePart.setMonth(now.getMonth() - monthsOffset); }
-                    currentLabelDate = new Date(datePart.getFullYear(), datePart.getMonth(), datePart.getDate());
-                }
-                currentLabelDate.setHours(0,0,0,0);
-                const isPredictive = timeframe.startsWith('next');
-                if (!isPredictive && currentLabelDate < trendDate) { series[index] = 0; return; }
-                let timeDiffRelevantDays = isPredictive ? (currentLabelDate.getTime() - now.getTime()) / 86400000 : (currentLabelDate.getTime() - trendDate.getTime()) / 86400000;
-                let rawValue = 0;
-                let hotnessMultiplier = 1 + (trend.hotnessScore || 0) * 5;
-                if (isPredictive) {
-                    const daysIntoFuture = timeDiffRelevantDays, initialHotness = peakMetric * (1 + (trend.hotnessScore || 0) * 0.5), growthFactor = 0.8, decayAfterPeak = 0.1, maxGrowthDays = 2;
-                    if (daysIntoFuture <= maxGrowthDays) { rawValue = initialHotness * (1 + (growthFactor * daysIntoFuture / maxGrowthDays)); }
-                    else { rawValue = initialHotness * (1 + growthFactor) * Math.exp(-decayAfterPeak * (daysIntoFuture - maxGrowthDays)); }
-                    rawValue *= (1 + (Math.random() - 0.5) * 0.2);
-                    series[index] = Math.max(Math.round(peakMetric * 0.2), Math.round(rawValue));
-                } else { 
-                    let decayRate = 0.05, peakShiftDays = 3;
-                    if (timeframe === '7d' || timeframe === '3d' || timeframe.includes('h')) { decayRate = 0.8; peakShiftDays = 1; }
-                    else if (timeframe === '1m' || timeframe === '3m') { decayRate = 0.3; peakShiftDays = 3; }
-                    else { decayRate = 0.05; peakShiftDays = 10; }
-                    const timeRelativeToPeak = timeDiffRelevantDays - peakShiftDays;
-                    rawValue = peakMetric * hotnessMultiplier * Math.exp(-decayRate * Math.pow(timeRelativeToPeak, 2) / (peakShiftDays * peakShiftDays));
-                    rawValue = rawValue * (1 + (Math.random() - 0.5) * 0.2);
-                    series[index] = Math.max(0, Math.round(rawValue));
-                }
-            });
             return series;
         }
 
@@ -2483,3 +2432,4 @@
     </script>
 </body>
 </html>
+
