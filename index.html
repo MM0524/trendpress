@@ -1834,7 +1834,6 @@
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
             
-            // Kiểm tra an toàn để đảm bảo các thành phần HTML cốt lõi tồn tại
             if (!canvas) {
                 console.error("Chart canvas 'hot-trends-chart' not found!");
                 return; 
@@ -1843,30 +1842,22 @@
                 hotTrendsChart.destroy();
             }
 
-            // Reset kết quả tìm kiếm cũ mỗi khi hàm chạy
             currentSearchResults = []; 
 
-            // Thêm các từ khóa tìm kiếm mới vào danh sách
             if (newSearchTerm) {
                 const term = newSearchTerm.trim();
-                if (term && !user.tbSearchTerms.includes(term)) {
-                    user.tbSearchTerms.push(term);
-                }
+                if (term && !user.tbSearchTerms.includes(term)) user.tbSearchTerms.push(term);
             }
             if (compareTerm) {
                 const term = compareTerm.trim();
-                if (term && !user.tbSearchTerms.includes(term)) {
-                    user.tbSearchTerms.push(term);
-                }
+                if (term && !user.tbSearchTerms.includes(term)) user.tbSearchTerms.push(term);
             }
 
-            // Cập nhật giao diện các "chip" tìm kiếm
             if (DOM.tbSearchChipsContainer) {
                 DOM.tbSearchChipsContainer.innerHTML = user.tbSearchTerms.map(term => `<span class="tb-search-chip">${truncateText(term, 20)}<button class="tb-search-chip-remove" data-term="${term}">&times;</button></span>`).join('');
                 DOM.tbSearchChipsContainer.classList.toggle('hidden', user.tbSearchTerms.length === 0);
             }
             
-            // Xử lý việc hiển thị nút "Clear Search" một cách an toàn
             if (clearSearchBtn) {
                 clearSearchBtn.classList.toggle('hidden', user.tbSearchTerms.length === 0);
             }
@@ -1874,7 +1865,26 @@
             const chartTitleEl = DOM.tbChartTitle;
             let trendsToDraw = [], trendsForLeaderboard = [];
             
-            // === PHẦN LOGIC: CHẾ ĐỘ TÌM KIẾM vs CHẾ ĐỘ DUYỆT ===
+            // ================== HÀM PHỤ MỚI ĐỂ TỔNG HỢP DỮ LIỆU ==================
+            const aggregateTrendData = (trends, labels) => {
+                if (!trends || trends.length === 0) return [];
+                
+                // Khởi tạo một mảng để lưu tổng giá trị tại mỗi điểm thời gian (mỗi label)
+                const aggregatedValues = new Array(labels.length).fill(0);
+
+                // Duyệt qua từng trend tìm được
+                trends.forEach(trend => {
+                    // Tạo ra chuỗi dữ liệu thời gian cho trend này
+                    const series = generateSeriesForTimeframe(trend, labels, '7d'); // Luôn dùng 7d cho tìm kiếm
+                    // Cộng dồn giá trị của series này vào mảng tổng hợp
+                    series.forEach((value, index) => {
+                        aggregatedValues[index] += value;
+                    });
+                });
+
+                return aggregatedValues;
+            };
+            // ====================================================================
 
             if (user.tbSearchTerms.length > 0) {
                 // --- CHẾ ĐỘ TÌM KIẾM ---
@@ -1882,64 +1892,68 @@
                 if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner" style="display: inline-block; vertical-align: middle; margin-right: 10px;"></div> ${t('Searching for')} "${user.tbSearchTerms.join(', ')}"...`;
                 
                 try {
-                    const searchPromises = user.tbSearchTerms.map(term => 
-                        fetch(`/.netlify/functions/fetch-trends?searchTerm=${encodeURIComponent(term)}`).then(res => res.json())
-                    );
+                    const searchPromises = user.tbSearchTerms.map(term => fetch(`/.netlify/functions/fetch-trends?searchTerm=${encodeURIComponent(term)}`).then(res => res.json()));
                     const results = await Promise.all(searchPromises);
                     let allSearchResults = results.flatMap(result => (result.success && Array.isArray(result.trends)) ? result.trends : []);
                     
                     const uniqueTrendsMap = new Map();
                     allSearchResults.forEach(trend => uniqueTrendsMap.set(trend.id, trend));
                     
-                    // Lưu kết quả vào biến tạm để xử lý click legend
                     currentSearchResults = Array.from(uniqueTrendsMap.values());
                     
+                    // Nếu không tìm thấy trend nào (kể cả trend ảo từ Google)
+                    if (currentSearchResults.length === 0) {
+                        trendsToDraw = [];
+                    } 
+                    // Nếu chỉ có MỘT trend ảo từ Google, cứ vẽ nó ra
+                    else if (currentSearchResults.length === 1 && currentSearchResults[0].isVirtual) {
+                        trendsToDraw = currentSearchResults;
+                    } 
+                    // Nếu có NHIỀU trend từ NewsAPI, TỔNG HỢP chúng lại
+                    else {
+                        const customTimeframeForChart = '7d';
+                        const labels = generateChartLabels(customTimeframeForChart);
+                        
+                        // Gọi hàm tổng hợp dữ liệu
+                        const aggregatedData = aggregateTrendData(currentSearchResults, labels);
+
+                        // Tạo một "trend tổng hợp ảo" để vẽ
+                        const aggregatedTrend = {
+                            id: `aggregated-${user.tbSearchTerms.join('-')}`,
+                            title_en: user.tbSearchTerms.join(' & '),
+                            // Gán dữ liệu đã tổng hợp vào một thuộc tính đặc biệt
+                            isAggregated: true,
+                            aggregatedData: aggregatedData
+                        };
+                        trendsToDraw = [aggregatedTrend];
+                    }
+
                     trendsForLeaderboard = [...currentSearchResults].sort((a, b) => b.hotnessScore - a.hotnessScore);
-                    trendsToDraw = trendsForLeaderboard.slice(0, 10);
                     if (chartTitleEl) chartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
 
                 } catch (error) {
                     console.error("Live search failed:", error);
                     if (chartTitleEl) chartTitleEl.textContent = t('Search failed. Please try again.');
                     trendsToDraw = [];
-                    trendsForLeaderboard = [];
                 }
 
             } else {
                 // --- CHẾ ĐỘ DUYỆT MẶC ĐỊNH ---
-                const selectedCategory = DOM.tbCategoryFilter.value;
-                const selectedRegion = DOM.tbRegionFilter.value;
-                const status = DOM.tbStatusSelect.value;
-                const customTimeframe = DOM.tbCustomTimeframeSelect.value;
-                
-                let filteredTrends = masterTrendsList.filter(trend =>
-                    (selectedRegion === 'global' || trend.region === selectedRegion) &&
-                    (selectedCategory === 'All' || trend.category === selectedCategory)
-                );
-
-                if (status !== 'predictive') {
-                    filteredTrends = filteredTrends.filter(trend => isTrendRelevantForTimeframe(trend, customTimeframe));
-                } else {
-                    filteredTrends = filteredTrends.filter(trend => isTrendRelevantForTimeframe(trend, '7d')); // Predictive dựa trên 7 ngày gần nhất
-                }
-                
+                const selectedCategory = DOM.tbCategoryFilter.value, selectedRegion = DOM.tbRegionFilter.value, status = DOM.tbStatusSelect.value, customTimeframe = DOM.tbCustomTimeframeSelect.value;
+                let filteredTrends = masterTrendsList.filter(t => (selectedRegion === 'global' || t.region === selectedRegion) && (selectedCategory === 'All' || t.category === selectedCategory));
+                if (status !== 'predictive') filteredTrends = filteredTrends.filter(t => isTrendRelevantForTimeframe(t, customTimeframe));
+                else filteredTrends = filteredTrends.filter(t => isTrendRelevantForTimeframe(t, '7d'));
                 if (status === 'outdated') {
                     const cutoffDate = new Date(new Date().setDate(new Date().getDate() - 7));
-                    filteredTrends = filteredTrends.filter(trend => new Date(trend.date) < cutoffDate);
+                    filteredTrends = filteredTrends.filter(t => new Date(t.date) < cutoffDate);
                 }
-                
                 let sortedTrends = [];
                 switch (status) {
-                    case 'hottest': case 'predictive':
-                        sortedTrends = [...filteredTrends].sort((a, b) => b.hotnessScore - a.hotnessScore); break;
-                    case 'latest':
-                        sortedTrends = [...filteredTrends].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); break;
-                    case 'outdated':
-                        sortedTrends = [...filteredTrends].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); break;
-                    default:
-                        sortedTrends = [...filteredTrends].sort((a, b) => b.hotnessScore - a.hotnessScore);
+                    case 'hottest': case 'predictive': sortedTrends = [...filteredTrends].sort((a, b) => b.hotnessScore - a.hotnessScore); break;
+                    case 'latest': sortedTrends = [...filteredTrends].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); break;
+                    case 'outdated': sortedTrends = [...filteredTrends].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); break;
+                    default: sortedTrends = [...filteredTrends].sort((a, b) => b.hotnessScore - a.hotnessScore);
                 }
-
                 trendsToDraw = sortedTrends.slice(0, 5);
                 trendsForLeaderboard = sortedTrends;
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
@@ -1947,17 +1961,24 @@
                 if (chartTitleEl) chartTitleEl.textContent = `${t(status)} - ${t('Interest Over Time')}`;
             }
             
-            // === PHẦN VẼ BIỂU ĐỒ ===
-
             const customTimeframeForChart = user.tbSearchTerms.length > 0 ? '7d' : DOM.tbCustomTimeframeSelect.value;
             const labels = generateChartLabels(customTimeframeForChart);
             const palette = getColorPalette(trendsToDraw.length || 5);
 
             const datasets = trendsToDraw.map((trendItem, i) => {
                 const color = palette[i % palette.length].stroke;
+                let dataPoints;
+
+                // **** LOGIC MỚI: KIỂM TRA ĐỂ SỬ DỤNG ĐÚNG DỮ LIỆU ****
+                if (trendItem.isAggregated) {
+                    dataPoints = trendItem.aggregatedData; // Dùng dữ liệu đã tổng hợp
+                } else {
+                    dataPoints = generateSeriesForTimeframe(trendItem, labels, customTimeframeForChart); // Dùng logic cũ
+                }
+
                 return {
                     label: truncateText(getLocalizedTrendText(trendItem).title, 30),
-                    data: generateSeriesForTimeframe(trendItem, labels, customTimeframeForChart),
+                    data: dataPoints, // Gán dữ liệu đã được xử lý
                     borderColor: color,
                     backgroundColor: (context) => {
                         const {ctx, chartArea} = context.chart;
@@ -1973,13 +1994,8 @@
                         gradient.addColorStop(1, transparentColorEnd);
                         return gradient;
                     },
-                    tension: 0.4,
-                    fill: true,
-                    pointRadius: 1,
-                    pointBackgroundColor: color,
-                    pointHoverRadius: 6,
-                    pointHoverBorderWidth: 2,
-                    pointHoverBorderColor: 'white',
+                    tension: 0.4, fill: true, pointRadius: 1, pointBackgroundColor: color,
+                    pointHoverRadius: 6, pointHoverBorderWidth: 2, pointHoverBorderColor: 'white',
                     trendId: trendItem.id
                 };
             });
@@ -1989,8 +2005,7 @@
 
             if (datasets.length > 0 && allDataPoints.length > 0) {
                 hotTrendsChart = new Chart(canvas.getContext('2d'), {
-                    type: 'line',
-                    data: { labels, datasets },
+                    type: 'line', data: { labels, datasets },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
@@ -2048,10 +2063,9 @@
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
                 if (chartTitleEl) chartTitleEl.textContent = t('No trends found.');
             }
-
             renderUserTrendsChart(customTimeframeForChart);
         }
-
+        
         function populateCustomTimeframeOptions(status) {
             const select = DOM.tbCustomTimeframeSelect;
             if (!select) return;
@@ -2440,5 +2454,6 @@
     </script>
 </body>
 </html>
+
 
 
