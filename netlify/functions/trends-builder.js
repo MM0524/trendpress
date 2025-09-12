@@ -186,7 +186,7 @@ async function getTrendsFromNewsAPI() {
         return newsapi.v2.topHeadlines({
             category: category,
             language: 'en', // Lấy các nguồn tin tiếng Anh hàng đầu toàn cầu
-            pageSize: 15,   // Lấy 15 tin hot nhất cho mỗi danh mục
+            pageSize: 30,   // Lấy 15 tin hot nhất cho mỗi danh mục
         }).then(response => {
             if (response.status === 'ok' && response.articles.length > 0) {
                 console.log(`✅ Fetched ${response.articles.length} headlines for category: ${category}`);
@@ -233,11 +233,10 @@ async function getTrendsFromRssFallback() {
         () => fetchAndParseXmlFeed("https://vnexpress.net/rss/giai-tri.rss", "VNExpress Entertainment", "Entertainment", "vn"),
         () => fetchAndParseXmlFeed("https://vnexpress.net/rss/the-thao.rss", "VNExpress Sports", "Sports", "vn"),
         () => fetchAndParseXmlFeed("https://vnexpress.net/rss/du-lich.rss", "VNExpress Travel", "Travel", "vn"),
-        () => fetchAndParseXmlFeed("https://cafef.vn/trang-chu.rss", "CafeF", "Business", "vn"),
-        () => fetchAndParseXmlFeed("https://gamek.vn/home.rss", "GameK", "Gaming", "vn"),
         () => fetchAndParseXmlFeed("https://tuoitre.vn/rss/giao-duc.rss", "Tuổi Trẻ Education", "Education", "vn"),
         () => fetchAndParseXmlFeed("https://afamily.vn/rss/home.rss", "Afamily", "Family", "vn"),
         () => fetchAndParseXmlFeed("https://suckhoedoisong.vn/rss/home.rss", "Sức Khỏe & Đời Sống", "Health", "vn"),
+        () => fetchAndParseXmlFeed("https://zingnews.vn/rss/giai-tri.rss", "ZingNews Entertainment", "Entertainment", "vn", ["Vietnam","Entertainment"]),
 
         // === INTERNATIONAL (for variety) ===
         () => fetchAndParseXmlFeed("https://venturebeat.com/feed/", "VentureBeat AI", "AI", "us", ["VentureBeat","AI"]),
@@ -253,6 +252,12 @@ async function getTrendsFromRssFallback() {
         () => fetchAndParseXmlFeed("https://techcrunch.com/feed/", "TechCrunch", "Technology", "us"),
         () => fetchAndParseXmlFeed("https://www.vogue.com/feed/rss", "Vogue", "Fashion", "us"),
         () => fetchAndParseXmlFeed("http://feeds.bbci.co.uk/news/rss.xml", "BBC News", "News", "uk"),
+        () => fetchAndParseXmlFeed("https://www.caranddriver.com/rss/all.xml/", "Car and Driver", "Cars", "us", ["Cars"]),
+        () => fetchAndParseXmlFeed("https://www.topgear.com/feeds/all/rss.xml", "Top Gear", "Cars", "uk", ["Cars"]),
+        () => fetchAndParseXmlFeed("https://europe.autonews.com/rss", "Autonews Europe", "Cars", "eu", ["Cars"]),
+  // () => fetchAndParseXmlFeed("https://www.largus.fr/rss.xml", "L'Argus", "Cars", "fr", ["France","Cars"]), // Removed
+        () => fetchAndParseXmlFeed("https://www.autohome.com.cn/rss", "Autohome", "Cars", "cn", ["China","Cars"]),
+        () => fetchAndParseXmlFeed("https://vnexpress.net/rss/oto-xe-may.rss", "VNExpress Auto", "Cars", "vn", ["Vietnam","Cars"]),
     ];
     const results = await Promise.allSettled(fetchers.map(f => f()));
     const fallbackTrends = results.filter(r => r.status === 'fulfilled' && r.value).flatMap(r => r.value);
