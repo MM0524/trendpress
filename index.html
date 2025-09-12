@@ -1865,11 +1865,11 @@
             const chartTitleEl = DOM.tbChartTitle;
             let trendsToDraw = [];
             
-            const aggregateTrendData = (trends, labels) => {
+            const aggregateTrendData = (trends, labels, timeframe) => {
                 if (!trends || trends.length === 0) return new Array(labels.length).fill(0);
                 const aggregatedValues = new Array(labels.length).fill(0);
                 trends.forEach(trend => {
-                    const series = generateSeriesForTimeframe(trend, labels, '7d');
+                    const series = generateSeriesForTimeframe(trend, labels, timeframe); // Sử dụng timeframe được truyền vào
                     series.forEach((value, index) => {
                         aggregatedValues[index] += value;
                     });
@@ -1878,53 +1878,45 @@
             };
 
             if (user.tbSearchTerms.length > 0) {
-                // --- CHẾ ĐỘ TÌM KIẾM SO SÁNH (LOGIC MỚI HOÀN TOÀN) ---
+                // --- CHẾ ĐỘ TÌM KIẾM SO SÁNH ---
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
-                if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner" style="display: inline-block; vertical-align: middle; margin-right: 10px;"></div> ${t('Searching for')} "${user.tbSearchTerms.join(', ')}"...`;
+                if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner"></div> ${t('Searching for')} "${user.tbSearchTerms.join(', ')}"...`;
                 
                 try {
-                    // 1. Tạo một mảng các promise, mỗi promise là một cuộc gọi API cho một từ khóa
+                    // Lấy timeframe hiện tại từ bộ lọc
+                    const currentTimeframe = DOM.tbCustomTimeframeSelect.value;
+                    
                     const searchPromises = user.tbSearchTerms.map(term => 
-                        fetch(`/.netlify/functions/fetch-trends?searchTerm=${encodeURIComponent(term)}`)
+                        // GỬI THÊM TIMEFRAME VÀO CUỘC GỌI API
+                        fetch(`/.netlify/functions/fetch-trends?searchTerm=${encodeURIComponent(term)}&timeframe=${currentTimeframe}`)
                             .then(res => res.json())
-                            .then(result => ({ term, data: result })) // Gắn lại từ khóa vào kết quả
+                            .then(result => ({ term, data: result }))
                     );
                     
-                    // 2. Chờ tất cả các cuộc gọi API hoàn thành
                     const resultsByTerm = await Promise.all(searchPromises);
                     
-                    const customTimeframeForChart = '7d';
-                    const labels = generateChartLabels(customTimeframeForChart);
+                    // SỬ DỤNG TIMEFRAME ĐỘNG ĐỂ TẠO LABELS
+                    const labels = generateChartLabels(currentTimeframe);
 
-                    // 3. Xử lý kết quả và tạo "trend tổng hợp" cho mỗi từ khóa
                     trendsToDraw = resultsByTerm.map(result => {
                         const { term, data } = result;
-                        if (!data.success || !Array.isArray(data.trends) || data.trends.length === 0) {
-                            // Trả về null nếu không có kết quả cho từ khóa này
-                            return null;
-                        }
+                        if (!data.success || !data.trends || data.trends.length === 0) return null;
                         
                         let aggregatedData;
-                        // Nếu kết quả là trend ảo từ Google, không cần tổng hợp nữa
                         if (data.trends.length === 1 && data.trends[0].isVirtual) {
-                            aggregatedData = generateSeriesForTimeframe(data.trends[0], labels, customTimeframeForChart);
+                            // Cần generate lại series với đúng labels của timeframe mới
+                            aggregatedData = generateSeriesForTimeframe(data.trends[0], labels, currentTimeframe);
                         } else {
-                        // Nếu là kết quả từ NewsAPI, tổng hợp chúng lại
-                            aggregatedData = aggregateTrendData(data.trends, labels);
+                            aggregatedData = aggregateTrendData(data.trends, labels, currentTimeframe);
                         }
                         
-                        // Tạo một trend ảo đại diện cho từ khóa này
                         return {
-                            id: `aggregated-${term}`,
-                            title_en: term, // Tiêu đề là chính từ khóa
-                            isAggregated: true,
-                            aggregatedData: aggregatedData
+                            id: `aggregated-${term}`, title_en: term,
+                            isAggregated: true, aggregatedData: aggregatedData
                         };
-                    }).filter(Boolean); // Lọc bỏ các kết quả null
+                    }).filter(Boolean);
 
-                    // Lưu tất cả các trend con vào currentSearchResults để leaderboard có thể hiển thị
                     currentSearchResults = resultsByTerm.flatMap(r => (r.data.success && r.data.trends) ? r.data.trends : []);
-
                     if (chartTitleEl) chartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
 
                 } catch (error) {
@@ -2422,3 +2414,4 @@
     </script>
 </body>
 </html>
+
