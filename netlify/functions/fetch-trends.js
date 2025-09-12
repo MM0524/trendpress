@@ -81,79 +81,74 @@ exports.handler = async (event) => {
     }
 
     try {
-        const { searchTerm } = event.queryStringParameters;
+        // Lấy thêm tham số timeframe từ query string
+        const { searchTerm, timeframe = '7d' } = event.queryStringParameters;
+
         if (!searchTerm || searchTerm.trim() === '') {
-            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "searchTerm parameter is required." }) };
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "searchTerm is required." }) };
         }
         if (!process.env.NEWS_API_KEY) {
-            throw new Error("NEWS_API_KEY is not configured on the server.");
+            throw new Error("NEWS_API_KEY is not configured.");
         }
 
-        // === BƯỚC 1: LUỒNG ƯU TIÊN - TÌM KIẾM TRÊN NEWSAPI ===
-        console.log(`🚀 [Primary] Performing live search on NewsAPI for: "${searchTerm}"`);
+        // Tính toán ngày bắt đầu dựa trên timeframe
+        const startTime = new Date();
+        const timeValue = parseInt(timeframe);
+        if (timeframe.includes('d')) {
+            startTime.setDate(startTime.getDate() - timeValue);
+        } else if (timeframe.includes('m')) {
+            startTime.setMonth(startTime.getMonth() - timeValue);
+        } else if (timeframe.includes('y')) {
+            startTime.setFullYear(startTime.getFullYear() - timeValue);
+        } else { // Mặc định là 7 ngày
+            startTime.setDate(startTime.getDate() - 7);
+        }
+
+        // === BƯỚC 1: TÌM KIẾM TRÊN NEWSAPI VỚI KHUNG THỜI GIAN ĐỘNG ===
+        console.log(`🚀 [Primary] Searching NewsAPI for: "${searchTerm}" from ${startTime.toISOString()}`);
         const response = await newsapi.v2.everything({
-            q: searchTerm, sortBy: 'relevancy', pageSize: 20, language: 'en'
+            q: searchTerm,
+            from: startTime.toISOString().split('T')[0], // Định dạng YYYY-MM-DD
+            sortBy: 'relevancy',
+            pageSize: 20,
+            language: 'en'
         });
-
-        if (response.status !== 'ok') {
-            throw new Error(response.message || "Failed to fetch from NewsAPI");
-        }
+        
+        // ... (phần còn lại của logic NewsAPI giữ nguyên)
         let searchResults = response.articles.map(normalizeNewsApiArticle).filter(Boolean);
-
         if (searchResults.length > 0) {
-            console.log(`✅ [Primary] Found ${searchResults.length} articles. Returning results.`);
             searchResults = preprocessAndCalculateHotness(searchResults);
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: searchResults }) };
         }
         
-        // === BƯỚC 2: LUỒNG DỰ PHÒNG - GOOGLE TRENDS (ĐƯỢC BỌC TRONG TRY...CATCH RIÊNG) ===
-        console.log(`⚠️ [Primary] No articles found. Switching to [Fallback] Google Trends API.`);
-        
-        try { // **** BẮT ĐẦU KHỐI TRY...CATCH MỚI ****
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            
+        // === BƯỚC 2: TÌM KIẾM TRÊN GOOGLE TRENDS VỚI KHUNG THỜI GIAN ĐỘNG ===
+        console.log(`⚠️ [Primary] No articles. Switching to [Fallback] Google Trends API.`);
+        try {
             const trendsResponse = await googleTrends.interestOverTime({
                 keyword: searchTerm,
-                startTime: sevenDaysAgo,
+                startTime: startTime, // Sử dụng ngày bắt đầu đã tính toán
             });
-
+            
+            // ... (phần còn lại của logic Google Trends giữ nguyên)
             const parsedResponse = JSON.parse(trendsResponse);
             const timelineData = parsedResponse.default.timelineData;
-
             if (!timelineData || timelineData.length === 0) {
-                console.log(`❌ [Fallback] No data from Google Trends for "${searchTerm}".`);
                 return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [] }) };
             }
-            
             const virtualTrend = createVirtualTrendFromGoogle(searchTerm, timelineData);
-            
             if (virtualTrend) {
                 let virtualResults = preprocessAndCalculateHotness([virtualTrend]);
-                console.log(`✅ [Fallback] Successfully created a virtual trend.`);
                 return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: virtualResults }) };
             } else {
                 return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [] }) };
             }
-
-        } catch (googleError) { // **** KHỐI CATCH MỚI ĐỂ XỬ LÝ LỖI TỪ GOOGLE TRENDS ****
+        } catch (googleError) {
             console.error(`❌ [Fallback] Google Trends API failed for "${searchTerm}":`, googleError.message);
-            // Thay vì gây ra lỗi 500, chúng ta sẽ trả về một mảng rỗng.
-            // Front-end sẽ hiển thị "No trends found", đó là một trải nghiệm tốt hơn nhiều.
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify({ success: true, trends: [] }),
-            };
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [] }) };
         }
 
     } catch (err) {
-        // Khối catch này giờ chỉ bắt các lỗi nghiêm trọng hơn (như NEWS_API_KEY thiếu)
         console.error("fetch-trends handler critical error:", err);
-        return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({ success: false, error: "Failed to perform search", message: err.message }),
-        };
+        return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: err.message }) };
     }
 };
