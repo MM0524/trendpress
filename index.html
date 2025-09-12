@@ -1667,7 +1667,51 @@
             return labels;
         }
 
-        function generateSeriesForTimeframe(trend, labels, timeframe) {
+                function generateSeriesForTimeframe(trend, labels, timeframe) {
+            // MỚI: Xử lý đặc biệt cho "trend ảo" từ Google Trends
+            if (trend.isVirtual && trend.interestData) {
+                console.log("-> Generating series for VIRTUAL trend:", trend.title_en);
+                const series = new Array(labels.length).fill(null); // Bắt đầu bằng null
+                const interestMap = new Map();
+
+                // Google Trends trả về dữ liệu theo ngày, ta cần map nó với labels của biểu đồ
+                trend.interestData.forEach(point => {
+                    const date = new Date(point.time * 1000); // time là Unix timestamp
+                    const formattedDate = date.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' });
+                    interestMap.set(formattedDate, point.value[0]);
+                });
+
+                // Điền dữ liệu vào series dựa trên sự trùng khớp của label
+                labels.forEach((label, index) => {
+                    if (interestMap.has(label)) {
+                        // Nhân giá trị (0-100) với một hệ số để nó có thang đo tương đương các trend thật
+                        series[index] = interestMap.get(label) * 1000;
+                    }
+                });
+
+                // Nội suy (interpolate) các giá trị null để đường kẻ liền mạch
+                for (let i = 0; i < series.length; i++) {
+                    if (series[i] === null) {
+                        let prev = i - 1, next = i + 1;
+                        while (prev >= 0 && series[prev] === null) prev--;
+                        while (next < series.length && series[next] === null) next++;
+                        
+                        const prevVal = prev < 0 ? 0 : series[prev];
+                        const nextVal = next >= series.length ? prevVal : series[next];
+                        
+                        if (prev >= 0 && next < series.length) {
+                             const slope = (nextVal - prevVal) / (next - prev);
+                             series[i] = Math.round(prevVal + slope * (i - prev));
+                        } else {
+                            series[i] = prevVal; // Nếu ở đầu hoặc cuối thì lấy giá trị gần nhất
+                        }
+                    }
+                }
+                
+                return series;
+            }
+
+            // Luồng xử lý cho trend thông thường (giữ nguyên)
             const series = new Array(labels.length).fill(0);
             const trendDate = new Date(trend.date || Date.now());
             trendDate.setHours(0,0,0,0);
@@ -1729,7 +1773,6 @@
                 if (isPredictive) {
                     const daysIntoFuture = timeDiffRelevantDays;
                     const initialHotness = peakMetric * (1 + (trend.hotnessScore || 0) * 0.5);
-                    
                     const growthFactor = 0.8;
                     const decayAfterPeak = 0.1;
                     const maxGrowthDays = 2; 
@@ -1764,10 +1807,8 @@
                     series[index] = Math.max(0, Math.round(rawValue));
                 }
             });
-
             return series;
         }
-
         async function renderTBDashboard(trendsForLeaderboard) {
             // let trendsForLeaderboard = [...allTrends]; // XÓA DÒNG NÀY
 
@@ -2528,5 +2569,6 @@
     </script>
 </body>
 </html>
+
 
 
