@@ -765,6 +765,8 @@
                 'No Description Available': 'Không có mô tả',
                 'Related Queries': 'Cụm từ tìm kiếm có liên quan',
                 'No related queries.': 'Không có cụm từ liên quan.',
+                'What is Engagement Score?': 'Điểm tương tác là gì? Đây là chỉ số tổng hợp dựa trên lượt xem, lượt tìm kiếm và các tương tác khác để đo lường độ hot của một xu hướng.',
+                'Engagement Score': 'Điểm tương tác',
                 'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị',
                 'General': 'Chung', 'Toys': 'Đồ chơi', 'Sneakers': 'Giày thể thao', 'Beauty': 'Làm đẹp', 'Lifestyle': 'Phong cách sống', 'Family': 'Gia đình', 'Cars': 'Ô tô', 'Archaeology': 'Khảo cổ học', 
                 'Your Favorite Trends - Interest Over Time': 'Xu hướng yêu thích của bạn - Mức độ quan tâm theo thời gian',
@@ -795,6 +797,8 @@
                 'No Description Available': 'No Description Available',
                 'Related Queries': 'Related Queries',
                 'No related queries.': 'No related queries found.',
+                'What is Engagement Score?': 'What is Engagement Score? This is a composite metric based on views, searches, and other interactions to measure a trend\'s popularity.',
+                'Engagement Score': 'Engagement Score',
                 'Technology': 'Technology', 'Fashion': 'Fashion', 'Gaming': 'Gaming', 'Finance': 'Finance', 'Health': 'Health', 'Travel': 'Travel', 'Food': 'Food', 'AI': 'AI', 'News': 'News', 'Science': 'Science', 'Music': 'Music', 'Media': 'Media', 'Entertainment': 'Entertainment', 'Sports': 'Sports', 'Logistics': 'Logistics', 'Cybersecurity': 'Cybersecurity', 'Healthcare': 'Healthcare', 'Education': 'Education', 'Environment': 'Environment', 'Politics': 'Politics', 'Marketing': 'Marketing',
                 'General': 'General', 'Toys': 'Toys', 'Sneakers': 'Sneakers', 'Beauty': 'Beauty', 'Lifestyle': 'Lifestyle', 'Family': 'Family', 'Cars': 'Cars', 'Archaeology': 'Archaeology',
                 'Your Favorite Trends - Interest Over Time': 'Your Favorite Trends - Interest Over Time',
@@ -1400,44 +1404,34 @@
 
             if (analysisChart) analysisChart.destroy();
             
+            // Xóa các canvas cũ nếu có
+            insightBody.querySelectorAll('canvas').forEach(c => c.remove());
+            
             insightBody.appendChild(canvas);
             const labels = ['-1d', '-6h', '-3h', 'Now', '+1d', '+4d', '+7d'];
             const lastHistoricalPoint = historicalData[historicalData.length - 1];
             const projectionData = [null, null, null, lastHistoricalPoint, futureProjection[0] || null, futureProjection[1] || null, futureProjection[2] || null];
+            
             analysisChart = new Chart(canvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: t('Historical'), data: [...historicalData, null, null, null], borderColor: '#00C8FF', tension: 0.1, pointBackgroundColor: '#00C8FF', pointBorderColor: '#fff', pointHoverRadius: 7, stepped: false },
-                        { label: t('Projection'), data: projectionData, borderColor: '#A100FF', borderDash: [5, 5], tension: 0.4, pointBackgroundColor: '#A100FF', pointBorderColor: '#fff', pointHoverRadius: 7, stepped: false }
+                        { label: t('Historical'), data: [...historicalData, null, null, null], borderColor: '#00C8FF', tension: 0.1, pointBackgroundColor: '#00C8FF', pointBorderColor: '#fff', pointHoverRadius: 7, fill: false },
+                        { label: t('Projection'), data: projectionData, borderColor: '#A100FF', borderDash: [5, 5], tension: 0.4, pointBackgroundColor: '#A100FF', pointBorderColor: '#fff', pointHoverRadius: 7, fill: false }
                     ]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: { display: true, labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 } },
-                        onClick: (e, legendItem, legend) => { // CẬP NHẬT: Thêm onClick handler cho chú giải biểu đồ chính
-                            const index = legendItem.datasetIndex;
-                            const chart = legend.chart;
-                            const trendIdFromChart = chart.data.datasets[index].trendId; // Lấy trendId từ dataset (nếu có)
-                            if (trendIdFromChart) {
-                                const trend = masterTrendsList.find(t => t.id === trendIdFromChart);
-                                if (trend) {
-                                    openTrendOverviewModal(trend);
-                                }
-                            }
-                        },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
                                     return `${context.dataset.label}: ${formatNumber(context.parsed.y)}`;
                                 }
                             }
-                        },
-                        animation: {
-                            duration: 1000,
-                            easing: 'easeOutQuart'
                         }
                     },
                     scales: {
@@ -1450,7 +1444,17 @@
                             }, 
                             beginAtZero: true,
                             min: 0,
-                            suggestedMax: Math.max(...historicalData, ...futureProjection.filter(val => val !== null)) * 1.2 || 1000
+                            suggestedMax: Math.max(...historicalData, ...futureProjection.filter(val => val !== null)) * 1.2 || 1000,
+                            // Thêm chú thích cho trục Y
+                            title: {
+                                display: true,
+                                text: t('Interest Level'), // Dùng hàm dịch
+                                color: 'var(--text-muted-color)',
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                }
+                            }
                         }
                     }
                 }
@@ -1844,17 +1848,28 @@
             const chartContainer = DOM.userTrendsChartContainer;
             const chartTitleEl = DOM.userTrendsChartTitle;
             const canvas = document.getElementById('user-trends-chart');
+
             if (!chartContainer || !chartTitleEl || !canvas) return;
-            if (!user.hasSetPreferences && user.followedTrends.length === 0) { chartContainer.classList.add('hidden'); return; }
+            if (!user.hasSetPreferences && user.followedTrends.length === 0) {
+                chartContainer.classList.add('hidden');
+                return;
+            }
             if (userTrendsChart) userTrendsChart.destroy();
+
             let userRelevantTrends = masterTrendsList.filter(t => isTrendRelevantForTimeframe(t, timeframe) && (user.followedTrends.includes(t.id) || (user.preferences.length > 0 && user.preferences.includes(t.category))));
             userRelevantTrends = Array.from(new Set(userRelevantTrends.map(t => t.id))).map(id => masterTrendsList.find(t => t.id === id)).filter(Boolean).sort((a, b) => b.hotnessScore - a.hotnessScore);
             const trendsToChart = userRelevantTrends.slice(0, 5);
-            if (trendsToChart.length === 0) { chartContainer.classList.add('hidden'); return; }
+
+            if (trendsToChart.length === 0) {
+                chartContainer.classList.add('hidden');
+                if(chartTitleEl) chartTitleEl.classList.remove('hidden'); // Hiện lại tiêu đề nếu không có chart
+                return;
+            }
+
             chartContainer.classList.remove('hidden');
-            chartTitleEl.textContent = t('Your Favorite Trends - Interest Over Time');
             const labels = generateChartLabels(timeframe);
             const palette = getColorPalette(trendsToChart.length);
+
             const datasets = trendsToChart.map((trendItem, idx) => {
                 const color = palette[idx % palette.length].stroke;
                 return {
@@ -1864,9 +1879,7 @@
                     backgroundColor: (context) => {
                         const {ctx, chartArea} = context.chart;
                         if (!chartArea) return null;
-                        let transparentColorEnd;
-                        if (color.startsWith('hsl')) transparentColorEnd = color.replace('hsl', 'hsla').replace(')', ', 0.25)');
-                        else transparentColorEnd = `${color}40`;
+                        let transparentColorEnd = color.startsWith('hsl') ? color.replace('hsl', 'hsla').replace(')', ', 0.25)') : `${color}40`;
                         const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
                         gradient.addColorStop(0, 'rgba(161, 0, 255, 0)');
                         gradient.addColorStop(1, transparentColorEnd); 
@@ -1877,12 +1890,16 @@
                     trendId: trendItem.id
                 };
             });
-            const allDataPoints = datasets.flatMap(ds => ds.data);
+            
+            const allDataPoints = datasets.flatMap(ds => ds.data.filter(p => p !== null));
             const maxDataValue = Math.max(...allDataPoints, 0);
+
             userTrendsChart = new Chart(canvas.getContext('2d'), {
                 type: 'line', data: { labels, datasets },
                 options: {
-                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { 
                             position: 'bottom', labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
@@ -1897,6 +1914,21 @@
                                 }
                             }
                         },
+                        title: {
+                            display: true,
+                            text: t('Your Favorite Trends - Interest Over Time'),
+                            color: 'var(--text-color)',
+                            font: { size: 16, weight: '600' },
+                            padding: { top: 10, bottom: 10 }
+                        },
+                        subtitle: {
+                            display: true,
+                            text: `ⓘ ${t('What is Engagement Score?')}`,
+                            color: 'var(--text-muted-color)',
+                            font: { size: 12, style: 'italic' },
+                            padding: { bottom: 20 },
+                            align: 'start'
+                        },
                         tooltip: {
                             enabled: true, backgroundColor: 'var(--surface-color)', titleColor: 'var(--primary-light)',
                             bodyColor: 'var(--text-color)', borderColor: 'var(--border-color)', borderWidth: 1,
@@ -1910,11 +1942,18 @@
                             grid: { color: 'rgba(255, 255, 255, 0.05)'},
                             ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, 
                             beginAtZero: true, min: 0,
-                            suggestedMax: maxDataValue * 1.2 || 1000
+                            suggestedMax: maxDataValue * 1.2 || 1000,
+                            title: {
+                                display: true,
+                                text: t('Engagement Score'),
+                                color: 'var(--text-muted-color)',
+                                font: { size: 12, weight: '500' }
+                            }
                         }
                     }
                 }
             });
+            if(chartTitleEl) chartTitleEl.classList.add('hidden');
         }
         
         async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
@@ -1922,8 +1961,13 @@
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
             const searchDetailsContainer = document.getElementById('tb-search-details-container');
             
-            if (!canvas) { return; }
-            if (hotTrendsChart) { hotTrendsChart.destroy(); }
+            if (!canvas) {
+                console.error("Chart canvas 'hot-trends-chart' not found!");
+                return; 
+            }
+            if (hotTrendsChart) {
+                hotTrendsChart.destroy();
+            }
 
             if (newSearchTerm) {
                 const term = newSearchTerm.trim();
@@ -1948,9 +1992,10 @@
             const chartTitleEl = DOM.tbChartTitle;
             let datasets = [];
             let chartLabels = [];
+            let chartTitleText = '';
 
             if (user.tbSearchTerms.length > 0) {
-                // --- SEARCH & COMPARE MODE ---
+                // --- CHẾ ĐỘ TÌM KIẾM SO SÁNH ---
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
                 if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner"></div> ${t('Searching for')} "${user.tbSearchTerms.join(', ')}"...`;
                 
@@ -1963,30 +2008,12 @@
                     
                     if (results.length === 1 && results[0].success && results[0].trends.length > 0) {
                         const searchData = results[0].trends[0];
-                        
                         document.getElementById('tb-top-articles-title').textContent = `${t('Top Articles for')} "${searchData.title_en}"`;
-                        
                         document.getElementById('tb-related-queries-title').textContent = t('Related Queries');
-                        
                         const articlesList = document.getElementById('tb-top-articles-list');
                         const queriesList = document.getElementById('tb-related-queries-list');
-                        
-                        articlesList.innerHTML = searchData.topArticles.length > 0
-                            ? searchData.topArticles.map(article => `
-                                <li class="tb-article-item" data-trend-id="${article.id}">
-                                    <div class="tb-article-title">${article.title_en}</div>
-                                    <div class="tb-article-source">${article.submitter}</div>
-                                </li>`).join('')
-                            : `<li>${t('No articles found.')}</li>`;
-                        
-                        queriesList.innerHTML = searchData.relatedQueries.length > 0
-                             ? searchData.relatedQueries.map(q => `
-                                <li class="tb-related-item" data-query="${q.query}">
-                                    <span class="tb-related-query">${q.query}</span>
-                                    <span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span>
-                                </li>`).join('')
-                            : `<li>${t('No related queries.')}</li>`;
-
+                        articlesList.innerHTML = searchData.topArticles.length > 0 ? searchData.topArticles.map(article => `<li class="tb-article-item" data-trend-id="${article.id}"><div class="tb-article-title">${article.title_en}</div><div class="tb-article-source">${article.submitter}</div></li>`).join('') : `<li>${t('No articles found.')}</li>`;
+                        queriesList.innerHTML = searchData.relatedQueries.length > 0 ? searchData.relatedQueries.map(q => `<li class="tb-related-item" data-query="${q.query}"><span class="tb-related-query">${q.query}</span><span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span></li>`).join('') : `<li>${t('No related queries.')}</li>`;
                         currentSearchResults = [...searchData.topArticles];
                         if (searchDetailsContainer) searchDetailsContainer.classList.remove('hidden');
                     }
@@ -1994,31 +2021,23 @@
                     const palette = getColorPalette(user.tbSearchTerms.length);
                     let masterTimeline = new Map();
                     const processedResults = results.map(result => (result.success && result.trends.length > 0) ? result.trends[0] : null).filter(Boolean);
-
                     processedResults.forEach(trendData => {
                         trendData.timelineData.forEach(point => {
                             const date = new Date(point.time * 1000);
                             const formattedDate = date.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' });
-                            if (!masterTimeline.has(point.time)) {
-                                masterTimeline.set(point.time, { label: formattedDate });
-                            }
+                            if (!masterTimeline.has(point.time)) masterTimeline.set(point.time, { label: formattedDate });
                         });
                     });
-                    
                     const sortedTimeline = Array.from(masterTimeline.entries()).sort((a, b) => a[0] - b[0]);
                     chartLabels = sortedTimeline.map(entry => entry[1].label);
 
                     datasets = processedResults.map((trendData, i) => {
                         const dataMap = new Map(trendData.timelineData.map(p => [new Date(p.time * 1000).toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }), p.value[0]]));
                         const dataPoints = chartLabels.map(label => dataMap.get(label) || 0);
-
                         return {
-                            label: trendData.title_en,
-                            data: dataPoints,
-                            borderColor: palette[i % palette.length].stroke,
+                            label: trendData.title_en, data: dataPoints, borderColor: palette[i % palette.length].stroke,
                             backgroundColor: (context) => {
-                                const {ctx, chartArea} = context.chart;
-                                if (!chartArea) return null;
+                                const {ctx, chartArea} = context.chart; if (!chartArea) return null;
                                 const color = palette[i % palette.length].stroke;
                                 let transparentColorEnd = color.startsWith('hsl') ? color.replace('hsl', 'hsla').replace(')', ', 0.25)') : `${color}40`;
                                 const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
@@ -2031,52 +2050,26 @@
                             trendId: trendData.id
                         };
                     });
-
-                    if (chartTitleEl) chartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
+                    chartTitleText = `${t('Search Results')} - ${t('Interest Over Time')}`;
                 } catch (error) {
                     console.error("Live search failed:", error);
-                    if (chartTitleEl) chartTitleEl.textContent = t('Search failed. Please try again.');
+                    chartTitleText = t('Search failed. Please try again.');
                 }
             } else {
                 // --- CHẾ ĐỘ DUYỆT MẶC ĐỊNH ---
                 const status = DOM.tbStatusSelect.value;
                 const customTimeframe = DOM.tbCustomTimeframeSelect.value;
-                chartLabels = generateChartLabels(customTimeframe); // Dùng labels cố định
-
-                const selectedCategory = DOM.tbCategoryFilter.value;
-                const selectedRegion = DOM.tbRegionFilter.value;
+                chartLabels = generateChartLabels(customTimeframe);
+                const { value: selectedCategory } = DOM.tbCategoryFilter;
+                const { value: selectedRegion } = DOM.tbRegionFilter;
                 
-                let filteredTrends = masterTrendsList.filter(trend =>
-                    (selectedRegion === 'global' || trend.region === selectedRegion) &&
-                    (selectedCategory === 'All' || trend.category === selectedCategory)
-                );
-
-                if (status !== 'predictive') {
-                    filteredTrends = filteredTrends.filter(trend => isTrendRelevantForTimeframe(trend, customTimeframe));
-                } else {
-                    filteredTrends = filteredTrends.filter(trend => isTrendRelevantForTimeframe(trend, '7d'));
-                }
+                let filteredTrends = masterTrendsList.filter(t => (selectedRegion === 'global' || t.region === selectedRegion) && (selectedCategory === 'All' || t.category === selectedCategory));
+                if (status !== 'predictive') filteredTrends = filteredTrends.filter(t => isTrendRelevantForTimeframe(t, customTimeframe));
+                else filteredTrends = filteredTrends.filter(t => isTrendRelevantForTimeframe(t, '7d'));
+                if (status === 'outdated') filteredTrends = filteredTrends.filter(t => new Date(t.date) < new Date(new Date().setDate(new Date().getDate() - 7)));
                 
-                if (status === 'outdated') {
-                    const cutoffDate = new Date(new Date().setDate(new Date().getDate() - 7));
-                    filteredTrends = filteredTrends.filter(trend => new Date(trend.date) < cutoffDate);
-                }
-                
-                let sortedTrends = [];
-                switch (status) {
-                    case 'hottest': case 'predictive':
-                        sortedTrends = [...filteredTrends].sort((a, b) => b.hotnessScore - a.hotnessScore); break;
-                    case 'latest':
-                        sortedTrends = [...filteredTrends].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); break;
-                    case 'outdated':
-                        sortedTrends = [...filteredTrends].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); break;
-                    default:
-                        sortedTrends = [...filteredTrends].sort((a, b) => b.hotnessScore - a.hotnessScore);
-                }
-                
+                let sortedTrends = [...filteredTrends].sort((a,b) => (status === 'latest' ? new Date(b.date) : b.hotnessScore) - (status === 'latest' ? new Date(a.date) : a.hotnessScore));
                 const trendsToDraw = sortedTrends.slice(0, 5);
-                const trendsForLeaderboard = sortedTrends;
-
                 const palette = getColorPalette(trendsToDraw.length || 5);
                 datasets = trendsToDraw.map((trend, i) => {
                     const color = palette[i % palette.length].stroke;
@@ -2100,55 +2093,41 @@
                 });
                 
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
-                renderTBDashboard(trendsForLeaderboard); // Chỉ render leaderboard ở chế độ duyệt
-                if (chartTitleEl) chartTitleEl.textContent = `${t(status)} - ${t('Interest Over Time')}`;
+                renderTBDashboard(sortedTrends);
+                chartTitleText = `${t(status)} - ${t('Interest Over Time')}`;
             }
             
+            if (chartTitleEl) chartTitleEl.textContent = chartTitleText; // Cập nhật tiêu đề trước
             const allDataPoints = datasets.flatMap(ds => ds.data.filter(p => p !== null));
             const maxDataValue = Math.max(...allDataPoints, 0);
 
             if (datasets.length > 0 && allDataPoints.length > 0) {
                 hotTrendsChart = new Chart(canvas.getContext('2d'), {
-                    type: 'line', 
-                    data: { labels: chartLabels, datasets },
+                    type: 'line', data: { labels: chartLabels, datasets },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
+                        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
                         plugins: {
                             legend: { 
-                                position: 'bottom',
-                                labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
+                                position: 'bottom', labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
                                 onHover: (event) => { event.native.target.style.cursor = 'pointer'; },
                                 onLeave: (event) => { event.native.target.style.cursor = 'default'; },
                                 onClick: (e, legendItem, legend) => {
-                                    // Ở chế độ so sánh, việc click sẽ phức tạp, tạm thời chỉ log
-                                    if (user.tbSearchTerms.length > 0) {
-                                        console.log("Legend clicked for term:", legendItem.text);
-                                        return;
-                                    }
-                                    // Logic cũ cho chế độ duyệt
+                                    if (user.tbSearchTerms.length > 0) return console.log("Legend clicked for term:", legendItem.text);
                                     const index = legendItem.datasetIndex;
-                                    const trendIdFromLegend = legend.chart.data.datasets[index].trendId;
-                                    if (trendIdFromLegend) {
-                                        const trend = masterTrendsList.find(t => t.id === trendIdFromLegend);
+                                    const trendId = legend.chart.data.datasets[index].trendId;
+                                    if (trendId) {
+                                        const trend = masterTrendsList.find(t => t.id === trendId);
                                         if (trend) openTrendOverviewModal(trend);
                                     }
                                 }
                             },
+                            title: { display: true, text: chartTitleText, color: 'var(--text-color)', font: { size: 16, weight: '600' }, padding: { top: 10, bottom: 10 } },
+                            subtitle: { display: true, text: `ⓘ ${t('What is Engagement Score?')}`, color: 'var(--text-muted-color)', font: { size: 12, style: 'italic' }, padding: { bottom: 20 }, align: 'start' },
                             tooltip: {
-                                enabled: true,
-                                backgroundColor: 'var(--surface-color)',
-                                titleColor: 'var(--primary-light)',
-                                bodyColor: 'var(--text-color)',
-                                borderColor: 'var(--border-color)',
-                                borderWidth: 1,
-                                padding: 10,
-                                displayColors: true,
-                                boxPadding: 4,
-                                callbacks: {
-                                    label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)}`
-                                }
+                                enabled: true, backgroundColor: 'var(--surface-color)', titleColor: 'var(--primary-light)',
+                                bodyColor: 'var(--text-color)', borderColor: 'var(--border-color)', borderWidth: 1,
+                                padding: 10, displayColors: true, boxPadding: 4,
+                                callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)}` }
                             }
                         },
                         scales: {
@@ -2156,23 +2135,25 @@
                             y: { 
                                 grid: { color: 'rgba(255, 255, 255, 0.05)'},
                                 ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, 
-                                beginAtZero: true,
-                                min: 0,
-                                suggestedMax: maxDataValue * 1.2 || 1000
+                                beginAtZero: true, min: 0,
+                                suggestedMax: maxDataValue * 1.2 || 1000,
+                                title: { display: true, text: t('Engagement Score'), color: 'var(--text-muted-color)', font: { size: 12, weight: '500' } }
                             }
                         }
                     }
                 });
+                if(chartTitleEl) chartTitleEl.classList.add('hidden');
             } else {
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                if (chartTitleEl) chartTitleEl.textContent = t('No trends found.');
+                if(chartTitleEl) {
+                    chartTitleEl.classList.remove('hidden');
+                    chartTitleEl.textContent = t('No trends found.');
+                }
             }
-            
-            // Tạm thời vô hiệu hóa biểu đồ phụ khi đang tìm kiếm
             if (user.tbSearchTerms.length > 0) {
-                 if (DOM.userTrendsChartContainer) DOM.userTrendsChartContainer.classList.add('hidden');
+                if (DOM.userTrendsChartContainer) DOM.userTrendsChartContainer.classList.add('hidden');
             } else {
-                 renderUserTrendsChart(DOM.tbCustomTimeframeSelect.value);
+                renderUserTrendsChart(DOM.tbCustomTimeframeSelect.value);
             }
         }
         
@@ -2599,6 +2580,7 @@
     </script>
 </body>
 </html>
+
 
 
 
