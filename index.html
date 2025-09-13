@@ -416,6 +416,84 @@
             margin-top: 1rem;
         }
 
+        /* NEW: Styles for Search Result Details */
+        #tb-search-details-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .tb-details-panel {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .tb-details-panel h4 {
+            color: var(--primary-light);
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .tb-article-list, .tb-related-list {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .tb-article-item, .tb-related-item {
+            padding: 1rem;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .tb-article-item:hover, .tb-related-item:hover {
+            border-color: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .tb-article-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--text-color);
+        }
+
+        .tb-article-source {
+            font-size: 0.8rem;
+            color: var(--text-muted-color);
+        }
+
+        .tb-related-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .tb-related-query {
+            font-weight: 500;
+        }
+        
+        .tb-related-value {
+            font-size: 0.9rem;
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        @media (max-width: 900px) {
+            #tb-search-details-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .footer { background-color: var(--surface-color); border-top: 1px solid var(--border-color); padding: 3rem 0 1rem 0; }
         .footer-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
         .footer-title { color: var(--primary-light); font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
@@ -579,15 +657,20 @@
             <h4 id="user-trends-chart-title"></h4>
             <canvas id="user-trends-chart"></canvas>
         </div>
+        <div id="tb-search-details-container" class="hidden">
+            <div class="tb-details-panel" id="tb-top-articles-panel">
+                <h4 id="tb-top-articles-title"></h4>
+                <ul class="tb-article-list" id="tb-top-articles-list"></ul>
+            </div>
+            <div class="tb-details-panel" id="tb-related-queries-panel">
+                <h4 id="tb-related-queries-title"></h4>
+                <ul class="tb-related-list" id="tb-related-queries-list"></ul>
+            </div>
+        </div>
     </section>
 
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
-    <!-- REMOVED: Login choice modal -->
-    <!-- <div class="modal-overlay" id="login-choice-modal"><div class="modal-content"><button class="modal-close" data-close="login-choice-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions">
-        <button class="btn-social" id="login-google-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span id="login-google-text"></span></button>
-        <button class="btn-social" id="login-work-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg><span></span></a>
-    </div></div></div> -->
     <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
     
     <!-- NEW: Trend Overview Modal -->
@@ -1575,7 +1658,7 @@
             return labels;
         }
         
-                function generateSeriesForTimeframe(trend, labels, timeframe) {
+        function generateSeriesForTimeframe(trend, labels, timeframe) {
             // --- PHẦN 1: Xử lý "trend ảo" từ Google Trends ---
             if (trend.isVirtual && trend.interestData) {
                 console.log("-> Generating series for VIRTUAL trend:", trend.title_en);
@@ -1830,17 +1913,13 @@
             });
         }
         
-                async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
+        async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
+            const searchDetailsContainer = document.getElementById('tb-search-details-container');
             
-            if (!canvas) {
-                console.error("Chart canvas 'hot-trends-chart' not found!");
-                return; 
-            }
-            if (hotTrendsChart) {
-                hotTrendsChart.destroy();
-            }
+            if (!canvas) { return; }
+            if (hotTrendsChart) { hotTrendsChart.destroy(); }
 
             if (newSearchTerm) {
                 const term = newSearchTerm.trim();
@@ -1855,9 +1934,11 @@
                 DOM.tbSearchChipsContainer.innerHTML = user.tbSearchTerms.map(term => `<span class="tb-search-chip">${truncateText(term, 20)}<button class="tb-search-chip-remove" data-term="${term}">&times;</button></span>`).join('');
                 DOM.tbSearchChipsContainer.classList.toggle('hidden', user.tbSearchTerms.length === 0);
             }
-            
             if (clearSearchBtn) {
                 clearSearchBtn.classList.toggle('hidden', user.tbSearchTerms.length === 0);
+            }
+            if (searchDetailsContainer) {
+                searchDetailsContainer.classList.add('hidden');
             }
 
             const chartTitleEl = DOM.tbChartTitle;
@@ -1865,36 +1946,58 @@
             let chartLabels = [];
 
             if (user.tbSearchTerms.length > 0) {
-                // --- CHẾ ĐỘ TÌM KIẾM SO SÁNH ---
+                // --- SEARCH & COMPARE MODE ---
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
                 if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner"></div> ${t('Searching for')} "${user.tbSearchTerms.join(', ')}"...`;
                 
                 try {
                     const currentTimeframe = DOM.tbCustomTimeframeSelect.value;
-                    
                     const searchPromises = user.tbSearchTerms.map(term => 
                         fetch(`/.netlify/functions/fetch-trends?searchTerm=${encodeURIComponent(term)}&timeframe=${currentTimeframe}`).then(res => res.json())
                     );
-                    
                     const results = await Promise.all(searchPromises);
+                    
+                    if (results.length === 1 && results[0].success && results[0].trends.length > 0) {
+                        const searchData = results[0].trends[0];
+                        document.getElementById('tb-top-articles-title').textContent = `${t('Top Articles for')} "${searchData.title_en}"`;
+                        document.getElementById('tb-related-queries-title').textContent = t('Related Queries');
+                        
+                        const articlesList = document.getElementById('tb-top-articles-list');
+                        const queriesList = document.getElementById('tb-related-queries-list');
+                        
+                        articlesList.innerHTML = searchData.topArticles.length > 0
+                            ? searchData.topArticles.map(article => `
+                                <li class="tb-article-item" data-trend-id="${article.id}">
+                                    <div class="tb-article-title">${article.title_en}</div>
+                                    <div class="tb-article-source">${article.submitter}</div>
+                                </li>`).join('')
+                            : `<li>${t('No articles found.')}</li>`;
+                        
+                        queriesList.innerHTML = searchData.relatedQueries.length > 0
+                             ? searchData.relatedQueries.map(q => `
+                                <li class="tb-related-item" data-query="${q.query}">
+                                    <span class="tb-related-query">${q.query}</span>
+                                    <span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span>
+                                </li>`).join('')
+                            : `<li>${t('No related queries.')}</li>`;
+
+                        currentSearchResults = [...searchData.topArticles];
+                        if (searchDetailsContainer) searchDetailsContainer.classList.remove('hidden');
+                    }
                     
                     const palette = getColorPalette(user.tbSearchTerms.length);
                     let masterTimeline = new Map();
+                    const processedResults = results.map(result => (result.success && result.trends.length > 0) ? result.trends[0] : null).filter(Boolean);
 
-                    const processedResults = results.map(result => {
-                        if (result.success && result.trends.length > 0) {
-                            const trendData = result.trends[0];
-                            trendData.timelineData.forEach(point => {
-                                const date = new Date(point.time * 1000);
-                                const formattedDate = date.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' });
-                                if (!masterTimeline.has(point.time)) {
-                                    masterTimeline.set(point.time, { label: formattedDate });
-                                }
-                            });
-                            return trendData;
-                        }
-                        return null;
-                    }).filter(Boolean);
+                    processedResults.forEach(trendData => {
+                        trendData.timelineData.forEach(point => {
+                            const date = new Date(point.time * 1000);
+                            const formattedDate = date.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' });
+                            if (!masterTimeline.has(point.time)) {
+                                masterTimeline.set(point.time, { label: formattedDate });
+                            }
+                        });
+                    });
                     
                     const sortedTimeline = Array.from(masterTimeline.entries()).sort((a, b) => a[0] - b[0]);
                     chartLabels = sortedTimeline.map(entry => entry[1].label);
@@ -1924,12 +2027,10 @@
                     });
 
                     if (chartTitleEl) chartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
-
                 } catch (error) {
                     console.error("Live search failed:", error);
                     if (chartTitleEl) chartTitleEl.textContent = t('Search failed. Please try again.');
                 }
-
             } else {
                 // --- CHẾ ĐỘ DUYỆT MẶC ĐỊNH ---
                 const status = DOM.tbStatusSelect.value;
@@ -2228,6 +2329,42 @@
                 document.getElementById('loader')?.classList.add('loader-hidden');
             }
 
+            // Event listener for Top Articles
+        document.getElementById('tb-top-articles-list')?.addEventListener('click', (e) => {
+            const item = e.target.closest('.tb-article-item');
+            if (item && item.dataset.trendId) {
+                const trend = currentSearchResults.find(t => t.id === item.dataset.trendId);
+                if (trend) openTrendOverviewModal(trend);
+            }
+        });
+
+        // Event listener for Related Queries
+        document.getElementById('tb-related-queries-list')?.addEventListener('click', async (e) => {
+            const item = e.target.closest('.tb-related-item');
+            if (item && item.dataset.query) {
+                await createHotTrendsChart(null, item.dataset.query);
+            }
+        });
+        
+        // Update listeners for filters to NOT clear search terms
+        if (DOM.tbCategoryFilter) DOM.tbCategoryFilter.addEventListener('change', () => createHotTrendsChart());
+        if (DOM.tbRegionFilter) DOM.tbRegionFilter.addEventListener('change', () => createHotTrendsChart());
+        if (DOM.tbStatusSelect) DOM.tbStatusSelect.addEventListener('change', () => {
+            currentTrendStatus.status = DOM.tbStatusSelect.value;
+            populateCustomTimeframeOptions(currentTrendStatus.status);
+            createHotTrendsChart();
+        });
+        if (DOM.tbCustomTimeframeSelect) DOM.tbCustomTimeframeSelect.addEventListener('change', () => {
+            currentTrendStatus.customTimeframe = DOM.tbCustomTimeframeSelect.value;
+            createHotTrendsChart();
+        });
+
+        // Clear search button listener
+        document.getElementById('tb-clear-search-btn')?.addEventListener('click', () => {
+            user.tbSearchTerms = [];
+            createHotTrendsChart();
+        });
+
             if (DOM.hamburgerMenu) DOM.hamburgerMenu.addEventListener('click', () => { if (DOM.mainNav) DOM.mainNav.classList.toggle('nav-active'); });
             if (DOM.logo) DOM.logo.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); }); // Ngăn chặn refresh
             if (DOM.navTopTrends) DOM.navTopTrends.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
@@ -2457,5 +2594,6 @@
     </script>
 </body>
 </html>
+
 
 
