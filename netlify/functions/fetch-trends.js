@@ -18,7 +18,7 @@ function toSortValue(d) {
     return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0;
 }
 
-// Cập nhật hàm này để nó trả về một đối tượng trend hoàn chỉnh
+// Hàm chuẩn hóa dữ liệu trả về từ NewsAPI
 function normalizeNewsApiArticle(article) {
     const { title, description, url, publishedAt, source } = article;
     if (!title || title === "[Removed]" || !url) return null;
@@ -47,37 +47,61 @@ function normalizeNewsApiArticle(article) {
     };
 }
 
-// Hàm tổng hợp các bài báo thành một chuỗi dữ liệu thời gian
-function aggregateArticlesToTimeline(articles, daysAgo) {
+// Hàm tổng hợp các bài báo thành một chuỗi dữ liệu thời gian (hỗ trợ cả ngày và giờ)
+function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
     if (!articles || articles.length === 0) return [];
     
-    // Tạo một map để đếm số lượng bài báo mỗi ngày
-    const dailyCounts = new Map();
+    const counts = new Map();
+    const isHourly = hoursAgo > 0;
+
+    // Bước 1: Đếm số lượng bài báo theo ngày hoặc giờ
     articles.forEach(article => {
-        // Lấy ngày tháng dạng YYYY-MM-DD
-        const dateStr = new Date(article.publishedAt).toISOString().split('T')[0];
-        dailyCounts.set(dateStr, (dailyCounts.get(dateStr) || 0) + 1);
+        const date = new Date(article.publishedAt);
+        let key;
+        if (isHourly) {
+            // Tạo key dạng "YYYY-MM-DDTHH:00:00.000Z" (làm tròn xuống giờ)
+            key = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).toISOString();
+        } else {
+            // Tạo key dạng "YYYY-MM-DD"
+            key = date.toISOString().split('T')[0];
+        }
+        counts.set(key, (counts.get(key) || 0) + 1);
     });
 
-    // Tạo chuỗi thời gian hoàn chỉnh cho `daysAgo` ngày qua
+    // Bước 2: Tạo chuỗi thời gian hoàn chỉnh
     const timelineData = [];
-    for (let i = daysAgo; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        
-        // Giá trị là số bài báo * một hệ số ngẫu nhiên để trông giống "độ hot"
-        const value = (dailyCounts.get(dateStr) || 0) * (Math.random() * 50 + 50);
-        
-        timelineData.push({
-            time: Math.floor(date.getTime() / 1000), // Unix timestamp (giây)
-            value: [Math.round(value)] // Giữ cấu trúc giống Google Trends
-        });
-    }
+    const now = new Date();
 
+    if (isHourly) {
+        // Tạo timeline theo giờ
+        for (let i = hoursAgo; i >= 0; i--) {
+            const date = new Date(now);
+            date.setHours(date.getHours() - i);
+            // Làm tròn xuống giờ để tạo key
+            const key = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).toISOString();
+            const value = (counts.get(key) || 0) * (Math.random() * 50 + 50);
+            
+            timelineData.push({
+                time: Math.floor(date.getTime() / 1000), // Unix timestamp (giây)
+                value: [Math.round(value)] // Giữ cấu trúc giống Google Trends
+            });
+        }
+    } else {
+        // Tạo timeline theo ngày
+        for (let i = daysAgo; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            const key = date.toISOString().split('T')[0];
+            const value = (counts.get(key) || 0) * (Math.random() * 50 + 50);
+            
+            timelineData.push({
+                time: Math.floor(date.getTime() / 1000),
+                value: [Math.round(value)]
+            });
+        }
+    }
     return timelineData;
 }
-
 
 // --- HANDLER CHÍNH ---
 exports.handler = async (event) => {
@@ -89,17 +113,32 @@ exports.handler = async (event) => {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "searchTerm is required." }) };
         }
         
-        const TIMEFRAME_MAP_TO_DAYS = { '1h': 1, '6h': 1, '24h': 1, '3d': 3, '7d': 7, '1m': 30, '3m': 30, '12m': 30 };
-        const daysAgo = TIMEFRAME_MAP_TO_DAYS[rawTimeframe] || 7;
-        const startTime = new Date();
-        startTime.setDate(startTime.getDate() - daysAgo);
+        // Map cho cả ngày và giờ để xử lý timeframe
+        const TIMEFRAME_MAP = {
+            '1h': { hours: 1 }, '6h': { hours: 6 }, '24h': { hours: 24 },
+            '3d': { days: 3 }, '7d': { days: 7 }, '1m': { days: 30 },
+            '3m': { days: 92 }, '12m': { days: 365 }, // Giới hạn timeframe dài về 30 ngày
+        };
 
-        // --- THỰC HIỆN CÁC CUỘC GỌI API SONG SONG ---
+        const timeConfig = TIMEFRAME_MAP[rawTimeframe] || { days: 7 };
+        const startTime = new Date();
+        let hoursAgo = 0;
+        let daysAgo = 0;
+
+        if (timeConfig.hours) {
+            startTime.setHours(startTime.getHours() - timeConfig.hours);
+            hoursAgo = timeConfig.hours;
+        } else {
+            startTime.setDate(startTime.getDate() - timeConfig.days);
+            daysAgo = timeConfig.days;
+        }
+
+        // --- CUỘC GỌI API SONG SONG ---
         const newsPromise = newsapi.v2.everything({
             q: searchTerm,
-            from: startTime.toISOString().split('T')[0],
+            from: startTime.toISOString(), // Gửi thời gian chi tiết (bao gồm cả giờ)
             sortBy: 'relevancy',
-            pageSize: 100, // Lấy tối đa 100 bài để tổng hợp
+            pageSize: 100,
             language: 'en'
         });
 
@@ -108,7 +147,6 @@ exports.handler = async (event) => {
             startTime: startTime,
         });
 
-        // Chạy song song để tiết kiệm thời gian
         const [newsResponse, relatedQueriesResponse] = await Promise.allSettled([newsPromise, relatedQueriesPromise]);
         
         // --- XỬ LÝ KẾT QUẢ ---
@@ -120,8 +158,8 @@ exports.handler = async (event) => {
         // Xử lý kết quả từ NewsAPI
         if (newsResponse.status === 'fulfilled' && newsResponse.value.status === 'ok' && newsResponse.value.articles.length > 0) {
             const allArticles = newsResponse.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
-            timelineData = aggregateArticlesToTimeline(allArticles, daysAgo);
-            // Sắp xếp bài báo theo ngày mới nhất và lấy 5 bài đầu
+            // Truyền cả daysAgo và hoursAgo vào hàm tổng hợp
+            timelineData = aggregateArticlesToTimeline(allArticles, daysAgo, hoursAgo);
             topArticles = allArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)).slice(0, 5);
         } else {
             // LUỒNG DỰ PHÒNG: GOOGLE TRENDS (NẾU NEWSAPI KHÔNG CÓ KẾT QUẢ)
@@ -130,7 +168,6 @@ exports.handler = async (event) => {
                 const trendsResponse = await googleTrends.interestOverTime({ keyword: searchTerm, startTime: startTime });
                 const parsed = JSON.parse(trendsResponse);
                 if (parsed.default.timelineData.length > 0) {
-                    // Chuẩn hóa giá trị của Google (0-100) lên thang đo lớn hơn
                     timelineData = parsed.default.timelineData.map(p => ({ ...p, value: [p.value[0] * 1000] }));
                 }
             } catch (e) {
@@ -142,7 +179,6 @@ exports.handler = async (event) => {
         if (relatedQueriesResponse.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(relatedQueriesResponse.value);
-                // Lấy các cụm từ đang tăng trưởng (rising) hoặc top
                 const rankedKeywords = parsed.default.rankedKeyword;
                 const risingQueries = rankedKeywords.find(k => k.rankedKeyword.every(q => q.value > 0)); // Thường là 'rising'
                 if (risingQueries) {
@@ -153,7 +189,6 @@ exports.handler = async (event) => {
             }
         }
 
-        // Nếu không có dữ liệu timeline từ cả hai nguồn, trả về mảng rỗng
         if (!timelineData) {
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [] }) };
         }
