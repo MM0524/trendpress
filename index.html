@@ -786,6 +786,10 @@
                 'Search by keyword...': 'Tìm kiếm theo từ khóa...', 'Add search term': 'Thêm cụm từ tìm kiếm', '+ Compare': '+ So sánh',
                 'Vietnam': 'Việt Nam', 'United States': 'Hoa Kỳ', 'Global': 'Toàn cầu',
                 'Last 12 months': '12 tháng qua', 'Last 30 days': '30 ngày qua', 'Last 7 days': '7 ngày qua',
+                'Hottest News': 'Tin tức Nóng nhất',
+                'Latest News': 'Tin tức Mới nhất',
+                'Outdated News': 'Tin tức Cũ',
+                'Predictive News': 'Tin tức Dự đoán',
                 'Rising': 'Đột phá', 'No trends found.': 'Không tìm thấy xu hướng nào.',
                 'No Title Available': 'Không có tiêu đề',
                 'No Description Available': 'Không có mô tả',
@@ -819,6 +823,10 @@
                 'Search by keyword...': 'Search by keyword...', 'Add search term': 'Add search term', '+ Compare': '+ Compare',
                 'Vietnam': 'Vietnam', 'United States': 'United States', 'Global': 'Global',
                 'Last 12 months': 'Last 12 months', 'Last 30 days': 'Last 30 days', 'Last 7 days': 'Last 7 days',
+                'Hottest News': 'Hottest News',
+                'Latest News': 'Latest News',
+                'Outdated News': 'Outdated News',
+                'Predictive News': 'Predictive News',
                 'Rising': 'Rising', 'No trends found.': 'No trends found.',
                 'No Title Available': 'No Title Available',
                 'No Description Available': 'No Description Available',
@@ -1957,8 +1965,8 @@
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { 
-                            position: 'top',
-                            align: 'start',
+                            position: 'bottom',
+                            align: 'center',
                             labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8, padding: 20 },
                             onHover: (event) => { event.native.target.style.cursor = 'pointer'; },
                             onLeave: (event) => { event.native.target.style.cursor = 'default'; },
@@ -2013,7 +2021,7 @@
             });
         }
         
-        async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
+                async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
             const searchDetailsContainer = document.getElementById('tb-search-details-container');
@@ -2068,7 +2076,8 @@
             if (user.tbSearchTerms.length > 0) {
                 // --- CHẾ ĐỘ TÌM KIẾM SO SÁNH ---
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
-                if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner"></div> ${t('Searching for')} "${user.tbSearchTerms.join(', ')}"...`;
+                const newChartTitleEl = document.getElementById('tb-chart-title'); // Lấy lại element sau khi clone
+                if (newChartTitleEl) newChartTitleEl.innerHTML = `<div class="loading-spinner"></div> ${t('Searching for')} "${user.tbSearchTerms.join(', ')}"...`;
                 
                 try {
                     const currentTimeframe = DOM.tbCustomTimeframeSelect.value;
@@ -2127,10 +2136,11 @@
                             trendId: trendData.id
                         };
                     });
-                    if (chartTitleEl) chartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
+                    if (newChartTitleEl) newChartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
                 } catch (error) {
                     console.error("Live search failed:", error);
-                    if (chartTitleEl) chartTitleEl.textContent = t('Search failed. Please try again.');
+                    const newChartTitleEl = document.getElementById('tb-chart-title');
+                    if (newChartTitleEl) newChartTitleEl.textContent = t('Search failed. Please try again.');
                 }
             } else {
                 // --- CHẾ ĐỘ DUYỆT MẶC ĐỊNH ---
@@ -2138,6 +2148,11 @@
                 const customTimeframe = DOM.tbCustomTimeframeSelect.value;
                 chartLabels = generateChartLabels(customTimeframe);
                 
+                const titleKeyMap = { hottest: 'Hottest News', latest: 'Latest News', outdated: 'Outdated News', predictive: 'Predictive News' };
+                const titleKey = titleKeyMap[status] || (status.charAt(0).toUpperCase() + status.slice(1));
+                const newChartTitleEl = document.getElementById('tb-chart-title');
+                if (newChartTitleEl) newChartTitleEl.textContent = `${t(titleKey)} - ${t('Interest Over Time')}`;
+
                 const selectedCategory = DOM.tbCategoryFilter.value;
                 const selectedRegion = DOM.tbRegionFilter.value;
                 let filteredTrends = masterTrendsList.filter(trend => (selectedRegion === 'global' || trend.region === selectedRegion) && (selectedCategory === 'All' || trend.category === selectedCategory));
@@ -2180,7 +2195,6 @@
                 });
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.remove('hidden');
                 renderTBDashboard(trendsForLeaderboard);
-                if (chartTitleEl) chartTitleEl.textContent = `${t(status)} - ${t('Interest Over Time')}`;
             }
             
             const allDataPoints = datasets.flatMap(ds => ds.data.filter(p => p !== null));
@@ -2190,24 +2204,15 @@
                 hotTrendsChart = new Chart(canvas.getContext('2d'), {
                     type: 'line', 
                     data: { labels: chartLabels, datasets },
-                    options: { // **** THAY THẾ TOÀN BỘ KHỐI NÀY ****
+                    options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false,
-                        },
+                        interaction: { mode: 'index', intersect: false },
                         plugins: {
-                            // Chuyển Legend lên trên cùng
                             legend: { 
-                                position: 'top',
-                                align: 'start',
-                                labels: { 
-                                    color: '#8a8da0', 
-                                    usePointStyle: true, 
-                                    boxWidth: 8,
-                                    padding: 20
-                                },
+                                position: 'bottom',
+                                align: 'center',
+                                labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 10, padding: 25 },
                                 onHover: (event) => { event.native.target.style.cursor = 'pointer'; },
                                 onLeave: (event) => { event.native.target.style.cursor = 'default'; },
                                 onClick: (e, legendItem, legend) => {
@@ -2223,27 +2228,16 @@
                                     }
                                 }
                             },
-                            // Tooltip được thiết kế lại hoàn toàn
                             tooltip: {
-                                enabled: true,
-                                backgroundColor: 'var(--surface-color)',
-                                titleColor: 'var(--text-color)',
-                                titleFont: { weight: '600', size: 14 },
-                                bodyColor: 'var(--text-color)',
-                                borderColor: 'var(--border-color)',
-                                borderWidth: 1,
-                                padding: 12,
-                                displayColors: true,
-                                boxPadding: 4,
-                                filter: function (tooltipItem) {
-                                    // Chỉ hiển thị trong tooltip nếu giá trị > 0
-                                    return tooltipItem.raw > 0;
-                                },
+                                enabled: true, backgroundColor: 'var(--surface-color)', titleColor: 'var(--text-color)',
+                                titleFont: { weight: '600', size: 14 }, bodyColor: 'var(--text-color)',
+                                borderColor: 'var(--border-color)', borderWidth: 1, padding: 12,
+                                displayColors: true, boxPadding: 4,
+                                filter: (tooltipItem) => tooltipItem.raw > 0,
                                 callbacks: {
-                                    label: function(context) {
+                                    label: (context) => {
                                         const label = context.dataset.label || '';
                                         const value = context.raw;
-                                        // Thêm "Engagement" vào sau giá trị
                                         return `${label}: ${formatNumber(value)} Engagement`;
                                     }
                                 }
@@ -2266,7 +2260,8 @@
                 });
             } else {
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                if (chartTitleEl) chartTitleEl.textContent = t('No trends found.');
+                const finalChartTitleEl = document.getElementById('tb-chart-title');
+                if (finalChartTitleEl) finalChartTitleEl.textContent = t('No trends found.');
             }
             
             if (user.tbSearchTerms.length > 0) {
@@ -2699,6 +2694,7 @@
     </script>
 </body>
 </html>
+
 
 
 
