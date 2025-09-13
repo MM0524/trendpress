@@ -763,6 +763,8 @@
                 'Rising': 'Đột phá', 'No trends found.': 'Không tìm thấy xu hướng nào.',
                 'No Title Available': 'Không có tiêu đề',
                 'No Description Available': 'Không có mô tả',
+                'Related Queries': 'Cụm từ tìm kiếm có liên quan',
+                'No related queries.': 'Không có cụm từ liên quan.',
                 'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị',
                 'General': 'Chung', 'Toys': 'Đồ chơi', 'Sneakers': 'Giày thể thao', 'Beauty': 'Làm đẹp', 'Lifestyle': 'Phong cách sống', 'Family': 'Gia đình', 'Cars': 'Ô tô', 'Archaeology': 'Khảo cổ học', 
                 'Your Favorite Trends - Interest Over Time': 'Xu hướng yêu thích của bạn - Mức độ quan tâm theo thời gian',
@@ -791,6 +793,8 @@
                 'Rising': 'Rising', 'No trends found.': 'No trends found.',
                 'No Title Available': 'No Title Available',
                 'No Description Available': 'No Description Available',
+                'Related Queries': 'Related Queries',
+                'No related queries.': 'No related queries found.',
                 'Technology': 'Technology', 'Fashion': 'Fashion', 'Gaming': 'Gaming', 'Finance': 'Finance', 'Health': 'Health', 'Travel': 'Travel', 'Food': 'Food', 'AI': 'AI', 'News': 'News', 'Science': 'Science', 'Music': 'Music', 'Media': 'Media', 'Entertainment': 'Entertainment', 'Sports': 'Sports', 'Logistics': 'Logistics', 'Cybersecurity': 'Cybersecurity', 'Healthcare': 'Healthcare', 'Education': 'Education', 'Environment': 'Environment', 'Politics': 'Politics', 'Marketing': 'Marketing',
                 'General': 'General', 'Toys': 'Toys', 'Sneakers': 'Sneakers', 'Beauty': 'Beauty', 'Lifestyle': 'Lifestyle', 'Family': 'Family', 'Cars': 'Cars', 'Archaeology': 'Archaeology',
                 'Your Favorite Trends - Interest Over Time': 'Your Favorite Trends - Interest Over Time',
@@ -1959,7 +1963,9 @@
                     
                     if (results.length === 1 && results[0].success && results[0].trends.length > 0) {
                         const searchData = results[0].trends[0];
+                        
                         document.getElementById('tb-top-articles-title').textContent = `${t('Top Articles for')} "${searchData.title_en}"`;
+                        
                         document.getElementById('tb-related-queries-title').textContent = t('Related Queries');
                         
                         const articlesList = document.getElementById('tb-top-articles-list');
@@ -2593,6 +2599,7 @@
     </script>
 </body>
 </html>
+
 
 
 
