@@ -416,6 +416,20 @@
             margin-top: 1rem;
         }
 
+        #tb-chart-title, #user-trends-chart-title {
+            color: var(--text-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            cursor: pointer; /* Giữ lại con trỏ để báo hiệu có thể click */
+            display: inline-block; /* Để không chiếm toàn bộ chiều rộng */
+            transition: color 0.2s ease;
+        }
+        
+        #tb-chart-title:hover, #user-trends-chart-title:hover {
+            color: var(--primary-light);
+        }
+        
         /* NEW: Styles for Search Result Details */
         #tb-search-details-container {
             display: grid;
@@ -651,6 +665,10 @@
         <div id="tb-chart-container">
             <h4 id="tb-chart-title"></h4>
             <canvas id="hot-trends-chart"></canvas>
+        </div>
+        <div id="user-trends-chart-container" class="hidden">
+            <h4 id="user-trends-chart-title"></h4>
+            <canvas id="user-trends-chart"></canvas>
         </div>
         <!-- Container for User's Favorite Categories Chart -->
         <div id="user-trends-chart-container" class="hidden">
@@ -1933,14 +1951,15 @@
             userTrendsChart = new Chart(canvas.getContext('2d'), {
                 type: 'line', 
                 data: { labels, datasets },
-                options: {
+                options: { // **** THAY THẾ TOÀN BỘ KHỐI NÀY ****
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { 
-                            position: 'bottom', 
-                            labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
+                            position: 'top',
+                            align: 'start',
+                            labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8, padding: 20 },
                             onHover: (event) => { event.native.target.style.cursor = 'pointer'; },
                             onLeave: (event) => { event.native.target.style.cursor = 'default'; },
                             onClick: (e, legendItem, legend) => {
@@ -1953,17 +1972,25 @@
                             }
                         },
                         tooltip: {
-                            enabled: true, 
-                            backgroundColor: 'var(--surface-color)', 
-                            titleColor: 'var(--primary-light)',
-                            bodyColor: 'var(--text-color)', 
-                            borderColor: 'var(--border-color)', 
+                            enabled: true,
+                            backgroundColor: 'var(--surface-color)',
+                            titleColor: 'var(--text-color)',
+                            titleFont: { weight: '600', size: 14 },
+                            bodyColor: 'var(--text-color)',
+                            borderColor: 'var(--border-color)',
                             borderWidth: 1,
-                            padding: 10, 
-                            displayColors: true, 
+                            padding: 12,
+                            displayColors: true,
                             boxPadding: 4,
-                            callbacks: { 
-                                label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)}` 
+                            filter: function (tooltipItem) {
+                                return tooltipItem.raw > 0;
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.raw;
+                                    return `${label}: ${formatNumber(value)} Engagement`;
+                                }
                             }
                         }
                     },
@@ -1978,16 +2005,8 @@
                             beginAtZero: true, 
                             min: 0,
                             suggestedMax: maxDataValue * 1.2 || 1000,
-                            title: {
-                                display: true,
-                                text: t('Engagement Score'),
-                                color: 'var(--text-muted-color)',
-                                font: {
-                                    size: 14,
-                                    weight: '500'
-                                },
-                                padding: { top: 0, left: 0, right: 0, bottom: 10 }
-                            }
+                             // **** XÓA BỎ TIÊU ĐỀ TRỤC Y ****
+                            // title: { ... } // <- ĐÃ XÓA
                         }
                     }
                 }
@@ -2171,14 +2190,24 @@
                 hotTrendsChart = new Chart(canvas.getContext('2d'), {
                     type: 'line', 
                     data: { labels: chartLabels, datasets },
-                    options: {
+                    options: { // **** THAY THẾ TOÀN BỘ KHỐI NÀY ****
                         responsive: true,
                         maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
                         plugins: {
+                            // Chuyển Legend lên trên cùng
                             legend: { 
-                                position: 'bottom',
-                                labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 8 },
+                                position: 'top',
+                                align: 'start',
+                                labels: { 
+                                    color: '#8a8da0', 
+                                    usePointStyle: true, 
+                                    boxWidth: 8,
+                                    padding: 20
+                                },
                                 onHover: (event) => { event.native.target.style.cursor = 'pointer'; },
                                 onLeave: (event) => { event.native.target.style.cursor = 'default'; },
                                 onClick: (e, legendItem, legend) => {
@@ -2194,11 +2223,30 @@
                                     }
                                 }
                             },
+                            // Tooltip được thiết kế lại hoàn toàn
                             tooltip: {
-                                enabled: true, backgroundColor: 'var(--surface-color)', titleColor: 'var(--primary-light)',
-                                bodyColor: 'var(--text-color)', borderColor: 'var(--border-color)', borderWidth: 1,
-                                padding: 10, displayColors: true, boxPadding: 4,
-                                callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)}` }
+                                enabled: true,
+                                backgroundColor: 'var(--surface-color)',
+                                titleColor: 'var(--text-color)',
+                                titleFont: { weight: '600', size: 14 },
+                                bodyColor: 'var(--text-color)',
+                                borderColor: 'var(--border-color)',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: true,
+                                boxPadding: 4,
+                                filter: function (tooltipItem) {
+                                    // Chỉ hiển thị trong tooltip nếu giá trị > 0
+                                    return tooltipItem.raw > 0;
+                                },
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.dataset.label || '';
+                                        const value = context.raw;
+                                        // Thêm "Engagement" vào sau giá trị
+                                        return `${label}: ${formatNumber(value)} Engagement`;
+                                    }
+                                }
                             }
                         },
                         scales: {
@@ -2212,13 +2260,6 @@
                                 beginAtZero: true,
                                 min: 0,
                                 suggestedMax: maxDataValue * 1.2 || 1000,
-                                title: {
-                                    display: true,
-                                    text: t('Engagement Score'),
-                                    color: 'var(--text-muted-color)',
-                                    font: { size: 14, weight: '500' },
-                                    padding: { top: 0, left: 0, right: 0, bottom: 10 }
-                                }
                             }
                         }
                     }
@@ -2658,6 +2699,7 @@
     </script>
 </body>
 </html>
+
 
 
 
