@@ -2065,14 +2065,19 @@
             });
         }
         
-        async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
+                async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
             const searchDetailsWrapper = document.getElementById('tb-search-details-wrapper');
             const chartTitleEl = document.getElementById('tb-chart-title');
             
-            if (!canvas) { return; }
-            if (hotTrendsChart) { hotTrendsChart.destroy(); }
+            if (!canvas) { 
+                console.error("Chart canvas 'hot-trends-chart' not found!");
+                return; 
+            }
+            if (hotTrendsChart) {
+                hotTrendsChart.destroy();
+            }
 
             if (chartTitleEl && !chartTitleEl.dataset.listenerAttached) {
                 chartTitleEl.dataset.listenerAttached = 'true';
@@ -2124,9 +2129,9 @@
                     const results = await Promise.all(searchPromises);
                     
                     const processedResults = results.map(res => (res.success && res.trends.length > 0) ? res.trends[0] : null).filter(Boolean);
-                    
-                    // **** BẮT ĐẦU SỬA LỖI ****
-                    
+
+                    // --- LOGIC RENDER CHI TIẾT ĐỘNG (ĐÃ SỬA LỖI) ---
+
                     // BƯỚC 1: Gộp tất cả các bài báo từ tất cả các kết quả vào `currentSearchResults` TRƯỚC TIÊN.
                     processedResults.forEach(searchData => {
                         if (searchData.topArticles && Array.isArray(searchData.topArticles)) {
@@ -2134,7 +2139,7 @@
                         }
                     });
                     
-                    // BƯỚC 2: Bây giờ, lặp lại để render HTML. Logic này không thay đổi, nhưng giờ nó an toàn hơn.
+                    // BƯỚC 2: Bây giờ, lặp lại để render HTML.
                     processedResults.forEach(searchData => {
                         const articlesHTML = `
                             <div class="tb-details-panel">
@@ -2168,12 +2173,13 @@
 
                         const container = document.createElement('div');
                         container.className = 'tb-search-details-container';
-                        // Chỉ thêm bảng articles nếu có articles
-                        if(searchData.topArticles.length > 0) {
+                        
+                        // Chỉ thêm bảng articles nếu có articles hoặc nếu không có dữ liệu nào cả (để hiển thị "No articles found")
+                        if (searchData.topArticles.length >= 0) {
                             container.innerHTML += articlesHTML;
                         }
-                        // Chỉ thêm bảng queries nếu có queries
-                        if(searchData.relatedQueries.length > 0) {
+                        // Chỉ thêm bảng queries nếu có queries hoặc nếu không có dữ liệu nào cả
+                        if (searchData.relatedQueries.length >= 0) {
                             container.innerHTML += queriesHTML;
                         }
 
@@ -2185,25 +2191,51 @@
                     if (searchDetailsWrapper && searchDetailsWrapper.innerHTML.trim() !== '') {
                         searchDetailsWrapper.classList.remove('hidden');
                     }
-                    // **** KẾT THÚC SỬA LỖI ****
+                    // --- KẾT THÚC LOGIC RENDER CHI TIẾT ---
 
                     const palette = getColorPalette(processedResults.length);
                     let masterTimeline = new Map();
                     processedResults.forEach(trendData => {
-                        trendData.timelineData.forEach(point => {
-                            const date = new Date(point.time * 1000);
-                            const formattedDate = date.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' });
-                            if (!masterTimeline.has(point.time)) masterTimeline.set(point.time, { label: formattedDate });
-                        });
+                        if (trendData.timelineData) {
+                            trendData.timelineData.forEach(point => {
+                                const date = new Date(point.time * 1000);
+                                const formattedDate = date.toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' });
+                                if (!masterTimeline.has(point.time)) masterTimeline.set(point.time, { label: formattedDate });
+                            });
+                        }
                     });
                     
                     const sortedTimeline = Array.from(masterTimeline.entries()).sort((a, b) => a[0] - b[0]);
                     chartLabels = sortedTimeline.map(entry => entry[1].label);
 
-                    datasets = processedResults.map((trendData, i) => { /* ... logic tạo dataset giữ nguyên ... */ });
+                    datasets = processedResults.map((trendData, i) => {
+                        const dataMap = new Map(trendData.timelineData.map(p => [new Date(p.time * 1000).toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }), p.value[0]]));
+                        const dataPoints = chartLabels.map(label => dataMap.get(label) || 0);
+                        return {
+                            label: trendData.title_en,
+                            data: dataPoints,
+                            borderColor: palette[i % palette.length].stroke,
+                            backgroundColor: (context) => {
+                                const {ctx, chartArea} = context.chart;
+                                if (!chartArea) return null;
+                                const color = palette[i % palette.length].stroke;
+                                let transparentColorEnd = color.startsWith('hsl') ? color.replace('hsl', 'hsla').replace(')', ', 0.25)') : `${color}40`;
+                                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                                gradient.addColorStop(0, 'rgba(161, 0, 255, 0)');
+                                gradient.addColorStop(1, transparentColorEnd);
+                                return gradient;
+                            },
+                            tension: 0.4, fill: true, pointRadius: 1, pointBackgroundColor: palette[i % palette.length].stroke,
+                            pointHoverRadius: 6, pointHoverBorderWidth: 2, pointHoverBorderColor: 'white',
+                            trendId: trendData.id
+                        };
+                    });
 
                     if (chartTitleEl) chartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
-                } catch (error) { /* ... */ }
+                } catch (error) {
+                    console.error("Live search failed:", error);
+                    if (chartTitleEl) chartTitleEl.textContent = t('Search failed. Please try again.');
+                }
             } else {
                 // --- CHẾ ĐỘ DUYỆT MẶC ĐỊNH ---
                 const status = DOM.tbStatusSelect.value;
@@ -2757,6 +2789,7 @@
     </script>
 </body>
 </html>
+
 
 
 
