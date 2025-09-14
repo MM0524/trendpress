@@ -541,6 +541,71 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        #tb-comparison-table-container {
+            margin-top: 2rem;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            color: var(--text-color);
+        }
+
+        #tb-comparison-table-container h4 {
+            color: var(--primary-light);
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .comparison-table th, .comparison-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .comparison-table th {
+            color: var(--text-muted-color);
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .comparison-table tbody tr:hover {
+            background-color: var(--bg-color);
+        }
+
+        .comparison-term-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+        }
+
+        .term-color-swatch {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .comparison-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .comparison-source {
+            font-size: 0.8rem;
+            color: var(--text-muted-color);
+            background-color: var(--bg-color);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
         
         .footer { background-color: var(--surface-color); border-top: 1px solid var(--border-color); padding: 3rem 0 1rem 0; }
         .footer-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
@@ -722,6 +787,22 @@
                 <ul class="tb-related-list" id="tb-related-queries-list"></ul>
             </div>
         </div>
+        <div id="tb-comparison-table-container" class="hidden">
+            <h4 id="tb-comparison-title"></h4>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th id="th-term"></th>
+                        <th id="th-total-engagement"></th>
+                        <th id="th-peak-engagement"></th>
+                        <th id="th-source"></th>
+                    </tr>
+                </thead>
+                <tbody id="tb-comparison-body">
+                    <!-- JavaScript sẽ tự động chèn các hàng vào đây -->
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
@@ -836,7 +917,11 @@
                 'Top 5 Hot Trends': 'Top 5 Tin Tức Nóng Nhất',
                 'Footer Description': 'Nền tảng phân tích và dự đoán tin tức hàng đầu, giúp bạn nắm bắt những thay đổi mới nhất trong thế giới số.',
                 'Find Trends': 'Tìm & Lọc Tin Tức',
-
+                'Comparison Details': 'So sánh Chi tiết',
+                'Search Term': 'Từ khóa',
+                'Total Engagement': 'Tổng Tương tác',
+                'Peak Engagement': 'Tương tác Đỉnh điểm',
+                'Data Source': 'Nguồn Dữ liệu',
                 // --- Các key còn lại ---
                 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign Out': 'Đăng xuất',
                 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.',
@@ -876,7 +961,11 @@
                 'Top 5 Hot Trends': 'Top 5 Hot News',
                 'Footer Description': 'A leading platform for news analysis and prediction, helping you stay ahead of the curve in the digital world.',
                 'Find Trends': 'Find & Filter News',
-
+                'Comparison Details': 'Comparison Details',
+                'Search Term': 'Search Term',
+                'Total Engagement': 'Total Engagement',
+                'Peak Engagement': 'Peak Engagement',
+                'Data Source': 'Data Source',
                 // --- Các key còn lại ---
                 'Trending Board': 'Trending Board', 'For U': 'For U', 'About': 'About', 'Sign Out': 'Sign Out',
                 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.',
@@ -913,6 +1002,11 @@
             { selector: '#clear-filter-btn', key: 'Show All Trends' },
             { selector: '#for-u-leaderboard-panel h3', key: 'Category Leaderboards' },
             { selector: '#feat-trend-prediction', key: 'Trend Prediction' },
+            { selector: '#tb-comparison-title', key: 'Comparison Details' },
+            { selector: '#th-term', key: 'Search Term' },
+            { selector: '#th-total-engagement', key: 'Total Engagement' },
+            { selector: '#th-peak-engagement', key: 'Peak Engagement' },
+            { selector: '#th-source', key: 'Data Source' },
             
             // Các binding không thay đổi
             { selector: '#nav-trending-board', key: 'Trending Board' },
@@ -2125,15 +2219,11 @@
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
             const searchDetailsWrapper = document.getElementById('tb-search-details-wrapper');
+            const comparisonContainer = document.getElementById('tb-comparison-table-container');
             const chartTitleEl = document.getElementById('tb-chart-title');
             
-            if (!canvas) { 
-                console.error("Chart canvas 'hot-trends-chart' not found!");
-                return; 
-            }
-            if (hotTrendsChart) {
-                hotTrendsChart.destroy();
-            }
+            if (!canvas) { return; }
+            if (hotTrendsChart) { hotTrendsChart.destroy(); }
 
             if (chartTitleEl && !chartTitleEl.dataset.listenerAttached) {
                 chartTitleEl.dataset.listenerAttached = 'true';
@@ -2161,14 +2251,18 @@
                 DOM.tbSearchChipsContainer.innerHTML = user.tbSearchTerms.map(term => `<span class="tb-search-chip">${truncateText(term, 20)}<button class="tb-search-chip-remove" data-term="${term}">&times;</button></span>`).join('');
                 DOM.tbSearchChipsContainer.classList.toggle('hidden', !isInSearchMode);
             }
-            
             if (clearSearchBtn) {
                 clearSearchBtn.classList.toggle('hidden', !isInSearchMode);
             }
             
-            if (searchTermsChanged && searchDetailsWrapper) {
-                searchDetailsWrapper.innerHTML = '';
-                searchDetailsWrapper.classList.add('hidden');
+            if (searchTermsChanged) {
+                if (searchDetailsWrapper) {
+                    searchDetailsWrapper.innerHTML = '';
+                    searchDetailsWrapper.classList.add('hidden');
+                }
+                if (comparisonContainer) {
+                    comparisonContainer.classList.add('hidden');
+                }
                 currentSearchResults = [];
             }
 
@@ -2176,7 +2270,6 @@
             let chartLabels = [];
 
             if (isInSearchMode) {
-                // --- CHẾ ĐỘ TÌM KIẾM ---
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
                 if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner" style="display: inline-block; vertical-align: middle; margin-right: 10px;"></div> ${t('Searching for')}...`;
                 
@@ -2192,55 +2285,51 @@
                     
                     const processedResults = results.map(res => (res.success && res.trends.length > 0) ? res.trends[0] : null).filter(Boolean);
 
-                    // --- LOGIC RENDER CHI TIẾT CÓ ĐIỀU KIỆN ---
                     if (searchTermsChanged) {
                         processedResults.forEach(searchData => {
                             currentSearchResults.push(...searchData.topArticles);
-                            
                             const articlesHTML = `
                                 <div class="tb-details-panel">
                                     <h4>${t('Top Articles for')} "${searchData.title_en}"</h4>
                                     <ul class="tb-article-list">
                                         ${searchData.topArticles.length > 0
-                                            ? searchData.topArticles.map(article => `
-                                                <li class="tb-article-item" data-trend-id="${article.id}">
-                                                    <div class="tb-article-title">${article.title_en}</div>
-                                                    <div class="tb-article-source">${article.submitter}</div>
-                                                </li>`).join('')
-                                            : `<li>${t('No articles found.')}</li>`
-                                        }
+                                            ? searchData.topArticles.map(article => `<li class="tb-article-item" data-trend-id="${article.id}"><div class="tb-article-title">${article.title_en}</div><div class="tb-article-source">${article.submitter}</div></li>`).join('')
+                                            : `<li>${t('No articles found.')}</li>`}
                                     </ul>
                                 </div>`;
-                            
                             const queriesHTML = `
                                 <div class="tb-details-panel">
                                     <h4>${t('Related Queries')}</h4>
                                     <ul class="tb-related-list">
                                         ${searchData.relatedQueries.length > 0
-                                            ? searchData.relatedQueries.map(q => `
-                                                <li class="tb-related-item" data-query="${q.query}">
-                                                    <span class="tb-related-query">${q.query}</span>
-                                                    <span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span>
-                                                </li>`).join('')
-                                            : `<li>${t('No related queries.')}</li>`
-                                        }
+                                            ? searchData.relatedQueries.map(q => `<li class="tb-related-item" data-query="${q.query}"><span class="tb-related-query">${q.query}</span><span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span></li>`).join('')
+                                            : `<li>${t('No related queries.')}</li>`}
                                     </ul>
                                 </div>`;
-
                             const container = document.createElement('div');
                             container.className = 'tb-search-details-container';
-                            
-                            if (searchData.topArticles.length > 0) container.innerHTML += articlesHTML;
-                            if (searchData.relatedQueries.length > 0) container.innerHTML += queriesHTML;
-
-                            if (searchDetailsWrapper && container.innerHTML.trim() !== '') {
-                                searchDetailsWrapper.appendChild(container);
-                            }
+                            container.innerHTML = articlesHTML + queriesHTML;
+                            if (searchDetailsWrapper) searchDetailsWrapper.appendChild(container);
                         });
 
                         if (searchDetailsWrapper && searchDetailsWrapper.innerHTML.trim() !== '') {
                             searchDetailsWrapper.classList.remove('hidden');
                         }
+                        
+                        // Render Bảng So Sánh
+                        if (processedResults.length > 1 && comparisonContainer) {
+                            const comparisonBody = document.getElementById('tb-comparison-body');
+                            comparisonBody.innerHTML = '';
+                            const palette = getColorPalette(processedResults.length);
+                            processedResults.forEach((data, index) => {
+                                const row = document.createElement('tr');
+                                const color = palette[index % palette.length].stroke;
+                                row.innerHTML = `<td><div class="comparison-term-cell"><span class="term-color-swatch" style="background-color: ${color};"></span>${data.title_en}</div></td><td class="comparison-value">${formatNumber(data.totalEngagement)}</td><td class="comparison-value">${formatNumber(data.peakEngagement)}</td><td><span class="comparison-source">${data.submitter}</span></td>`;
+                                comparisonBody.appendChild(row);
+                            });
+                            comparisonContainer.classList.remove('hidden');
+                        }
+
                         lastRenderedSearchTerms = [...user.tbSearchTerms];
                     }
                     // --- KẾT THÚC LOGIC RENDER CHI TIẾT ---
@@ -2873,6 +2962,7 @@
     </script>
 </body>
 </html>
+
 
 
 
