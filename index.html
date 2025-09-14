@@ -1682,8 +1682,7 @@
             // Bước 1: Chọn icon và key dịch thuật phù hợp với loại phân tích
             if (analysisType === 'prediction') {
                 titleIcon = '🔮 ';
-                // Key 'AI Analysis Summary for' đã được đổi giá trị thành 'Dự đoán AI cho' trong translations
-                titleKey = 'AI Analysis Summary for'; 
+                titleKey = 'AI Analysis Summary for'; // Key này trong translations được dịch thành "Dự đoán AI cho"
             } else if (analysisType === 'detailed') {
                 titleIcon = '🔍 ';
                 titleKey = 'AI Deep Dive for';
@@ -1717,13 +1716,20 @@
 
             // Bước 3: Gọi API back-end để lấy phân tích
             try {
-                const data = await analyzeTrendSecurely(trend, analysisType);
+                // Lấy dữ liệu thô từ server
+                let rawData = await analyzeTrendSecurely(trend, analysisType);
+                
+                // **** BẮT ĐẦU SỬA LỖI ****
+                // Dọn dẹp các khối mã Markdown mà AI có thể trả về
+                if (typeof rawData === 'string') {
+                    // Loại bỏ ```html ở đầu và ``` ở cuối, cùng với các khoảng trắng
+                    rawData = rawData.trim().replace(/^```html\s*/, '').replace(/\s*```$/, '').trim();
+                }
+                // **** KẾT THÚC SỬA LỖI ****
                 
                 // Bước 4: Hiển thị kết quả thành công
-                // Dữ liệu trả về từ back-end (cho 'prediction' và 'detailed') đã là HTML
-                // Chúng ta chỉ cần làm sạch và hiển thị nó.
-                // Hàm `analyzeTrendSecurely` đã bao gồm DOMPurify.
-                modalBody.innerHTML = data;
+                // DOMPurify sẽ đảm bảo HTML còn lại là an toàn trước khi render
+                modalBody.innerHTML = DOMPurify.sanitize(rawData, { USE_PROFILES: { html: true } });
 
             } catch (err) {
                 // Bước 5: Hiển thị thông báo lỗi nếu API thất bại
@@ -1737,7 +1743,6 @@
                 }
             }
         }
-
         // NEW: Function to open the trend overview modal
         function openTrendOverviewModal(trend) {
             // No longer need login check here, as user is always 'work'
@@ -2865,6 +2870,7 @@
     </script>
 </body>
 </html>
+
 
 
 
