@@ -78,9 +78,27 @@ function createDetailedAnalysisPrompt(trend, language) {
     const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || trend.description_en || trend.description_vi;
 
     if (language === 'vi') {
-        return `Bạn là một chuyên gia phân tích xu hướng marketing... (prompt chi tiết của bạn)`;
+        return `
+            Bạn là một chuyên gia phân tích xu hướng marketing. Phân tích tin tức sau đây.
+            Thông tin: Tên="${trendTitle}", Mô tả="${trendDescription}", Lĩnh vực="${trend.category}".
+            Yêu cầu:
+            1. Tổng quan ngắn gọn về tin tức này.
+            2. Tại sao nó lại nổi bật và các kênh lan truyền chính?
+            3. Đối tượng khán giả phù hợp nhất với tin tức này là ai?
+            4. Đề xuất 2 nền tảng mạng xã hội và chiến lược nội dung phù hợp để tận dụng.
+            QUAN TRỌNG: Chỉ trả lời bằng HTML hợp lệ. Mỗi điểm trong 4 điểm trên phải được gói trong một thẻ <div class="ai-section">...</div> và có tiêu đề là thẻ <h4>.
+        `;
     } else {
-        return `You are a marketing trend analyst... (your detailed prompt)`;
+        return `
+            You are a marketing trend analystYou are a marketing trend analyst. Analyze the following news item.
+            Info: Name="${trendTitle}", Description="${trendDescription}", Category="${trend.category}".
+            Requirements:
+            1. A brief overview of this news.
+            2. Why is it trending & what are the main spreading channels?
+            3. Who is the most relevant target audience?
+            4. Recommend 2 social media platforms and suitable content strategies to leverage it.
+            IMPORTANT: Respond ONLY with valid HTML. Each of the four points must be wrapped in its own <div class="ai-section">...</div> tag with an <h4> title.
+            `;
     }
 }
 
@@ -89,9 +107,33 @@ function createPredictionPrompt(trend, language) {
     const trendDescription = (language === 'vi' ? trend.description_vi : trend.description_en) || trend.description_en || trend.description_vi;
 
     if (language === 'vi') {
-        return `Bạn là một nhà phân tích chiến lược và dự báo tương lai... (prompt dự đoán chi tiết của bạn)`;
+        return `
+            Bạn là một nhà phân tích chiến lược và dự báo tương lai. Phân tích tin tức sau đây:
+            Tiêu đề: "${trendTitle}"
+            Mô tả: "${trendDescription}"
+            Lĩnh vực: "${trend.category}"
+
+            Dựa trên thông tin trên, hãy đưa ra dự báo chi tiết về 3 điểm sau:
+            1. **Tương lai của các lĩnh vực liên quan:** Dựa trên tin tức này, tương lai tiềm năng của các sản phẩm, công nghệ, hoặc hành vi xã hội liên quan sẽ như thế nào?
+            2. **Hậu quả và Cơ hội:** Những hậu quả dài hạn (tích cực hoặc tiêu cực) và các cơ hội lớn để tăng trưởng hoặc đổi mới sáng tạo bắt nguồn từ sự kiện này là gì?
+            3. **Tác động đến người dùng:** Người dùng hoặc người tiêu dùng thông thường có thể được hưởng lợi hoặc bị ảnh hưởng tiêu cực trực tiếp từ sự phát triển này trong tương lai gần như thế nào?
+
+            QUAN TRỌNG: Chỉ trả lời bằng HTML hợp lệ. Mỗi điểm trong 3 điểm trên phải được gói trong một thẻ <div class="ai-section">...</div> và có tiêu đề là thẻ <h4>.
+            `;
     } else {
-        return `You are a strategic foresight analyst and futurist... (your detailed prediction prompt)`;
+        return `
+            You are a strategic foresight analyst and futurist. Analyze the following news item:
+            Title: "${trendTitle}"
+            Description: "${trendDescription}"
+            Category: "${trend.category}"
+
+            Based on this information, provide a detailed forecast on the following three points:
+            1. **The Future of Related Fields:** Based on this news, what are the potential futures for related products, technologies, or societal behaviors?
+            2. **Consequences and Opportunities:** What are the likely long-term consequences (positive or negative) and key opportunities for growth or innovation stemming from this event?
+            3. **Impact on Users/Consumers:** How might the average person, user, or consumer be directly benefited or negatively affected by this development in the near future?
+
+            IMPORTANT: Respond ONLY with valid HTML. Each of the three points must be wrapped in its own <div class="ai-section">...</div> tag with an <h4> title.
+            `;
     }
 }
 
