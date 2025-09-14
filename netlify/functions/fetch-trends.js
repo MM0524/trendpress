@@ -77,7 +77,6 @@ function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
         for (let i = hoursAgo; i >= 0; i--) {
             const date = new Date(now);
             date.setHours(date.getHours() - i);
-            // Làm tròn xuống giờ để tạo key
             const key = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).toISOString();
             const value = (counts.get(key) || 0) * (Math.random() * 50 + 50);
             
@@ -113,17 +112,15 @@ exports.handler = async (event) => {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "searchTerm is required." }) };
         }
         
-        // Map cho cả ngày và giờ để xử lý timeframe
         const TIMEFRAME_MAP = {
             '1h': { hours: 1 }, '6h': { hours: 6 }, '24h': { hours: 24 },
             '3d': { days: 3 }, '7d': { days: 7 }, '1m': { days: 30 },
-            '3m': { days: 92 }, '12m': { days: 365 }, // Giới hạn timeframe dài về 30 ngày
+            '3m': { days: 92 }, '12m': { days: 365 },
         };
 
         const timeConfig = TIMEFRAME_MAP[rawTimeframe] || { days: 7 };
         const startTime = new Date();
-        let hoursAgo = 0;
-        let daysAgo = 0;
+        let hoursAgo = 0, daysAgo = 0;
 
         if (timeConfig.hours) {
             startTime.setHours(startTime.getHours() - timeConfig.hours);
@@ -133,67 +130,68 @@ exports.handler = async (event) => {
             daysAgo = timeConfig.days;
         }
 
-        // --- CUỘC GỌI API SONG SONG ---
-        const newsPromise = newsapi.v2.everything({
-            q: searchTerm,
-            from: startTime.toISOString(), // Gửi thời gian chi tiết (bao gồm cả giờ)
-            sortBy: 'relevancy',
-            pageSize: 100,
-            language: 'en'
-        });
+        // --- GỌI 3 API SONG SONG VỚI PROMISE.ALLSETTLED ---
+        const interestPromise = googleTrends.interestOverTime({ keyword: searchTerm, startTime: startTime });
+        const newsPromise = newsapi.v2.everything({ q: searchTerm, from: startTime.toISOString(), sortBy: 'relevancy', pageSize: 100, language: 'en' });
+        const relatedQueriesPromise = googleTrends.relatedQueries({ keyword: searchTerm, startTime: startTime });
 
-        const relatedQueriesPromise = googleTrends.relatedQueries({
-            keyword: searchTerm,
-            startTime: startTime,
-        });
+        const [interestResult, newsResult, relatedQueriesResult] = await Promise.allSettled([interestPromise, newsPromise, relatedQueriesPromise]);
 
-        const [newsResponse, relatedQueriesResponse] = await Promise.allSettled([newsPromise, relatedQueriesPromise]);
-        
-        // --- XỬ LÝ KẾT QUẢ ---
+        // --- XỬ LÝ KẾT QUẢ MỘT CÁCH ĐỘC LẬP ---
         let timelineData = null;
         let topArticles = [];
         let relatedQueries = [];
-        let sourceApi = "NewsAPI";
+        let sourceApi = "Google Trends"; // Ưu tiên Google Trends cho timeline
 
-        // Xử lý kết quả từ NewsAPI
-        if (newsResponse.status === 'fulfilled' && newsResponse.value.status === 'ok' && newsResponse.value.articles.length > 0) {
-            const allArticles = newsResponse.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
-            // Truyền cả daysAgo và hoursAgo vào hàm tổng hợp
-            timelineData = aggregateArticlesToTimeline(allArticles, daysAgo, hoursAgo);
+        // 1. Xử lý kết quả Top Articles (từ NewsAPI)
+        if (newsResult.status === 'fulfilled' && newsResult.value.status === 'ok' && newsResult.value.articles.length > 0) {
+            const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
             topArticles = allArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)).slice(0, 5);
-        } else {
-            // LUỒNG DỰ PHÒNG: GOOGLE TRENDS (NẾU NEWSAPI KHÔNG CÓ KẾT QUẢ)
-            sourceApi = "Google Trends";
+        }
+
+        // 2. Xử lý kết quả Timeline (ưu tiên Google, fallback về NewsAPI)
+        if (interestResult.status === 'fulfilled') {
             try {
-                const trendsResponse = await googleTrends.interestOverTime({ keyword: searchTerm, startTime: startTime });
-                const parsed = JSON.parse(trendsResponse);
+                const parsed = JSON.parse(interestResult.value);
                 if (parsed.default.timelineData.length > 0) {
                     timelineData = parsed.default.timelineData.map(p => ({ ...p, value: [p.value[0] * 1000] }));
                 }
-            } catch (e) {
-                console.error("Interest Over Time failed:", e.message);
-            }
+            } catch (e) { console.error("Parsing interestOverTime failed:", e.message); }
+        }
+        
+        // Fallback: Nếu Google Trends thất bại VÀ NewsAPI có bài báo, tạo timeline từ NewsAPI
+        if (!timelineData && topArticles.length > 0) {
+            console.log("Timeline fallback: Creating timeline from NewsAPI articles.");
+            sourceApi = "NewsAPI";
+            // Lấy lại toàn bộ bài báo, không chỉ top 5
+            const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
+            timelineData = aggregateArticlesToTimeline(allArticles, daysAgo, hoursAgo);
         }
 
-        // Xử lý kết quả từ Related Queries
-        if (relatedQueriesResponse.status === 'fulfilled') {
+        // 3. Xử lý kết quả Related Queries
+        if (relatedQueriesResult.status === 'fulfilled') {
             try {
-                const parsed = JSON.parse(relatedQueriesResponse.value);
-                const rankedKeywords = parsed.default.rankedKeyword;
-                const risingQueries = rankedKeywords.find(k => k.rankedKeyword.every(q => q.value > 0)); // Thường là 'rising'
-                if (risingQueries) {
-                    relatedQueries = risingQueries.rankedKeyword.slice(0, 5);
-                }
-            } catch(e) {
-                console.error("Parsing related queries failed:", e.message);
-            }
+                const parsed = JSON.parse(relatedQueriesResult.value);
+                const risingQueries = parsed.default.rankedKeyword.find(k => k.rankedKeyword.every(q => q.value > 0));
+                if (risingQueries) relatedQueries = risingQueries.rankedKeyword.slice(0, 5);
+            } catch (e) { console.error("Parsing related queries failed:", e.message); }
         }
 
+        // Nếu không có dữ liệu timeline từ bất kỳ nguồn nào, coi như không có kết quả
         if (!timelineData) {
+            // Nhưng vẫn có thể có bài báo hoặc related queries, nên vẫn trả về
+            if (topArticles.length > 0 || relatedQueries.length > 0) {
+                 const failedTimelineTrend = {
+                    id: `aggregated-${searchTerm.replace(/\s/g, '-')}-${rawTimeframe}`,
+                    title_en: searchTerm, isAggregated: true, submitter: "Multiple Sources",
+                    timelineData: [], topArticles: topArticles, relatedQueries: relatedQueries,
+                };
+                 return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [failedTimelineTrend] }) };
+            }
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [] }) };
         }
 
-        // Tạo đối tượng trend tổng hợp cuối cùng
+        // --- TẠO KẾT QUẢ TỔNG HỢP ---
         const aggregatedTrend = {
             id: `aggregated-${searchTerm.replace(/\s/g, '-')}-${rawTimeframe}`,
             title_en: searchTerm,
@@ -207,11 +205,7 @@ exports.handler = async (event) => {
         return {
             statusCode: 200,
             headers,
-            body: JSON.stringify({
-                success: true,
-                // Luôn trả về một mảng chứa một trend duy nhất
-                trends: [aggregatedTrend]
-            }),
+            body: JSON.stringify({ success: true, trends: [aggregatedTrend] }),
         };
 
     } catch (err) {
