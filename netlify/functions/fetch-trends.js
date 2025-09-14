@@ -48,16 +48,14 @@ function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
     const now = new Date();
     if (isHourly) {
         for (let i = hoursAgo; i >= 0; i--) {
-            const date = new Date(now);
-            date.setHours(date.getHours() - i);
+            const date = new Date(now); date.setHours(date.getHours() - i);
             const key = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).toISOString();
             const value = (counts.get(key) || 0) * (Math.random() * 50 + 50);
             timelineData.push({ time: Math.floor(date.getTime() / 1000), value: [Math.round(value)] });
         }
     } else {
         for (let i = daysAgo; i >= 0; i--) {
-            const date = new Date(now);
-            date.setDate(date.getDate() - i);
+            const date = new Date(now); date.setDate(date.getDate() - i);
             const key = date.toISOString().split('T')[0];
             const value = (counts.get(key) || 0) * (Math.random() * 50 + 50);
             timelineData.push({ time: Math.floor(date.getTime() / 1000), value: [Math.round(value)] });
@@ -66,15 +64,13 @@ function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
     return timelineData;
 }
 
-// Hàm thực hiện hồi quy tuyến tính để dự đoán xu hướng
 function predictFutureTrends(timelineData, daysToPredict = 7) {
     if (!timelineData || timelineData.length < 2) return [];
     const recentData = timelineData.slice(-14);
     const n = recentData.length;
     let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
     recentData.forEach((point, i) => {
-        const x = i;
-        const y = point.value[0];
+        const x = i; const y = point.value[0];
         sumX += x; sumY += y; sumXY += x * y; sumX2 += x * x;
     });
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX) || 0;
@@ -84,8 +80,7 @@ function predictFutureTrends(timelineData, daysToPredict = 7) {
     const predictions = [];
     for (let i = 1; i <= daysToPredict; i++) {
         const predictedValue = slope * (n - 1 + i) + intercept;
-        const futureDate = new Date(lastDate);
-        futureDate.setDate(futureDate.getDate() + i);
+        const futureDate = new Date(lastDate); futureDate.setDate(futureDate.getDate() + i);
         predictions.push({
             time: Math.floor(futureDate.getTime() / 1000),
             value: [Math.max(0, Math.round(predictedValue * (1 + (Math.random() - 0.5) * 0.1)))],
@@ -96,7 +91,6 @@ function predictFutureTrends(timelineData, daysToPredict = 7) {
 }
 
 // --- HANDLER CHÍNH ---
-// --- HANDLER CHÍNH ĐÃ ĐƯỢC SỬA LỖI ---
 exports.handler = async (event) => {
     const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
     
@@ -108,8 +102,7 @@ exports.handler = async (event) => {
         
         let startTime, hoursAgo = 0, daysAgo = 0;
         if (mode === 'predictive') {
-            startTime = new Date();
-            startTime.setDate(startTime.getDate() - 90);
+            startTime = new Date(); startTime.setDate(startTime.getDate() - 90);
             daysAgo = 90;
         } else {
             const TIMEFRAME_MAP = {
@@ -119,30 +112,20 @@ exports.handler = async (event) => {
             };
             const timeConfig = TIMEFRAME_MAP[rawTimeframe] || { days: 7 };
             startTime = new Date();
-            if (timeConfig.hours) {
-                startTime.setHours(startTime.getHours() - timeConfig.hours);
-                hoursAgo = timeConfig.hours;
-            } else {
-                startTime.setDate(startTime.getDate() - timeConfig.days);
-                daysAgo = timeConfig.days;
-            }
+            if (timeConfig.hours) { startTime.setHours(startTime.getHours() - timeConfig.hours); hoursAgo = timeConfig.hours; }
+            else { startTime.setDate(startTime.getDate() - timeConfig.days); daysAgo = timeConfig.days; }
         }
         
-        const newsApiStartTime = new Date();
-        newsApiStartTime.setDate(newsApiStartTime.getDate() - 28);
+        const newsApiStartTime = new Date(); newsApiStartTime.setDate(newsApiStartTime.getDate() - 28);
 
-        // --- CUỘC GỌI API SONG SONG (ĐÃ SỬA LẠI) ---
         const interestPromise = googleTrends.interestOverTime({ keyword: searchTerm, startTime: startTime });
         const newsPromise = newsapi.v2.everything({ q: searchTerm, from: newsApiStartTime.toISOString(), sortBy: 'relevancy', pageSize: 100, language: 'en' });
         const relatedQueriesPromise = googleTrends.relatedQueries({ keyword: searchTerm, startTime: startTime });
 
-        // **** SỬA LỖI: THÊM LẠI interestPromise VÀ GÁN ĐÚNG BIẾN ****
         const [interestResult, newsResult, relatedQueriesResult] = await Promise.allSettled([interestPromise, newsPromise, relatedQueriesPromise]);
 
-        // --- XỬ LÝ KẾT QUẢ ---
         let timelineData = null, topArticles = [], relatedQueries = [], sourceApi = "Google Trends";
 
-        // 1. Xử lý kết quả Timeline (ưu tiên Google)
         if (interestResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(interestResult.value);
@@ -152,18 +135,15 @@ exports.handler = async (event) => {
             } catch (e) { console.error("Parsing interestOverTime failed:", e.message); }
         }
 
-        // 2. Xử lý kết quả Top Articles (từ NewsAPI)
         if (newsResult.status === 'fulfilled' && newsResult.value.status === 'ok' && newsResult.value.articles.length > 0) {
             const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
             topArticles = allArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)).slice(0, 5);
-            // Fallback: Nếu Google Trends thất bại, tạo timeline từ NewsAPI
             if (!timelineData) {
                 sourceApi = "NewsAPI";
                 timelineData = aggregateArticlesToTimeline(allArticles, daysAgo, hoursAgo);
             }
         }
         
-        // 3. Xử lý kết quả Related Queries
         if (relatedQueriesResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(relatedQueriesResult.value);
@@ -172,10 +152,22 @@ exports.handler = async (event) => {
             } catch (e) { console.error("Parsing related queries failed:", e.message); }
         }
 
-        // Thực hiện dự đoán nếu ở mode predictive và có dữ liệu lịch sử
         if (mode === 'predictive' && timelineData && timelineData.length > 0) {
             const predictions = predictFutureTrends(timelineData);
             timelineData.push(...predictions);
+        }
+
+        // Tính toán các chỉ số tổng hợp
+        let totalEngagement = 0;
+        let peakEngagement = 0;
+        if (timelineData && timelineData.length > 0) {
+            // Chỉ tính toán trên dữ liệu lịch sử, không tính phần dự đoán
+            const historicalTimeline = timelineData.filter(p => !p.isPrediction);
+            if (historicalTimeline.length > 0) {
+                const values = historicalTimeline.map(p => p.value[0]);
+                totalEngagement = values.reduce((sum, val) => sum + val, 0);
+                peakEngagement = Math.max(...values);
+            }
         }
 
         if (!timelineData && topArticles.length === 0 && relatedQueries.length === 0) {
@@ -190,6 +182,8 @@ exports.handler = async (event) => {
             timelineData: timelineData || [],
             topArticles: topArticles,
             relatedQueries: relatedQueries,
+            totalEngagement: totalEngagement,
+            peakEngagement: peakEngagement,
         };
         
         return {
