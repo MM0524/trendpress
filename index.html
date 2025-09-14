@@ -2076,7 +2076,6 @@
                 hotTrendsChart.destroy();
             }
 
-            // Gắn event listener cho tiêu đề một lần duy nhất và an toàn
             if (chartTitleEl && !chartTitleEl.dataset.listenerAttached) {
                 chartTitleEl.dataset.listenerAttached = 'true';
                 chartTitleEl.style.cursor = 'pointer';
@@ -2130,42 +2129,44 @@
 
                     // --- LOGIC RENDER CHI TIẾT ĐỘNG (ĐÃ SỬA LỖI) ---
                     processedResults.forEach(searchData => {
-                        // Gộp tất cả các bài báo tìm được vào một danh sách chung
                         currentSearchResults.push(...searchData.topArticles);
 
-                        // Chỉ tạo khối HTML nếu có dữ liệu để hiển thị
-                        if (searchData.topArticles.length > 0 || searchData.relatedQueries.length > 0) {
-                            const articlesHTML = searchData.topArticles.length > 0 ? `
-                                <div class="tb-details-panel">
-                                    <h4>${t('Top Articles for')} "${searchData.title_en}"</h4>
-                                    <ul class="tb-article-list">
-                                        ${searchData.topArticles.map(article => `
+                        const articlesHTML = `
+                            <div class="tb-details-panel">
+                                <h4>${t('Top Articles for')} "${searchData.title_en}"</h4>
+                                <ul class="tb-article-list">
+                                    ${searchData.topArticles.length > 0
+                                        ? searchData.topArticles.map(article => `
                                             <li class="tb-article-item" data-trend-id="${article.id}">
                                                 <div class="tb-article-title">${article.title_en}</div>
                                                 <div class="tb-article-source">${article.submitter}</div>
-                                            </li>`).join('')}
-                                    </ul>
-                                </div>` : '';
-                            
-                            const queriesHTML = searchData.relatedQueries.length > 0 ? `
-                                <div class="tb-details-panel">
-                                    <h4>${t('Related Queries')}</h4>
-                                    <ul class="tb-related-list">
-                                        ${searchData.relatedQueries.map(q => `
+                                            </li>`).join('')
+                                        : `<li>${t('No articles found.')}</li>`
+                                    }
+                                </ul>
+                            </div>`;
+                        
+                        const queriesHTML = `
+                            <div class="tb-details-panel">
+                                <h4>${t('Related Queries')}</h4>
+                                <ul class="tb-related-list">
+                                    ${searchData.relatedQueries.length > 0
+                                        ? searchData.relatedQueries.map(q => `
                                             <li class="tb-related-item" data-query="${q.query}">
                                                 <span class="tb-related-query">${q.query}</span>
                                                 <span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span>
-                                            </li>`).join('')}
-                                    </ul>
-                                </div>` : '';
+                                            </li>`).join('')
+                                        : `<li>${t('No related queries.')}</li>`
+                                    }
+                                </ul>
+                            </div>`;
 
-                            const container = document.createElement('div');
-                            container.className = 'tb-search-details-container';
-                            container.innerHTML = articlesHTML + queriesHTML;
-                            
-                            if (searchDetailsWrapper) {
-                                searchDetailsWrapper.appendChild(container);
-                            }
+                        const container = document.createElement('div');
+                        container.className = 'tb-search-details-container';
+                        container.innerHTML = articlesHTML + queriesHTML;
+                        
+                        if (searchDetailsWrapper) {
+                            searchDetailsWrapper.appendChild(container);
                         }
                     });
 
@@ -2335,8 +2336,7 @@
                 });
             } else {
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                const finalChartTitleEl = document.getElementById('tb-chart-title');
-                if (finalChartTitleEl) finalChartTitleEl.textContent = t('No trends found.');
+                if (chartTitleEl) chartTitleEl.textContent = t('No trends found.');
             }
             
             if (user.tbSearchTerms.length > 0) {
@@ -2769,6 +2769,7 @@
     </script>
 </body>
 </html>
+
 
 
 
