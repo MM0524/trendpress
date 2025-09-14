@@ -27,7 +27,7 @@ function normalizeNewsApiArticle(article) {
     
     return {
         id: stableId,
-        title_en: title,
+        title_en: title || '', // **** THAY ĐỔI: Đảm bảo title_en không bao giờ là null
         description_en: description || "No description available.",
         title_vi: null,
         description_vi: null,
@@ -35,10 +35,8 @@ function normalizeNewsApiArticle(article) {
         tags: [source.name.replace(/\s/g, '')],
         source: url,
         date: toDateStr(publishedAt),
-        sortKey: toSortValue(publishedAt),
         submitter: source.name || "Unknown Source",
-        region: 'global',
-        publishedAt: publishedAt // Giữ lại để sắp xếp
+        publishedAt: publishedAt
     };
 }
 
