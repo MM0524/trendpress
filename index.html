@@ -431,11 +431,21 @@
         }
         
         /* NEW: Styles for Search Result Details */
-        #tb-search-details-container {
+       #tb-search-details-wrapper {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            /* 
+              Tự động tạo các cột. Mỗi cột sẽ cố gắng rộng bằng 1 phần (1fr),
+              nhưng sẽ không nhỏ hơn 400px. Khi không đủ không gian, nó sẽ tự xuống dòng.
+            */
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
             gap: 2rem;
             margin-top: 2rem;
+        }
+
+        .tb-search-details-container {
+             display: flex;
+             flex-direction: column;
+             gap: 2rem;
         }
 
         .tb-details-panel {
@@ -443,6 +453,10 @@
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            /* Đảm bảo các panel có chiều cao tối thiểu ngay cả khi trống */
+            min-height: 200px; 
         }
 
         .tb-details-panel h4 {
@@ -450,6 +464,9 @@
             margin-bottom: 1.5rem;
             font-size: 1.1rem;
             font-weight: 600;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            word-break: break-all; /* Ngăn tiêu đề dài làm vỡ layout */
         }
         
         .tb-article-list, .tb-related-list {
@@ -471,8 +488,8 @@
 
         .tb-article-item:hover, .tb-related-item:hover {
             border-color: var(--primary-light);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.25);
         }
 
         .tb-article-title {
@@ -494,20 +511,25 @@
         
         .tb-related-query {
             font-weight: 500;
+            color: var(--text-color);
         }
         
         .tb-related-value {
             font-size: 0.9rem;
             color: var(--success-color);
             font-weight: 600;
+            background-color: rgba(76, 175, 80, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
         }
 
+        /* Responsive: Chuyển về 1 cột trên màn hình nhỏ */
         @media (max-width: 900px) {
-            #tb-search-details-container {
+            #tb-search-details-wrapper {
                 grid-template-columns: 1fr;
             }
         }
-
+        
         .footer { background-color: var(--surface-color); border-top: 1px solid var(--border-color); padding: 3rem 0 1rem 0; }
         .footer-content { max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
         .footer-title { color: var(--primary-light); font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
@@ -2040,10 +2062,10 @@
             });
         }
         
-                async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
+        async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
-            const searchDetailsContainer = document.getElementById('tb-search-details-container');
+            const searchDetailsWrapper = document.getElementById('tb-search-details-wrapper');
             const chartTitleEl = document.getElementById('tb-chart-title');
             
             if (!canvas) { 
@@ -2052,20 +2074,6 @@
             }
             if (hotTrendsChart) {
                 hotTrendsChart.destroy();
-            }
-
-            // Gắn event listener cho tiêu đề biểu đồ để mở popup giải thích
-            if (chartTitleEl) {
-                // Kỹ thuật cloneNode để gỡ bỏ listener cũ, tránh việc gắn chồng chéo nhiều lần
-                const newChartTitleEl = chartTitleEl.cloneNode(true);
-                chartTitleEl.parentNode.replaceChild(newChartTitleEl, chartTitleEl);
-                
-                newChartTitleEl.style.cursor = 'pointer'; // Thêm con trỏ chuột để báo hiệu có thể click
-                newChartTitleEl.addEventListener('click', () => {
-                    document.getElementById('explanation-title').textContent = t('What is Engagement Score?');
-                    document.getElementById('explanation-body').textContent = t('Engagement Score Explanation');
-                    openModal('explanation-modal');
-                });
             }
 
             if (newSearchTerm) {
@@ -2085,9 +2093,13 @@
             if (clearSearchBtn) {
                 clearSearchBtn.classList.toggle('hidden', user.tbSearchTerms.length === 0);
             }
-            if (searchDetailsContainer) {
-                searchDetailsContainer.classList.add('hidden');
+            
+            // Luôn xóa và ẩn các chi tiết cũ trước khi bắt đầu
+            if (searchDetailsWrapper) {
+                searchDetailsWrapper.innerHTML = '';
+                searchDetailsWrapper.classList.add('hidden');
             }
+            currentSearchResults = []; // Reset kết quả bài báo
 
             let datasets = [];
             let chartLabels = [];
@@ -2095,8 +2107,7 @@
             if (user.tbSearchTerms.length > 0) {
                 // --- CHẾ ĐỘ TÌM KIẾM SO SÁNH ---
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
-                const newChartTitleEl = document.getElementById('tb-chart-title'); // Lấy lại element sau khi clone
-                if (newChartTitleEl) newChartTitleEl.innerHTML = `<div class="loading-spinner"></div> ${t('Searching for')} "${user.tbSearchTerms.join(', ')}"...`;
+                if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner"></div> ${t('Searching for')} "${user.tbSearchTerms.join(', ')}"...`;
                 
                 try {
                     const currentTimeframe = DOM.tbCustomTimeframeSelect.value;
@@ -2105,25 +2116,60 @@
                     );
                     const results = await Promise.all(searchPromises);
                     
-                    if (results.length === 1 && results[0].success && results[0].trends.length > 0) {
-                        const searchData = results[0].trends[0];
-                        document.getElementById('tb-top-articles-title').textContent = `${t('Top Articles for')} "${searchData.title_en}"`;
-                        document.getElementById('tb-related-queries-title').textContent = t('Related Queries');
-                        const articlesList = document.getElementById('tb-top-articles-list');
-                        const queriesList = document.getElementById('tb-related-queries-list');
-                        articlesList.innerHTML = searchData.topArticles.length > 0
-                            ? searchData.topArticles.map(article => `<li class="tb-article-item" data-trend-id="${article.id}"><div class="tb-article-title">${article.title_en}</div><div class="tb-article-source">${article.submitter}</div></li>`).join('')
-                            : `<li>${t('No articles found.')}</li>`;
-                        queriesList.innerHTML = searchData.relatedQueries.length > 0
-                             ? searchData.relatedQueries.map(q => `<li class="tb-related-item" data-query="${q.query}"><span class="tb-related-query">${q.query}</span><span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span></li>`).join('')
-                            : `<li>${t('No related queries.')}</li>`;
-                        currentSearchResults = [...searchData.topArticles];
-                        if (searchDetailsContainer) searchDetailsContainer.classList.remove('hidden');
-                    }
-                    
                     const palette = getColorPalette(user.tbSearchTerms.length);
                     let masterTimeline = new Map();
+                    
                     const processedResults = results.map(result => (result.success && result.trends.length > 0) ? result.trends[0] : null).filter(Boolean);
+
+                    // --- LOGIC RENDER CHI TIẾT ĐỘNG ---
+                    processedResults.forEach(searchData => {
+                        if (searchData.topArticles.length > 0 || searchData.relatedQueries.length > 0) {
+                            const articlesHTML = `
+                                <div class="tb-details-panel">
+                                    <h4>${t('Top Articles for')} "${searchData.title_en}"</h4>
+                                    <ul class="tb-article-list">
+                                        ${searchData.topArticles.length > 0
+                                            ? searchData.topArticles.map(article => `
+                                                <li class="tb-article-item" data-trend-id="${article.id}">
+                                                    <div class="tb-article-title">${article.title_en}</div>
+                                                    <div class="tb-article-source">${article.submitter}</div>
+                                                </li>`).join('')
+                                            : `<li>${t('No articles found.')}</li>`
+                                        }
+                                    </ul>
+                                </div>`;
+                            
+                            const queriesHTML = `
+                                <div class="tb-details-panel">
+                                    <h4>${t('Related Queries')}</h4>
+                                    <ul class="tb-related-list">
+                                        ${searchData.relatedQueries.length > 0
+                                            ? searchData.relatedQueries.map(q => `
+                                                <li class="tb-related-item" data-query="${q.query}">
+                                                    <span class="tb-related-query">${q.query}</span>
+                                                    <span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span>
+                                                </li>`).join('')
+                                            : `<li>${t('No related queries.')}</li>`
+                                        }
+                                    </ul>
+                                </div>`;
+
+                            const container = document.createElement('div');
+                            container.className = 'tb-search-details-container';
+                            container.innerHTML = articlesHTML + queriesHTML;
+                            
+                            if (searchDetailsWrapper) {
+                                searchDetailsWrapper.appendChild(container);
+                            }
+                            currentSearchResults.push(...searchData.topArticles);
+                        }
+                    });
+
+                    if (searchDetailsWrapper && searchDetailsWrapper.innerHTML !== '') {
+                        searchDetailsWrapper.classList.remove('hidden');
+                    }
+                    // --- KẾT THÚC LOGIC RENDER CHI TIẾT ---
+
                     processedResults.forEach(trendData => {
                         trendData.timelineData.forEach(point => {
                             const date = new Date(point.time * 1000);
@@ -2131,6 +2177,7 @@
                             if (!masterTimeline.has(point.time)) masterTimeline.set(point.time, { label: formattedDate });
                         });
                     });
+                    
                     const sortedTimeline = Array.from(masterTimeline.entries()).sort((a, b) => a[0] - b[0]);
                     chartLabels = sortedTimeline.map(entry => entry[1].label);
 
@@ -2138,7 +2185,8 @@
                         const dataMap = new Map(trendData.timelineData.map(p => [new Date(p.time * 1000).toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }), p.value[0]]));
                         const dataPoints = chartLabels.map(label => dataMap.get(label) || 0);
                         return {
-                            label: trendData.title_en, data: dataPoints,
+                            label: trendData.title_en,
+                            data: dataPoints,
                             borderColor: palette[i % palette.length].stroke,
                             backgroundColor: (context) => {
                                 const {ctx, chartArea} = context.chart;
@@ -2155,11 +2203,11 @@
                             trendId: trendData.id
                         };
                     });
-                    if (newChartTitleEl) newChartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
+
+                    if (chartTitleEl) chartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
                 } catch (error) {
                     console.error("Live search failed:", error);
-                    const newChartTitleEl = document.getElementById('tb-chart-title');
-                    if (newChartTitleEl) newChartTitleEl.textContent = t('Search failed. Please try again.');
+                    if (chartTitleEl) chartTitleEl.textContent = t('Search failed. Please try again.');
                 }
             } else {
                 // --- CHẾ ĐỘ DUYỆT MẶC ĐỊNH ---
@@ -2169,8 +2217,7 @@
                 
                 const titleKeyMap = { hottest: 'Hottest News', latest: 'Latest News', outdated: 'Outdated News', predictive: 'Predictive News' };
                 const titleKey = titleKeyMap[status] || (status.charAt(0).toUpperCase() + status.slice(1));
-                const newChartTitleEl = document.getElementById('tb-chart-title');
-                if (newChartTitleEl) newChartTitleEl.textContent = `${t(titleKey)} - ${t('Interest Over Time')}`;
+                if (chartTitleEl) chartTitleEl.textContent = `${t(titleKey)} - ${t('Interest Over Time')}`;
 
                 const selectedCategory = DOM.tbCategoryFilter.value;
                 const selectedRegion = DOM.tbRegionFilter.value;
@@ -2229,8 +2276,7 @@
                         interaction: { mode: 'index', intersect: false },
                         plugins: {
                             legend: { 
-                                position: 'bottom',
-                                align: 'center',
+                                position: 'bottom', align: 'center',
                                 labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 10, padding: 25 },
                                 onHover: (event) => { event.native.target.style.cursor = 'pointer'; },
                                 onLeave: (event) => { event.native.target.style.cursor = 'default'; },
@@ -2263,24 +2309,27 @@
                             }
                         },
                         scales: {
-                            x: { 
-                                grid: { display: false }, 
-                                ticks: { color: '#8a8da0' } 
-                            },
+                            x: { grid: { display: false }, ticks: { color: '#8a8da0' } },
                             y: { 
                                 grid: { color: 'rgba(255, 255, 255, 0.05)'},
                                 ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, 
                                 beginAtZero: true,
                                 min: 0,
                                 suggestedMax: maxDataValue * 1.2 || 1000,
+                                title: {
+                                    display: true,
+                                    text: t('Engagement Score'),
+                                    color: 'var(--text-muted-color)',
+                                    font: { size: 14, weight: '500' },
+                                    padding: { top: 0, left: 0, right: 0, bottom: 10 }
+                                }
                             }
                         }
                     }
                 });
             } else {
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                const finalChartTitleEl = document.getElementById('tb-chart-title');
-                if (finalChartTitleEl) finalChartTitleEl.textContent = t('No trends found.');
+                if (chartTitleEl) chartTitleEl.textContent = t('No trends found.');
             }
             
             if (user.tbSearchTerms.length > 0) {
@@ -2713,6 +2762,7 @@
     </script>
 </body>
 </html>
+
 
 
 
