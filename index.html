@@ -2065,7 +2065,7 @@
             });
         }
         
-        async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
+         async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
             const searchDetailsWrapper = document.getElementById('tb-search-details-wrapper');
@@ -2135,29 +2135,56 @@
                     
                     const processedResults = results.map(res => (res.success && res.trends.length > 0) ? res.trends[0] : null).filter(Boolean);
 
+                    // --- LOGIC RENDER CHI TIẾT (ĐÃ ĐIỀN ĐẦY ĐỦ) ---
                     processedResults.forEach(searchData => {
                         if (searchData.topArticles && Array.isArray(searchData.topArticles)) {
                             currentSearchResults.push(...searchData.topArticles);
                         }
+                        
                         let articlesHTML = '';
                         if (searchData.topArticles && searchData.topArticles.length > 0) {
-                            articlesHTML = `...`; // HTML for articles
+                            articlesHTML = `
+                                <div class="tb-details-panel">
+                                    <h4>${t('Top Articles for')} "${searchData.title_en}"</h4>
+                                    <ul class="tb-article-list">
+                                        ${searchData.topArticles.map(article => `
+                                            <li class="tb-article-item" data-trend-id="${article.id}">
+                                                <div class="tb-article-title">${article.title_en}</div>
+                                                <div class="tb-article-source">${article.submitter}</div>
+                                            </li>`).join('')}
+                                    </ul>
+                                </div>`;
                         }
+
                         let queriesHTML = '';
                         if (searchData.relatedQueries && searchData.relatedQueries.length > 0) {
-                            queriesHTML = `...`; // HTML for queries
+                            queriesHTML = `
+                                <div class="tb-details-panel">
+                                    <h4>${t('Related Queries')}</h4>
+                                    <ul class="tb-related-list">
+                                        ${searchData.relatedQueries.map(q => `
+                                            <li class="tb-related-item" data-query="${q.query}">
+                                                <span class="tb-related-query">${q.query}</span>
+                                                <span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span>
+                                            </li>`).join('')}
+                                    </ul>
+                                </div>`;
                         }
+
                         if (articlesHTML || queriesHTML) {
                             const container = document.createElement('div');
                             container.className = 'tb-search-details-container';
                             container.innerHTML = articlesHTML + queriesHTML;
-                            if (searchDetailsWrapper) searchDetailsWrapper.appendChild(container);
+                            if (searchDetailsWrapper) {
+                                searchDetailsWrapper.appendChild(container);
+                            }
                         }
                     });
 
                     if (searchDetailsWrapper && searchDetailsWrapper.innerHTML.trim() !== '') {
                         searchDetailsWrapper.classList.remove('hidden');
                     }
+                    // --- KẾT THÚC LOGIC RENDER CHI TIẾT ---
 
                     const palette = getColorPalette(processedResults.length);
                     let masterTimeline = new Map();
@@ -2788,6 +2815,7 @@
     </script>
 </body>
 </html>
+
 
 
 
