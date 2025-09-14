@@ -2411,12 +2411,13 @@
             currentTrendStatus.customTimeframe = select.value;
         }
 
-        function handleInteraction(e) {
+                function handleInteraction(e) {
             const targetElement = e.target;
             
-            // Tìm phần tử có thể click gần nhất (card, item, nút,...)
+            // Tìm các phần tử cha có thể tương tác gần nhất
             const trendCard = targetElement.closest('.trend-card');
             const leaderboardItem = targetElement.closest('#tb-topic-list li, #tb-query-list li, #for-u-leaderboards li');
+            const articleItem = targetElement.closest('.tb-article-item');
             
             let trendId = null;
             let analysisType = null;
@@ -2434,6 +2435,15 @@
             } else if (leaderboardItem) {
                 trendId = leaderboardItem.dataset.trendId;
                 analysisType = 'detailed';
+            } else if (articleItem) {
+                // Khi click vào một bài báo trong kết quả tìm kiếm
+                e.preventDefault();
+                trendId = articleItem.dataset.trendId;
+                const trend = currentSearchResults.find(t => t.id === trendId);
+                if (trend) {
+                    openTrendOverviewModal(trend);
+                }
+                return; // Dừng lại sau khi mở modal
             } else if (targetElement.matches('.tag.hashtag')) {
                 // Xử lý click hashtag
                 e.preventDefault();
@@ -2463,8 +2473,7 @@
             // Ngăn chặn các hành vi mặc định khác (như điều hướng của thẻ <a>)
             e.preventDefault();
 
-            // *** LOGIC TÌM KIẾM TREND ĐÃ ĐƯỢC CẢI TIẾN ***
-            // Ưu tiên tìm trong kết quả tìm kiếm gần nhất, sau đó mới đến danh sách master
+            // Tìm kiếm dữ liệu trend từ cả hai nguồn
             const trend = currentSearchResults.find(t => t.id === trendId) || masterTrendsList.find(t => t.id === trendId);
 
             if (!trend) {
@@ -2481,7 +2490,7 @@
                     ? user.followedTrends.filter(id => id !== trend.id) 
                     : [...user.followedTrends, trend.id];
                 
-                // Cập nhật giao diện cho tất cả các bản sao của trend card này
+                // Cập nhật giao diện cho tất cả các bản sao của trend card này (cả trang chính và trong modal)
                 document.querySelectorAll(`[data-trend-id="${trend.id}"] .btn-follow`).forEach(btn => {
                     btn.classList.toggle('followed', !isFollowed);
                     btn.textContent = !isFollowed ? t('Following') : t('❤️ Follow');
@@ -2551,19 +2560,23 @@
             }
 
             // Event listener for Top Articles
-        document.getElementById('tb-top-articles-list')?.addEventListener('click', (e) => {
-            const item = e.target.closest('.tb-article-item');
-            if (item && item.dataset.trendId) {
-                const trend = currentSearchResults.find(t => t.id === item.dataset.trendId);
-                if (trend) openTrendOverviewModal(trend);
-            }
-        });
+        document.getElementById('tb-search-details-wrapper')?.addEventListener('click', async (e) => {
+            const articleItem = e.target.closest('.tb-article-item');
+            const relatedItem = e.target.closest('.tb-related-item');
 
-        // Event listener for Related Queries
-        document.getElementById('tb-related-queries-list')?.addEventListener('click', async (e) => {
-            const item = e.target.closest('.tb-related-item');
-            if (item && item.dataset.query) {
-                await createHotTrendsChart(null, item.dataset.query);
+            // Xử lý click vào một bài báo trong Top Articles
+            if (articleItem && articleItem.dataset.trendId) {
+                const trendId = articleItem.dataset.trendId;
+                // Hàm handleInteraction đã có logic tìm kiếm trong currentSearchResults
+                handleInteraction(e);
+            }
+            
+            // Xử lý click vào một cụm từ liên quan
+            else if (relatedItem && relatedItem.dataset.query) {
+                const query = relatedItem.dataset.query;
+                if (query && !user.tbSearchTerms.includes(query)) {
+                    await createHotTrendsChart(null, query);
+                }
             }
         });
         
@@ -2815,6 +2828,7 @@
     </script>
 </body>
 </html>
+
 
 
 
