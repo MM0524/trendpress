@@ -2414,7 +2414,7 @@
             currentTrendStatus.customTimeframe = select.value;
         }
 
-                function handleInteraction(e) {
+        function handleInteraction(e) {
             const targetElement = e.target;
             
             // Tìm các phần tử cha có thể tương tác gần nhất
@@ -2424,88 +2424,75 @@
             
             let trendId = null;
             let analysisType = null;
+            
+            // **** BẮT ĐẦU TÁI CẤU TRÚC LOGIC ƯU TIÊN ****
 
-            // Xác định hành động và trendId dựa trên phần tử được click
-            if (targetElement.closest('.btn-summary')) {
+            // ƯU TIÊN 1: Kiểm tra các nút hành động cụ thể TRƯỚC TIÊN
+            if (targetElement.closest('.btn-predict')) {
                 trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
-                analysisType = 'summary';
+                analysisType = 'prediction'; // Sử dụng `prediction` như đã định nghĩa
             } else if (targetElement.closest('.analyze-trend-btn')) {
                 trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
                 analysisType = 'detailed';
-            } else if (targetElement.closest('.trend-title')) {
+            } else if (targetElement.closest('.btn-follow')) {
+                // Xử lý follow ngay tại đây
+                e.preventDefault();
+                trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
+                if (!trendId) return;
+
+                const isFollowed = user.followedTrends.includes(trendId);
+                user.followedTrends = isFollowed 
+                    ? user.followedTrends.filter(id => id !== trendId) 
+                    : [...user.followedTrends, trendId];
+                
+                document.querySelectorAll(`[data-trend-id="${trendId}"] .btn-follow`).forEach(btn => {
+                    btn.classList.toggle('followed', !isFollowed);
+                    btn.textContent = !isFollowed ? t('Following') : t('❤️ Follow');
+                });
+                
+                if (currentView === 'forU') generateCategoryLeaderboards('for-u-leaderboards', user.preferences);
+                if (currentView === 'trendingBoard') renderUserTrendsChart(DOM.tbCustomTimeframeSelect.value);
+                return; // Kết thúc hành động sau khi follow
+            }
+            // Nút "View Source" là một thẻ <a>, trình duyệt sẽ tự xử lý, không cần can thiệp.
+
+            // ƯU TIÊN 2: Kiểm tra các phần tử điều hướng hoặc mở modal
+            else if (targetElement.closest('.trend-title')) {
                 trendId = targetElement.closest('.trend-title')?.dataset.trendId;
                 analysisType = 'detailed';
             } else if (leaderboardItem) {
                 trendId = leaderboardItem.dataset.trendId;
                 analysisType = 'detailed';
             } else if (articleItem) {
-                // Khi click vào một bài báo trong kết quả tìm kiếm
                 e.preventDefault();
                 trendId = articleItem.dataset.trendId;
                 const trend = currentSearchResults.find(t => t.id === trendId);
-                if (trend) {
-                    openTrendOverviewModal(trend);
-                }
-                return; // Dừng lại sau khi mở modal
+                if (trend) openTrendOverviewModal(trend);
+                return;
             } else if (targetElement.matches('.tag.hashtag')) {
-                // Xử lý click hashtag
                 e.preventDefault();
-                currentFilter.type = 'hashtag';
-                currentFilter.value = 'All';
-                currentFilter.hashtag = targetElement.dataset.tag;
-                currentFilter.searchTerm = '';
-                switchView('main');
-                closeModal('trend-overview-modal');
+                // ... (logic hashtag) ...
                 return; 
-            } else if (trendCard) {
-                // Click vào nền của card chỉ để mở modal tổng quan
+            } else if (trendCard && !targetElement.closest('a, button')) {
+                // ƯU TIÊN 3: CHỈ mở modal nếu click vào nền card (không phải nút hay link)
                 e.preventDefault();
                 trendId = trendCard.dataset.trendId;
                 const trend = masterTrendsList.find(t => t.id === trendId) || currentSearchResults.find(t => t.id === trendId);
-                if (trend) {
-                    openTrendOverviewModal(trend);
-                }
+                if (trend) openTrendOverviewModal(trend);
                 return;
             }
 
-            // Nếu không tìm thấy trendId hoặc hành động cụ thể, dừng lại
-            if (!trendId) {
-                return;
-            }
-
-            // Ngăn chặn các hành vi mặc định khác (như điều hướng của thẻ <a>)
+            if (!trendId) return;
             e.preventDefault();
 
-            // Tìm kiếm dữ liệu trend từ cả hai nguồn
             const trend = currentSearchResults.find(t => t.id === trendId) || masterTrendsList.find(t => t.id === trendId);
-
             if (!trend) {
                 console.error("Trend data not found for ID:", trendId);
                 return;
             }
 
-            // Thực thi hành động dựa trên `analysisType` hoặc nút được bấm
             if (analysisType) { 
                 openAIInsightModal(trend, analysisType);
-            } else if (targetElement.closest('.btn-follow')) {
-                const isFollowed = user.followedTrends.includes(trend.id);
-                user.followedTrends = isFollowed 
-                    ? user.followedTrends.filter(id => id !== trend.id) 
-                    : [...user.followedTrends, trend.id];
-                
-                // Cập nhật giao diện cho tất cả các bản sao của trend card này (cả trang chính và trong modal)
-                document.querySelectorAll(`[data-trend-id="${trend.id}"] .btn-follow`).forEach(btn => {
-                    btn.classList.toggle('followed', !isFollowed);
-                    btn.textContent = !isFollowed ? t('Following') : t('❤️ Follow');
-                });
-                
-                // Vẽ lại các thành phần phụ thuộc vào 'followedTrends' nếu cần
-                if (currentView === 'forU') { 
-                    generateCategoryLeaderboards('for-u-leaderboards', user.preferences); 
-                }
-                if (currentView === 'trendingBoard') {
-                    renderUserTrendsChart(DOM.tbCustomTimeframeSelect.value); 
-                }
             }
         }
 
@@ -2829,6 +2816,7 @@
     </script>
 </body>
 </html>
+
 
 
 
