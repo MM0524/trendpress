@@ -1,49 +1,94 @@
 // netlify/functions/fetch-trends.js
+const NewsAPI = require('newsapi');
 const crypto = require('crypto');
 const googleTrends = require('google-trends-api');
-// Sử dụng node-fetch để gọi API từ một Netlify Function khác
-const fetch = require('node-fetch');
 
-// --- HÀM MỚI: CÔNG CỤ TÌM KIẾM NỘI BỘ ---
-// Hàm này quét qua danh sách tin tức tổng hợp và tìm các bài báo liên quan nhất.
-function findRelatedArticles(searchTerm, masterList) {
-    if (!searchTerm || !masterList || masterList.length === 0) {
-        return [];
-    }
+// Khởi tạo NewsAPI client với API key từ biến môi trường
+const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
-    const searchLower = searchTerm.toLowerCase();
+// --- CÁC HÀM HELPER ---
+
+function toDateStr(d) {
+    const dt = d ? new Date(d) : new Date();
+    return isNaN(dt.getTime()) ? new Date().toISOString().split("T")[0] : dt.toISOString().split("T")[0];
+}
+
+function toSortValue(d) {
+    const dt = d ? new Date(d) : null;
+    return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0;
+}
+
+// Hàm chuẩn hóa dữ liệu trả về từ NewsAPI
+function normalizeNewsApiArticle(article) {
+    const { title, description, url, publishedAt, source } = article;
+    if (!title || title === "[Removed]" || !url) return null;
+
+    const stableId = crypto.createHash('md5').update(url).digest('hex');
     
-    // Chấm điểm liên quan cho mỗi bài báo
-    const scoredArticles = masterList.map(article => {
-        let relevanceScore = 0;
-        const title = (article.title_en || article.title_vi || '').toLowerCase();
-        const description = (article.description_en || article.description_vi || '').toLowerCase();
-        const tags = (article.tags || []).join(' ').toLowerCase();
+    return {
+        id: stableId,
+        title_en: title,
+        description_en: description || "No description available.",
+        title_vi: null,
+        description_vi: null,
+        category: "Search",
+        tags: [source.name.replace(/\s/g, '')],
+        source: url,
+        date: toDateStr(publishedAt),
+        sortKey: toSortValue(publishedAt),
+        submitter: source.name || "Unknown Source",
+        region: 'global',
+        publishedAt: publishedAt // Giữ lại để sắp xếp
+    };
+}
 
-        // Tiêu chí chấm điểm:
-        if (title.includes(searchLower)) {
-            relevanceScore += 10; // Điểm cao nhất cho tiêu đề
+// Hàm tổng hợp các bài báo thành một chuỗi dữ liệu thời gian
+function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
+    if (!articles || articles.length === 0) return [];
+    
+    const counts = new Map();
+    const isHourly = hoursAgo > 0;
+
+    articles.forEach(article => {
+        const date = new Date(article.publishedAt);
+        let key;
+        if (isHourly) {
+            key = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).toISOString();
+        } else {
+            key = date.toISOString().split('T')[0];
         }
-        if (description.includes(searchLower)) {
-            relevanceScore += 5; // Điểm cao cho mô tả
-        }
-        if (tags.includes(searchLower)) {
-            relevanceScore += 2; // Điểm thưởng cho tag
-        }
-        
-        // Thêm một chút ngẫu nhiên để kết quả không quá tĩnh
-        if (relevanceScore > 0) {
-            relevanceScore += Math.random(); 
-        }
-        
-        return { ...article, relevanceScore };
+        counts.set(key, (counts.get(key) || 0) + 1);
     });
-    
-    // Lọc ra các bài báo có điểm > 0, sắp xếp theo điểm từ cao đến thấp và lấy 5 bài đầu tiên
-    return scoredArticles
-        .filter(article => article.relevanceScore > 0)
-        .sort((a, b) => b.relevanceScore - a.relevanceScore)
-        .slice(0, 5);
+
+    const timelineData = [];
+    const now = new Date();
+
+    if (isHourly) {
+        for (let i = hoursAgo; i >= 0; i--) {
+            const date = new Date(now);
+            date.setHours(date.getHours() - i);
+            const key = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).toISOString();
+            const value = (counts.get(key) || 0) * (Math.random() * 50 + 50);
+            
+            timelineData.push({
+                time: Math.floor(date.getTime() / 1000),
+                value: [Math.round(value)]
+            });
+        }
+    } else {
+        for (let i = daysAgo; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            const key = date.toISOString().split('T')[0];
+            const value = (counts.get(key) || 0) * (Math.random() * 50 + 50);
+            
+            timelineData.push({
+                time: Math.floor(date.getTime() / 1000),
+                value: [Math.round(value)]
+            });
+        }
+    }
+    return timelineData;
 }
 
 // --- HANDLER CHÍNH ---
@@ -56,56 +101,40 @@ exports.handler = async (event) => {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "searchTerm is required." }) };
         }
         
-        // --- BƯỚC 1: TẢI VỀ DANH SÁCH TIN TỨC TỔNG HỢP TỪ BUILDER FUNCTION ---
-        // URL này trỏ đến chính builder function của bạn. 
-        // `process.env.URL` là biến môi trường do Netlify cung cấp, chứa URL của trang web.
-        const builderUrl = `${process.env.URL}/.netlify/builders/trends-builder`;
-        let masterList = [];
-        try {
-            const response = await fetch(builderUrl);
-            if(response.ok) {
-                const data = await response.json();
-                if (data.success && Array.isArray(data.trends)) {
-                    masterList = data.trends;
-                    console.log(`Successfully fetched ${masterList.length} articles from master list.`);
-                }
-            } else {
-                 console.error(`Failed to fetch master list, status: ${response.status}`);
-            }
-        } catch (e) {
-            console.error("Critical error fetching master trends list:", e.message);
-            // Nếu không tải được danh sách chính, chúng ta vẫn có thể tiếp tục với Google Trends
-        }
-
-        // --- BƯỚC 2: GỌI CÁC API GOOGLE TRENDS SONG SONG ---
         const TIMEFRAME_MAP = {
             '1h': { hours: 1 }, '6h': { hours: 6 }, '24h': { hours: 24 },
             '3d': { days: 3 }, '7d': { days: 7 }, '1m': { days: 30 },
             '3m': { days: 30 }, '12m': { days: 30 },
         };
+
         const timeConfig = TIMEFRAME_MAP[rawTimeframe] || { days: 7 };
         const startTime = new Date();
+        let hoursAgo = 0, daysAgo = 0;
+
         if (timeConfig.hours) {
             startTime.setHours(startTime.getHours() - timeConfig.hours);
+            hoursAgo = timeConfig.hours;
         } else {
             startTime.setDate(startTime.getDate() - timeConfig.days);
+            daysAgo = timeConfig.days;
         }
 
         const interestPromise = googleTrends.interestOverTime({ keyword: searchTerm, startTime: startTime });
+        const newsPromise = newsapi.v2.everything({ q: searchTerm, from: startTime.toISOString(), sortBy: 'relevancy', pageSize: 100, language: 'en' });
         const relatedQueriesPromise = googleTrends.relatedQueries({ keyword: searchTerm, startTime: startTime });
 
-        const [interestResult, relatedQueriesResult] = await Promise.allSettled([interestPromise, relatedQueriesPromise]);
-        
-        // --- BƯỚC 3: XỬ LÝ VÀ GỘP KẾT QUẢ ---
+        const [interestResult, newsResult, relatedQueriesResult] = await Promise.allSettled([interestPromise, newsPromise, relatedQueriesPromise]);
+
         let timelineData = null;
         let topArticles = [];
         let relatedQueries = [];
-        
-        // 3.1: Sử dụng công cụ tìm kiếm nội bộ để lấy topArticles
-        topArticles = findRelatedArticles(searchTerm, masterList);
-        console.log(`Found ${topArticles.length} related articles internally.`);
+        let sourceApi = "Google Trends";
 
-        // 3.2: Xử lý timeline từ Google Trends
+        if (newsResult.status === 'fulfilled' && newsResult.value.status === 'ok' && newsResult.value.articles.length > 0) {
+            const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
+            topArticles = allArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)).slice(0, 5);
+        }
+
         if (interestResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(interestResult.value);
@@ -115,7 +144,12 @@ exports.handler = async (event) => {
             } catch (e) { console.error("Parsing interestOverTime failed:", e.message); }
         }
         
-        // 3.3: Xử lý related queries từ Google Trends
+        if (!timelineData && newsResult.status === 'fulfilled' && newsResult.value.articles.length > 0) {
+            sourceApi = "NewsAPI";
+            const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
+            timelineData = aggregateArticlesToTimeline(allArticles, daysAgo, hoursAgo);
+        }
+
         if (relatedQueriesResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(relatedQueriesResult.value);
@@ -124,18 +158,16 @@ exports.handler = async (event) => {
             } catch (e) { console.error("Parsing related queries failed:", e.message); }
         }
 
-        // Nếu không có BẤT KỲ dữ liệu nào (timeline, articles, queries), trả về mảng rỗng
         if (!timelineData && topArticles.length === 0 && relatedQueries.length === 0) {
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [] }) };
         }
 
-        // Tạo đối tượng trend tổng hợp cuối cùng
         const aggregatedTrend = {
             id: `aggregated-${searchTerm.replace(/\s/g, '-')}-${rawTimeframe}`,
             title_en: searchTerm,
             isAggregated: true,
-            submitter: "Multiple Sources", // Nguồn giờ là tổng hợp
-            timelineData: timelineData || [], // Đảm bảo luôn là mảng
+            submitter: sourceApi,
+            timelineData: timelineData || [],
             topArticles: topArticles,
             relatedQueries: relatedQueries,
         };
@@ -154,4 +186,4 @@ exports.handler = async (event) => {
             body: JSON.stringify({ success: false, message: err.message }),
         };
     }
-};
+}; // <-- ĐÂY LÀ DẤU NGOẶC QUAN TRỌNG NHẤT, CÓ THỂ ĐÃ BỊ THIẾU
