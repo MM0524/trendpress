@@ -27,7 +27,7 @@ function normalizeNewsApiArticle(article) {
     
     return {
         id: stableId,
-        title_en: title,
+        title_en: title || '', // Đảm bảo title_en không bao giờ là null
         description_en: description || "No description available.",
         title_vi: null,
         description_vi: null,
@@ -35,10 +35,8 @@ function normalizeNewsApiArticle(article) {
         tags: [source.name.replace(/\s/g, '')],
         source: url,
         date: toDateStr(publishedAt),
-        sortKey: toSortValue(publishedAt),
         submitter: source.name || "Unknown Source",
-        region: 'global',
-        publishedAt: publishedAt // Giữ lại để sắp xếp
+        publishedAt: publishedAt
     };
 }
 
@@ -104,7 +102,8 @@ exports.handler = async (event) => {
         const TIMEFRAME_MAP = {
             '1h': { hours: 1 }, '6h': { hours: 6 }, '24h': { hours: 24 },
             '3d': { days: 3 }, '7d': { days: 7 }, '1m': { days: 30 },
-            '3m': { days: 30 }, '12m': { days: 30 },
+            '3m': { days: 90 },
+            '12m': { days: 365 },
         };
 
         const timeConfig = TIMEFRAME_MAP[rawTimeframe] || { days: 7 };
@@ -119,8 +118,13 @@ exports.handler = async (event) => {
             daysAgo = timeConfig.days;
         }
 
+        // Tạo một ngày bắt đầu riêng cho NewsAPI, không bao giờ cũ hơn 28 ngày
+        const newsApiStartTime = new Date();
+        newsApiStartTime.setDate(newsApiStartTime.getDate() - 28);
+
+        // --- GỌI API SONG SONG ---
         const interestPromise = googleTrends.interestOverTime({ keyword: searchTerm, startTime: startTime });
-        const newsPromise = newsapi.v2.everything({ q: searchTerm, from: startTime.toISOString(), sortBy: 'relevancy', pageSize: 100, language: 'en' });
+        const newsPromise = newsapi.v2.everything({ q: searchTerm, from: newsApiStartTime.toISOString(), sortBy: 'relevancy', pageSize: 100, language: 'en' });
         const relatedQueriesPromise = googleTrends.relatedQueries({ keyword: searchTerm, startTime: startTime });
 
         const [interestResult, newsResult, relatedQueriesResult] = await Promise.allSettled([interestPromise, newsPromise, relatedQueriesPromise]);
@@ -130,11 +134,13 @@ exports.handler = async (event) => {
         let relatedQueries = [];
         let sourceApi = "Google Trends";
 
+        // 1. Xử lý kết quả Top Articles (từ NewsAPI)
         if (newsResult.status === 'fulfilled' && newsResult.value.status === 'ok' && newsResult.value.articles.length > 0) {
             const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
             topArticles = allArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)).slice(0, 5);
         }
 
+        // 2. Xử lý kết quả Timeline (ưu tiên Google, fallback về NewsAPI)
         if (interestResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(interestResult.value);
@@ -150,6 +156,7 @@ exports.handler = async (event) => {
             timelineData = aggregateArticlesToTimeline(allArticles, daysAgo, hoursAgo);
         }
 
+        // 3. Xử lý kết quả Related Queries
         if (relatedQueriesResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(relatedQueriesResult.value);
@@ -186,4 +193,4 @@ exports.handler = async (event) => {
             body: JSON.stringify({ success: false, message: err.message }),
         };
     }
-}; // <-- ĐÂY LÀ DẤU NGOẶC QUAN TRỌNG NHẤT, CÓ THỂ ĐÃ BỊ THIẾU
+};
