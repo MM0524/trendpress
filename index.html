@@ -2506,7 +2506,7 @@
             }
         }
 
-            async function initializeApp() {
+        async function initializeApp() {
                 applyTranslations();
                 updateLanguageToggleUI();
 
@@ -2565,9 +2565,8 @@
             const relatedItem = e.target.closest('.tb-related-item');
 
             // Xử lý click vào một bài báo trong Top Articles
-            if (articleItem && articleItem.dataset.trendId) {
-                const trendId = articleItem.dataset.trendId;
-                // Hàm handleInteraction đã có logic tìm kiếm trong currentSearchResults
+            if (articleItem) {
+                // Chỉ cần gọi handleInteraction, nó sẽ tự xử lý việc mở modal
                 handleInteraction(e);
             }
             
@@ -2747,38 +2746,37 @@
             });
 
             // NEW: Event listener for the new trend overview modal's content
-            if (DOM.trendOverviewBody) DOM.trendOverviewBody.addEventListener('click', (e) => {
+            if (DOM.trendOverviewBody) {
+            DOM.trendOverviewBody.addEventListener('click', (e) => {
+                // Lấy trendId đã được lưu khi modal mở ra
+                const trendId = DOM.trendOverviewBody.dataset.currentTrendId;
+                if (!trendId) return;
+
                 const targetElement = e.target;
-                const trendId = DOM.trendOverviewBody.dataset.currentTrendId; // Get the trend ID stored when modal opened
-                const trend = masterTrendsList.find(t => t.id === trendId);
+                
+                // Tìm đến element cha có chứa thông tin hành động (nút bấm, tiêu đề, tag)
+                const interactiveParent = targetElement.closest('.trend-actions, .trend-card-header, .trend-title, .tag.hashtag');
 
-                if (!trend) {
-                    console.error("Could not find trend data for interaction within overview modal.");
-                    return;
+                // "Trick": Gán tạm thời trendId vào element cha đó.
+                // Điều này làm cho các nút bên trong modal hoạt động giống hệt như các nút trên card thông thường.
+                if (interactiveParent) {
+                    interactiveParent.dataset.trendId = trendId;
+                } else if (targetElement.classList.contains('trend-card')) {
+                    // Trường hợp click vào nền card bên trong modal
+                    targetElement.dataset.trendId = trendId;
                 }
-                let analysisType = null;
-                // Kiểm tra data-analysis-type của nút được click
-                if (targetElement.closest('.btn-summary')) {
-                    analysisType = targetElement.closest('.btn-summary').dataset.analysisType;
-                } else if (targetElement.closest('.analyze-trend-btn')) { 
-                    analysisType = targetElement.closest('.analyze-trend-btn').dataset.analysisType;
-                } else if (targetElement.closest('.trend-title')) { 
-                    analysisType = 'detailed'; // Tiêu đề luôn mở Deep Dive
-                }
+                
+                // Gọi hàm xử lý tương tác chung, nó sẽ tự biết phải làm gì
+                handleInteraction(e);
 
-                if (analysisType) {
-                    openAIInsightModal(trend, analysisType);
-                } else if (targetElement.closest('.btn-follow')) {
-                    handleInteraction(e); // Let the main handler manage follow state and UI updates
-                } else if (targetElement.matches('.tag.hashtag')) {
-                    currentFilter.type = 'hashtag';
-                    currentFilter.value = 'All';
-                    currentFilter.hashtag = targetElement.dataset.tag;
-                    currentFilter.searchTerm = '';
-                    switchView('main');
-                    closeModal('trend-overview-modal'); // Close the overview modal when applying hashtag filter
+                // Dọn dẹp dataset tạm thời để tránh ảnh hưởng đến các lần sau (tùy chọn nhưng nên có)
+                if (interactiveParent) {
+                    delete interactiveParent.dataset.trendId;
+                } else if (targetElement.classList.contains('trend-card')) {
+                    delete targetElement.dataset.trendId;
                 }
             });
+        }
 
             document.getElementById('language-toggle')?.addEventListener('click', async (e) => {
                 e.preventDefault(); // Ngăn chặn hành vi mặc định
@@ -2828,6 +2826,7 @@
     </script>
 </body>
 </html>
+
 
 
 
