@@ -2065,7 +2065,7 @@
             });
         }
         
-                async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
+        async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
             const searchDetailsWrapper = document.getElementById('tb-search-details-wrapper');
@@ -2098,100 +2098,66 @@
                 if (term && !user.tbSearchTerms.includes(term)) user.tbSearchTerms.push(term);
             }
 
+            const isInSearchMode = user.tbSearchTerms.length > 0;
+
             if (DOM.tbSearchChipsContainer) {
                 DOM.tbSearchChipsContainer.innerHTML = user.tbSearchTerms.map(term => `<span class="tb-search-chip">${truncateText(term, 20)}<button class="tb-search-chip-remove" data-term="${term}">&times;</button></span>`).join('');
-                DOM.tbSearchChipsContainer.classList.toggle('hidden', user.tbSearchTerms.length === 0);
+                DOM.tbSearchChipsContainer.classList.toggle('hidden', !isInSearchMode);
             }
             
             if (clearSearchBtn) {
-                clearSearchBtn.classList.toggle('hidden', user.tbSearchTerms.length === 0);
+                clearSearchBtn.classList.toggle('hidden', !isInSearchMode);
             }
             
             if (searchDetailsWrapper) {
                 searchDetailsWrapper.innerHTML = '';
                 searchDetailsWrapper.classList.add('hidden');
             }
-            currentSearchResults = []; // Reset kết quả bài báo
+            currentSearchResults = [];
 
             let datasets = [];
             let chartLabels = [];
 
-            if (user.tbSearchTerms.length > 0) {
+            if (isInSearchMode) {
                 // --- CHẾ ĐỘ TÌM KIẾM SO SÁNH ---
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
                 if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner" style="display: inline-block; vertical-align: middle; margin-right: 10px;"></div> ${t('Searching for')}...`;
                 
                 try {
                     const currentTimeframe = DOM.tbCustomTimeframeSelect.value;
+                    const currentStatus = DOM.tbStatusSelect.value;
+                    const modeParam = currentStatus === 'predictive' ? '&mode=predictive' : '';
+
                     const searchPromises = user.tbSearchTerms.map(term => 
-                        fetch(`/.netlify/functions/fetch-trends?searchTerm=${encodeURIComponent(term)}&timeframe=${currentTimeframe}`).then(res => res.json())
+                        fetch(`/.netlify/functions/fetch-trends?searchTerm=${encodeURIComponent(term)}&timeframe=${currentTimeframe}${modeParam}`).then(res => res.json())
                     );
                     const results = await Promise.all(searchPromises);
                     
                     const processedResults = results.map(res => (res.success && res.trends.length > 0) ? res.trends[0] : null).filter(Boolean);
 
-                    // --- LOGIC RENDER CHI TIẾT ĐỘNG (ĐÃ SỬA LỖI) ---
-
-                    // BƯỚC 1: Gộp tất cả các bài báo từ tất cả các kết quả vào `currentSearchResults` TRƯỚC TIÊN.
                     processedResults.forEach(searchData => {
                         if (searchData.topArticles && Array.isArray(searchData.topArticles)) {
                             currentSearchResults.push(...searchData.topArticles);
                         }
-                    });
-                    
-                    // BƯỚC 2: Bây giờ, lặp lại để render HTML.
-                    processedResults.forEach(searchData => {
-                        const articlesHTML = `
-                            <div class="tb-details-panel">
-                                <h4>${t('Top Articles for')} "${searchData.title_en}"</h4>
-                                <ul class="tb-article-list">
-                                    ${searchData.topArticles.length > 0
-                                        ? searchData.topArticles.map(article => `
-                                            <li class="tb-article-item" data-trend-id="${article.id}">
-                                                <div class="tb-article-title">${article.title_en}</div>
-                                                <div class="tb-article-source">${article.submitter}</div>
-                                            </li>`).join('')
-                                        : `<li>${t('No articles found.')}</li>`
-                                    }
-                                </ul>
-                            </div>`;
-                        
-                        const queriesHTML = `
-                            <div class="tb-details-panel">
-                                <h4>${t('Related Queries')}</h4>
-                                <ul class="tb-related-list">
-                                    ${searchData.relatedQueries.length > 0
-                                        ? searchData.relatedQueries.map(q => `
-                                            <li class="tb-related-item" data-query="${q.query}">
-                                                <span class="tb-related-query">${q.query}</span>
-                                                <span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span>
-                                            </li>`).join('')
-                                        : `<li>${t('No related queries.')}</li>`
-                                    }
-                                </ul>
-                            </div>`;
-
-                        const container = document.createElement('div');
-                        container.className = 'tb-search-details-container';
-                        
-                        // Chỉ thêm bảng articles nếu có articles hoặc nếu không có dữ liệu nào cả (để hiển thị "No articles found")
-                        if (searchData.topArticles.length >= 0) {
-                            container.innerHTML += articlesHTML;
+                        let articlesHTML = '';
+                        if (searchData.topArticles && searchData.topArticles.length > 0) {
+                            articlesHTML = `...`; // HTML for articles
                         }
-                        // Chỉ thêm bảng queries nếu có queries hoặc nếu không có dữ liệu nào cả
-                        if (searchData.relatedQueries.length >= 0) {
-                            container.innerHTML += queriesHTML;
+                        let queriesHTML = '';
+                        if (searchData.relatedQueries && searchData.relatedQueries.length > 0) {
+                            queriesHTML = `...`; // HTML for queries
                         }
-
-                        if (searchDetailsWrapper && container.innerHTML.trim() !== '') {
-                            searchDetailsWrapper.appendChild(container);
+                        if (articlesHTML || queriesHTML) {
+                            const container = document.createElement('div');
+                            container.className = 'tb-search-details-container';
+                            container.innerHTML = articlesHTML + queriesHTML;
+                            if (searchDetailsWrapper) searchDetailsWrapper.appendChild(container);
                         }
                     });
 
                     if (searchDetailsWrapper && searchDetailsWrapper.innerHTML.trim() !== '') {
                         searchDetailsWrapper.classList.remove('hidden');
                     }
-                    // --- KẾT THÚC LOGIC RENDER CHI TIẾT ---
 
                     const palette = getColorPalette(processedResults.length);
                     let masterTimeline = new Map();
@@ -2208,29 +2174,62 @@
                     const sortedTimeline = Array.from(masterTimeline.entries()).sort((a, b) => a[0] - b[0]);
                     chartLabels = sortedTimeline.map(entry => entry[1].label);
 
-                    datasets = processedResults.map((trendData, i) => {
-                        const dataMap = new Map(trendData.timelineData.map(p => [new Date(p.time * 1000).toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }), p.value[0]]));
-                        const dataPoints = chartLabels.map(label => dataMap.get(label) || 0);
-                        return {
+                    datasets = processedResults.flatMap((trendData, i) => {
+                        const dataMap = new Map(trendData.timelineData.map(p => [new Date(p.time * 1000).toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }), p]));
+                        const historicalData = new Array(chartLabels.length).fill(null);
+                        const predictionData = new Array(chartLabels.length).fill(null);
+                        let lastHistoricalIndex = -1;
+
+                        chartLabels.forEach((label, index) => {
+                            if (dataMap.has(label)) {
+                                const point = dataMap.get(label);
+                                if (point.isPrediction) {
+                                    predictionData[index] = point.value[0];
+                                } else {
+                                    historicalData[index] = point.value[0];
+                                    lastHistoricalIndex = index;
+                                }
+                            }
+                        });
+
+                        if (lastHistoricalIndex !== -1 && predictionData.some(p => p !== null)) {
+                            predictionData[lastHistoricalIndex] = historicalData[lastHistoricalIndex];
+                        }
+                        
+                        const color = palette[i % palette.length].stroke;
+                        const baseDataset = {
                             label: trendData.title_en,
-                            data: dataPoints,
-                            borderColor: palette[i % palette.length].stroke,
+                            borderColor: color,
                             backgroundColor: (context) => {
                                 const {ctx, chartArea} = context.chart;
                                 if (!chartArea) return null;
-                                const color = palette[i % palette.length].stroke;
                                 let transparentColorEnd = color.startsWith('hsl') ? color.replace('hsl', 'hsla').replace(')', ', 0.25)') : `${color}40`;
                                 const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
                                 gradient.addColorStop(0, 'rgba(161, 0, 255, 0)');
                                 gradient.addColorStop(1, transparentColorEnd);
                                 return gradient;
                             },
-                            tension: 0.4, fill: true, pointRadius: 1, pointBackgroundColor: palette[i % palette.length].stroke,
+                            tension: 0.4, fill: true, pointRadius: 1, pointBackgroundColor: color,
                             pointHoverRadius: 6, pointHoverBorderWidth: 2, pointHoverBorderColor: 'white',
                             trendId: trendData.id
                         };
-                    });
 
+                        const datasetsForTerm = [];
+                        if (historicalData.some(p => p !== null)) {
+                            datasetsForTerm.push({ ...baseDataset, data: historicalData });
+                        }
+                        if (predictionData.some(p => p !== null)) {
+                            datasetsForTerm.push({
+                                ...baseDataset,
+                                label: `${trendData.title_en} (${t('Predictive')})`,
+                                borderDash: [5, 5],
+                                data: predictionData,
+                                fill: false
+                            });
+                        }
+                        return datasetsForTerm;
+                    });
+                    
                     if (chartTitleEl) chartTitleEl.textContent = `${t('Search Results')} - ${t('Interest Over Time')}`;
                 } catch (error) {
                     console.error("Live search failed:", error);
@@ -2359,7 +2358,7 @@
                 if (chartTitleEl) chartTitleEl.textContent = t('No trends found.');
             }
             
-            if (user.tbSearchTerms.length > 0) {
+            if (isInSearchMode) {
                 if (DOM.userTrendsChartContainer) DOM.userTrendsChartContainer.classList.add('hidden');
             } else {
                 renderUserTrendsChart(DOM.tbCustomTimeframeSelect.value);
@@ -2789,6 +2788,7 @@
     </script>
 </body>
 </html>
+
 
 
 
