@@ -2115,15 +2115,13 @@
                             beginAtZero: true, 
                             min: 0,
                             suggestedMax: maxDataValue * 1.2 || 1000,
-                             // **** XÓA BỎ TIÊU ĐỀ TRỤC Y ****
-                            // title: { ... } // <- ĐÃ XÓA
                         }
                     }
                 }
             });
         }
         
-         async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
+        async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
             const searchDetailsWrapper = document.getElementById('tb-search-details-wrapper');
@@ -2157,18 +2155,17 @@
             }
 
             const isInSearchMode = user.tbSearchTerms.length > 0;
-
             const searchTermsChanged = JSON.stringify(user.tbSearchTerms) !== JSON.stringify(lastRenderedSearchTerms);
-            
+
             if (DOM.tbSearchChipsContainer) {
                 DOM.tbSearchChipsContainer.innerHTML = user.tbSearchTerms.map(term => `<span class="tb-search-chip">${truncateText(term, 20)}<button class="tb-search-chip-remove" data-term="${term}">&times;</button></span>`).join('');
                 DOM.tbSearchChipsContainer.classList.toggle('hidden', !isInSearchMode);
             }
+            
             if (clearSearchBtn) {
                 clearSearchBtn.classList.toggle('hidden', !isInSearchMode);
             }
             
-            // Chỉ xóa các bảng chi tiết nếu từ khóa tìm kiếm đã thay đổi
             if (searchTermsChanged && searchDetailsWrapper) {
                 searchDetailsWrapper.innerHTML = '';
                 searchDetailsWrapper.classList.add('hidden');
@@ -2181,7 +2178,7 @@
             if (isInSearchMode) {
                 // --- CHẾ ĐỘ TÌM KIẾM ---
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
-                if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner"></div> ${t('Searching for')}...`;
+                if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner" style="display: inline-block; vertical-align: middle; margin-right: 10px;"></div> ${t('Searching for')}...`;
                 
                 try {
                     const currentTimeframe = DOM.tbCustomTimeframeSelect.value;
@@ -2196,24 +2193,54 @@
                     const processedResults = results.map(res => (res.success && res.trends.length > 0) ? res.trends[0] : null).filter(Boolean);
 
                     // --- LOGIC RENDER CHI TIẾT CÓ ĐIỀU KIỆN ---
-                    // **CHỈ RENDER LẠI CÁC BẢNG NẾU TỪ KHÓA THAY ĐỔI**
                     if (searchTermsChanged) {
                         processedResults.forEach(searchData => {
                             currentSearchResults.push(...searchData.topArticles);
-                            const articlesHTML = `...`; // HTML cho articles
-                            const queriesHTML = `...`; // HTML cho queries
-                            if (articlesHTML || queriesHTML) {
-                                const container = document.createElement('div');
-                                container.className = 'tb-search-details-container';
-                                container.innerHTML = articlesHTML + queriesHTML;
-                                if (searchDetailsWrapper) searchDetailsWrapper.appendChild(container);
+                            
+                            const articlesHTML = `
+                                <div class="tb-details-panel">
+                                    <h4>${t('Top Articles for')} "${searchData.title_en}"</h4>
+                                    <ul class="tb-article-list">
+                                        ${searchData.topArticles.length > 0
+                                            ? searchData.topArticles.map(article => `
+                                                <li class="tb-article-item" data-trend-id="${article.id}">
+                                                    <div class="tb-article-title">${article.title_en}</div>
+                                                    <div class="tb-article-source">${article.submitter}</div>
+                                                </li>`).join('')
+                                            : `<li>${t('No articles found.')}</li>`
+                                        }
+                                    </ul>
+                                </div>`;
+                            
+                            const queriesHTML = `
+                                <div class="tb-details-panel">
+                                    <h4>${t('Related Queries')}</h4>
+                                    <ul class="tb-related-list">
+                                        ${searchData.relatedQueries.length > 0
+                                            ? searchData.relatedQueries.map(q => `
+                                                <li class="tb-related-item" data-query="${q.query}">
+                                                    <span class="tb-related-query">${q.query}</span>
+                                                    <span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span>
+                                                </li>`).join('')
+                                            : `<li>${t('No related queries.')}</li>`
+                                        }
+                                    </ul>
+                                </div>`;
+
+                            const container = document.createElement('div');
+                            container.className = 'tb-search-details-container';
+                            
+                            if (searchData.topArticles.length > 0) container.innerHTML += articlesHTML;
+                            if (searchData.relatedQueries.length > 0) container.innerHTML += queriesHTML;
+
+                            if (searchDetailsWrapper && container.innerHTML.trim() !== '') {
+                                searchDetailsWrapper.appendChild(container);
                             }
                         });
 
                         if (searchDetailsWrapper && searchDetailsWrapper.innerHTML.trim() !== '') {
                             searchDetailsWrapper.classList.remove('hidden');
                         }
-                        // Cập nhật lại trạng thái sau khi render
                         lastRenderedSearchTerms = [...user.tbSearchTerms];
                     }
                     // --- KẾT THÚC LOGIC RENDER CHI TIẾT ---
@@ -2296,6 +2323,7 @@
                 }
             } else {
                 // --- CHẾ ĐỘ DUYỆT MẶC ĐỊNH ---
+                lastRenderedSearchTerms = [];
                 const status = DOM.tbStatusSelect.value;
                 const customTimeframe = DOM.tbCustomTimeframeSelect.value;
                 chartLabels = generateChartLabels(customTimeframe);
@@ -2845,6 +2873,7 @@
     </script>
 </body>
 </html>
+
 
 
 
