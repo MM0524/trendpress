@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrendPulse | Prioritized Edition</title>
+    <title>TrendPress | Prioritized Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Thêm DOMPurify cho bảo mật XSS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
@@ -540,7 +540,7 @@
 <body>
     <div class="loader-overlay" id="loader"><div class="loader-pulse"><div></div><div></div></div></div>
     <header class="header">
-        <div class="logo" id="logo"><span class="logo-trend">Trend</span>Pulse</div>
+        <div class="logo" id="logo"><span class="logo-trend">Trend</span>Press</div>
         <div class="ai-status-indicator" id="ai-status-indicator"><span id="ai-status-text"></span></div>
         <nav id="main-nav">
             <ul class="nav-links">
@@ -714,7 +714,7 @@
     
     <footer class="footer">
         <div class="footer-content">
-            <div class="footer-section"><h4 class="footer-title">TrendPulse</h4><p class="footer-description"></p></div>
+            <div class="footer-section"><h4 class="footer-title">TrendPress</h4><p class="footer-description"></p></div>
             <div class="footer-section"><h4 class="footer-title"></h4><ul class="footer-links"><li><a href="#" id="footer-top-trends"></a></li><li><a href="#" id="footer-trending-board"></a></li><li><a href="#" id="footer-about"></a></a></li></ul></div>
             <div class="footer-section"><h4 class="footer-title"></h4><ul class="footer-links"><li><span id="feat-ai-analysis"></span></li><li><span id="feat-trend-prediction"></span></li><li><span id="feat-leaderboards"></span></li><li><span id="feat-personal-recommendations"></span></li></ul></div>
             <div class="footer-section"><h4 class="footer-title"></h4><div class="footer-contact"><p id="contact-email"></p><p id="contact-support"></p></div></div>
@@ -773,36 +773,38 @@
 
         const translations = {
             vi: {
-                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign In': 'Đăng nhập', 'Sign Out': 'Đăng xuất',
-                'Sign in with Work/School': 'Đăng nhập với tài khoản công việc/trường học', 'Sign in with Google': 'Đăng nhập với Google',
-                'Welcome to TrendPulse': 'Chào mừng đến với TrendPulse', 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.', 'Trending Now': 'Xu hướng hiện tại',
-                'Show All Trends': 'Hiển thị tất cả xu hướng', 'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': 'Phân tích', 'Deep Dive': 'Phân tích chuyên sâu', 'Summary': 'Tóm tắt',
-                'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích', 'Premium Access Required': 'Yêu cầu quyền truy cập Premium',
-                'Please sign in with a company or school email to view the Trending Board.': 'Vui lòng đăng nhập bằng email công ty hoặc trường học để xem Trending Board.', 'Log In': 'Đăng nhập', 'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPulse.',
-                'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Top 5 Hot Trends': 'Top 5 Xu Hướng Nóng Nhất', 'Your Followed Trends': 'Xu Hướng Bạn Theo Dõi', 'Category Leaderboards': 'Bảng xếp hạng danh mục', 'About TrendPulse': 'Giới thiệu TrendPulse',
-                "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": 'Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề xu hướng để có thông tin chi tiết từ AI.',
-                'Footer Description': 'Nền tảng phân tích và dự đoán xu hướng hàng đầu, giúp bạn nắm bắt những thay đổi mới nhất trong thế giới số.', 'Quick Links': 'Liên kết nhanh', 'Features': 'Tính năng', 'AI Analysis': 'Phân tích AI', 'Trend Prediction': 'Dự đoán xu hướng', 'Leaderboards': 'Bảng xếp hạng', 'Personal Recommendations': 'Gợi ý cá nhân', 'Contact': 'Liên hệ', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Hỗ trợ: support@trendpulse.com', 'All rights reserved.': 'Tất cả quyền được bảo lưu.',
-                'AI: Checking...': 'AI: Đang kiểm tra...', 'AI: Ready': 'AI: Sẵn sàng', 'AI: Unavailable': 'AI: Không khả dụng', 'AI: Connection error': 'AI: Lỗi kết nối', 'AI Insight for': 'AI Insight cho', 'AI Analysis Summary for': 'Tóm tắt Phân tích AI cho', 'AI Deep Dive for': 'Phân tích Chuyên sâu cho', 'Analyzing trend...': 'Đang phân tích xu hướng...', 'Unable to analyze trend.': 'Không thể phân tích xu hướng.', 'Trends for': 'Xu hướng cho', 'Success Score': 'Tỷ Lệ Thành Công', 'Summary': 'Tóm Tắt', 'Interest Over Time': 'Mức Độ Quan Tâm', 'Engagement': 'Tương tác', 'Find Trends': 'Tìm & Lọc Trends', 'Popular Tags': 'Thẻ Phổ Biến', 'Trending Topics': 'Chủ đề tìm kiếm', 'Trending Queries': 'Cụm từ tìm kiếm', 'Growth': 'Gia tăng', 'All Categories': 'Tất cả danh mục',
+                'Top Trends': 'Top News',
+                'Trending Now': 'Tin Tức Nóng',
+                'Find & Filter Trends': 'Tìm & Lọc Tin Tức',
+                'Welcome to TrendPulse': 'Chào mừng đến với TrendPress',
+                'About TrendPulse': 'Giới thiệu TrendPress',
+                'No trends found.': 'Không tìm thấy tin tức nào.',
+                'Your Followed Trends': 'Tin Tức Bạn Theo Dõi',
+                'Your Favorite Trends - Interest Over Time': 'Tin Tức Yêu Thích - Mức Độ Quan Tâm',
+                'Trends for': 'Tin tức cho',
+                'Trend Prediction': 'Dự Đoán Tin Tức',
+                'Show All Trends': 'Hiển thị tất cả tin tức',
+                'Choose an account to continue to TrendPulse.': 'Chọn tài khoản để tiếp tục với TrendPress.',
+                'Top 5 Hot Trends': 'Top 5 Tin Tức Nóng Nhất',
+                'Footer Description': 'Nền tảng phân tích và dự đoán tin tức hàng đầu, giúp bạn nắm bắt những thay đổi mới nhất trong thế giới số.',
+                'Find Trends': 'Tìm & Lọc Tin Tức',
+
+                // --- Các key còn lại ---
+                'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign Out': 'Đăng xuất',
+                'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.',
+                'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': 'Phân tích', 'Summary': 'Tóm tắt',
+                'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích',
+                'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Category Leaderboards': 'Bảng xếp hạng danh mục',
+                "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề tin tức để có thông tin chi tiết từ AI.",
+                'Quick Links': 'Liên kết nhanh', 'Features': 'Tính năng', 'AI Analysis': 'Phân tích AI', 'Leaderboards': 'Bảng xếp hạng', 'Personal Recommendations': 'Gợi ý cá nhân', 'Contact': 'Liên hệ', 'Email: info@trendpulse.com': 'Email: info@trendpress.com', 'Support: support@trendpulse.com': 'Hỗ trợ: support@trendpress.com', 'All rights reserved.': 'Tất cả quyền được bảo lưu.',
+                'AI: Checking...': 'AI: Đang kiểm tra...', 'AI: Ready': 'AI: Sẵn sàng', 'AI: Unavailable': 'AI: Không khả dụng', 'AI: Connection error': 'AI: Lỗi kết nối', 'AI Insight for': 'AI Insight cho', 'AI Analysis Summary for': 'Tóm tắt Phân tích AI cho',
+                'Analyzing trend...': 'Đang phân tích tin tức...', 'Unable to analyze trend.': 'Không thể phân tích tin tức.',
+                'Interest Over Time': 'Mức Độ Quan Tâm', 'Engagement': 'Tương tác', 'Popular Tags': 'Thẻ Phổ Biến', 'Trending Topics': 'Chủ đề tìm kiếm', 'Trending Queries': 'Cụm từ tìm kiếm', 'Growth': 'Gia tăng', 'All Categories': 'Tất cả danh mục',
                 'Search by keyword...': 'Tìm kiếm theo từ khóa...', 'Add search term': 'Thêm cụm từ tìm kiếm', '+ Compare': '+ So sánh',
-                'Vietnam': 'Việt Nam', 'United States': 'Hoa Kỳ', 'Global': 'Toàn cầu',
-                'Last 12 months': '12 tháng qua', 'Last 30 days': '30 ngày qua', 'Last 7 days': '7 ngày qua',
-                'Hottest News': 'Tin tức Nóng nhất',
-                'Latest News': 'Tin tức Mới nhất',
-                'Outdated News': 'Tin tức Cũ',
-                'Predictive News': 'Tin tức Dự đoán',
-                'Rising': 'Đột phá', 'No trends found.': 'Không tìm thấy xu hướng nào.',
-                'No Title Available': 'Không có tiêu đề',
-                'No Description Available': 'Không có mô tả',
-                'Related Queries': 'Cụm từ tìm kiếm có liên quan',
-                'No related queries.': 'Không có cụm từ liên quan.',
-                'What is Engagement Score?': 'Điểm tương tác là gì? Đây là chỉ số tổng hợp dựa trên lượt xem, lượt tìm kiếm và các tương tác khác để đo lường độ hot của một xu hướng.',
-                'Engagement Score': 'Điểm tương tác',
-                'Engagement Score Explanation': 'Đây là một chỉ số tổng hợp dựa trên lượt xem, lượt tìm kiếm và các tương tác khác để đo lường mức độ phổ biến của một xu hướng.',
-                'Technology': 'Công nghệ', 'Fashion': 'Thời trang', 'Gaming': 'Trò chơi', 'Finance': 'Tài chính', 'Health': 'Sức khỏe', 'Travel': 'Du lịch', 'Food': 'Ẩm thực', 'AI': 'Trí tuệ nhân tạo', 'News': 'Tin tức', 'Science': 'Khoa học', 'Music': 'Âm nhạc', 'Media': 'Truyền thông', 'Entertainment': 'Giải trí', 'Sports': 'Thể thao', 'Logistics': 'Logistics', 'Cybersecurity': 'An ninh mạng', 'Healthcare': 'Chăm sóc sức khỏe', 'Education': 'Giáo dục', 'Environment': 'Môi trường', 'Politics': 'Chính trị', 'Marketing': 'Tiếp thị',
-                'General': 'Chung', 'Toys': 'Đồ chơi', 'Sneakers': 'Giày thể thao', 'Beauty': 'Làm đẹp', 'Lifestyle': 'Phong cách sống', 'Family': 'Gia đình', 'Cars': 'Ô tô', 'Archaeology': 'Khảo cổ học', 
-                'Your Favorite Trends - Interest Over Time': 'Xu hướng yêu thích của bạn - Mức độ quan tâm theo thời gian',
-                'United Kingdom': 'Vương quốc Anh', 'India': 'Ấn Độ', 'Japan': 'Nhật Bản', 'Germany': 'Đức', 'France': 'Pháp', 'Canada': 'Canada', 'Australia': 'Úc',
-                'uk': 'Vương quốc Anh', 'in': 'Ấn Độ', 'jp': 'Nhật Bản', 'de': 'Đức', 'fr': 'Pháp', 'ca': 'Canada', 'au': 'Úc',
+                'Hottest News': 'Tin tức Nóng nhất', 'Latest News': 'Tin tức Mới nhất', 'Outdated News': 'Tin tức Cũ', 'Predictive News': 'Tin tức Dự đoán',
+                'Rising': 'Đột phá', 'No Title Available': 'Không có tiêu đề', 'No Description Available': 'Không có mô tả',
+                'Related Queries': 'Cụm từ tìm kiếm liên quan', 'No related queries.': 'Không có cụm từ liên quan.',
+                'What is Engagement Score?': 'Điểm Tương tác là gì?', 'Engagement Score': 'Điểm Tương tác', 'Engagement Score Explanation': 'Đây là một chỉ số tổng hợp dựa trên lượt xem, lượt tìm kiếm và các tương tác khác để đo lường mức độ phổ biến của một xu hướng.',
                 'Hottest': 'Hot nhất', 'Latest': 'Mới nhất', 'Outdated': 'Lỗi thời', 'Predictive': 'Dự đoán',
                 'Last 1 hour': '1 giờ qua', 'Last 6 hours': '6 giờ qua', 'Last 24 hours': '24 giờ qua', 'Last 3 days': '3 ngày qua', 'Last 7 days': '7 ngày qua', 'Last 30 days': '30 ngày qua', 'Last 90 days': '90 ngày qua', 'Last 1 year': '1 năm qua',
                 'Next 3 days': '3 ngày tới', 'Next 5 days': '5 ngày tới', 'Next 7 days': '7 ngày tới',
@@ -810,35 +812,38 @@
                 'Germany': 'Đức', 'France': 'Pháp', 'Europe': 'Châu Âu', 'China': 'Trung Quốc', 'South Korea': 'Hàn Quốc', 'India': 'Ấn Độ', 'Australia': 'Úc', 'Japan': 'Nhật Bản'
             },
             en: {
-                'Top Trends': 'Top Trends', 'Trending Board': 'Trending Board', 'For U': 'For U', 'For You': 'For You', 'About': 'About', 'Sign In': 'Sign In', 'Sign Out': 'Sign Out',
-                'Sign in with Work/School': 'Sign in with Work/School', 'Sign in with Google': 'Sign in with Google',
-                'Welcome to TrendPulse': 'Welcome to TrendPulse', 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.', 'Trending Now': 'Trending Now',
-                'Show All Trends': 'Show All Trends', 'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': 'Analyze', 'Deep Dive': 'Deep Dive', 'Summary': 'Summary',
-                'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences', 'Premium Access Required': 'Premium Access Required',
-                'Please sign in with a company or school email to view the Trending Board.': 'Please sign in with a company or school email to view the Trending Board.', 'Log In': 'Log In', 'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPulse.',
-                'Trending Board Dashboard': 'Trending Board Dashboard', 'Top 5 Hot Trends': 'Top 5 Hot Trends', 'Your Followed Trends': 'Your Followed Trends', 'Category Leaderboards': 'Category Leaderboards', 'About TrendPulse': 'About TrendPulse',
-                "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.",
-                'Footer Description': 'A leading platform for trend analysis and prediction, helping you stay ahead of the curve in the digital world.', 'Quick Links': 'Quick Links', 'Features': 'Features', 'AI Analysis': 'AI Analysis', 'Trend Prediction': 'Trend Prediction', 'Leaderboards': 'Leaderboards', 'Personal Recommendations': 'Personal Recommendations', 'Contact': 'Contact', 'Email: info@trendpulse.com': 'Email: info@trendpulse.com', 'Support: support@trendpulse.com': 'Support: support@trendpulse.com', 'All rights reserved.': 'All rights reserved.',
-                'AI: Checking...': 'AI: Checking...', 'AI: Ready': 'AI: Ready', 'AI: Unavailable': 'AI: Unavailable', 'AI: Connection error': 'AI: Connection error', 'AI Insight for': 'AI Insight for', 'AI Analysis Summary for': 'AI Analysis Summary for', 'AI Deep Dive for': 'AI Deep Dive for', 'Analyzing trend...': 'Analyzing trend...', 'Unable to analyze trend.': 'Unable to analyze trend.', 'Trends for': 'Trends for', 'Success Score': 'Success Score', 'Summary': 'Summary', 'Interest Over Time': 'Interest Over Time', 'Engagement': 'Engagement', 'Find Trends': 'Find & Filter Trends', 'Popular Tags': 'Popular Tags', 'Trending Topics': 'Trending Topics', 'Trending Queries': 'Trending Queries', 'Growth': 'Growth', 'All Categories': 'All Categories',
+                'Top Trends': 'Top News',
+                'Trending Now': 'Hot News',
+                'Find & Filter Trends': 'Find & Filter News',
+                'Welcome to TrendPulse': 'Welcome to TrendPress',
+                'About TrendPulse': 'About TrendPress',
+                'No trends found.': 'No news found.',
+                'Your Followed Trends': 'Your Followed News',
+                'Your Favorite Trends - Interest Over Time': 'Your Favorite News - Interest Over Time',
+                'Trends for': 'News for',
+                'Trend Prediction': 'News Prediction',
+                'Show All Trends': 'Show All News',
+                'Choose an account to continue to TrendPulse.': 'Choose an account to continue to TrendPress.',
+                'Top 5 Hot Trends': 'Top 5 Hot News',
+                'Footer Description': 'A leading platform for news analysis and prediction, helping you stay ahead of the curve in the digital world.',
+                'Find Trends': 'Find & Filter News',
+
+                // --- Các key còn lại ---
+                'Trending Board': 'Trending Board', 'For U': 'For U', 'About': 'About', 'Sign Out': 'Sign Out',
+                'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.',
+                'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': 'Analyze', 'Summary': 'Summary',
+                'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences',
+                'Trending Board Dashboard': 'Trending Board Dashboard', 'Category Leaderboards': 'Category Leaderboards',
+                "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualize, and analyze emerging news. Click a news title to get AI-powered insights.",
+                'Quick Links': 'Quick Links', 'Features': 'Features', 'AI Analysis': 'AI Analysis', 'Leaderboards': 'Leaderboards', 'Personal Recommendations': 'Personal Recommendations', 'Contact': 'Contact', 'Email: info@trendpulse.com': 'Email: info@trendpress.com', 'Support: support@trendpulse.com': 'Support: support@trendpress.com', 'All rights reserved.': 'All rights reserved.',
+                'AI: Checking...': 'AI: Checking...', 'AI: Ready': 'AI: Ready', 'AI: Unavailable': 'AI: Unavailable', 'AI: Connection error': 'AI: Connection error', 'AI Insight for': 'AI Insight for', 'AI Analysis Summary for': 'AI Analysis Summary for',
+                'Analyzing trend...': 'Analyzing news...', 'Unable to analyze trend.': 'Unable to analyze news.',
+                'Interest Over Time': 'Interest Over Time', 'Engagement': 'Engagement', 'Popular Tags': 'Popular Tags', 'Trending Topics': 'Trending Topics', 'Trending Queries': 'Trending Queries', 'Growth': 'Growth', 'All Categories': 'All Categories',
                 'Search by keyword...': 'Search by keyword...', 'Add search term': 'Add search term', '+ Compare': '+ Compare',
-                'Vietnam': 'Vietnam', 'United States': 'United States', 'Global': 'Global',
-                'Last 12 months': 'Last 12 months', 'Last 30 days': 'Last 30 days', 'Last 7 days': 'Last 7 days',
-                'Hottest News': 'Hottest News',
-                'Latest News': 'Latest News',
-                'Outdated News': 'Outdated News',
-                'Predictive News': 'Predictive News',
-                'Rising': 'Rising', 'No trends found.': 'No trends found.',
-                'No Title Available': 'No Title Available',
-                'No Description Available': 'No Description Available',
-                'Related Queries': 'Related Queries',
-                'No related queries.': 'No related queries found.',
-                'What is Engagement Score?': 'What is Engagement Score?',
-                'Engagement Score': 'Engagement Score',
-                'Engagement Score Explanation': 'This is a composite metric based on views, searches, and other interactions to measure a trend\'s popularity.',
-                'Technology': 'Technology', 'Fashion': 'Fashion', 'Gaming': 'Gaming', 'Finance': 'Finance', 'Health': 'Health', 'Travel': 'Travel', 'Food': 'Food', 'AI': 'AI', 'News': 'News', 'Science': 'Science', 'Music': 'Music', 'Media': 'Media', 'Entertainment': 'Entertainment', 'Sports': 'Sports', 'Logistics': 'Logistics', 'Cybersecurity': 'Cybersecurity', 'Healthcare': 'Healthcare', 'Education': 'Education', 'Environment': 'Environment', 'Politics': 'Politics', 'Marketing': 'Marketing',
-                'General': 'General', 'Toys': 'Toys', 'Sneakers': 'Sneakers', 'Beauty': 'Beauty', 'Lifestyle': 'Lifestyle', 'Family': 'Family', 'Cars': 'Cars', 'Archaeology': 'Archaeology',
-                'Your Favorite Trends - Interest Over Time': 'Your Favorite Trends - Interest Over Time',
-                'uk': 'United Kingdom', 'in': 'India', 'jp': 'Japan', 'de': 'Germany', 'fr': 'France', 'ca': 'Canada', 'au': 'Australia',
+                'Hottest News': 'Hottest News', 'Latest News': 'Latest News', 'Outdated News': 'Outdated News', 'Predictive News': 'Predictive News',
+                'Rising': 'Rising', 'No Title Available': 'No Title Available', 'No Description Available': 'No Description Available',
+                'Related Queries': 'Related Queries', 'No related queries.': 'No related queries found.',
+                'What is Engagement Score?': 'What is Engagement Score?', 'Engagement Score': 'Engagement Score', 'Engagement Score Explanation': 'This is a composite metric based on views, searches, and other interactions to measure a trend\'s popularity.',
                 'Hottest': 'Hottest', 'Latest': 'Latest', 'Outdated': 'Outdated', 'Predictive': 'Predictive',
                 'Last 1 hour': 'Last 1 hour', 'Last 6 hours': 'Last 6 hours', 'Last 24 hours': 'Last 24 hours', 'Last 3 days': 'Last 3 days', 'Last 7 days': 'Last 7 days', 'Last 30 days': 'Last 30 days', 'Last 90 days': 'Last 90 days', 'Last 1 year': 'Last 1 year',
                 'Next 3 days': 'Next 3 days', 'Next 5 days': 'Next 5 days', 'Next 7 days': 'Next 7 days',
@@ -848,33 +853,47 @@
         };
 
         const i18nBindings = [
-            { selector: '#nav-top-trends', key: 'Top Trends' }, { selector: '#nav-trending-board', key: 'Trending Board' },
-            { selector: '#nav-for-u a', key: 'For U' }, { selector: '#nav-about', key: 'About' },
-            // REMOVED: { selector: '#sign-in-btn', key: 'Sign In' }, 
+            { selector: '#nav-top-trends', key: 'Top Trends' }, 
+            { selector: '#trending-header-text', key: 'Trending Now' },
+            { selector: '#search-filter-title', key: 'Find Trends' }, // Đổi sang key ngắn gọn và nhất quán hơn
+            { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' },
+            { selector: '#about-modal .modal-title', key: 'About TrendPulse' },
+            { selector: '#footer-top-trends', key: 'Top Trends' },
+            { selector: '#user-trends-chart-title', key: 'Your Favorite Trends - Interest Over Time' },
+            { selector: '#clear-filter-btn', key: 'Show All Trends' },
+            { selector: '#for-u-leaderboard-panel h3', key: 'Category Leaderboards' },
+            { selector: '#feat-trend-prediction', key: 'Trend Prediction' },
+            
+            // Các binding không thay đổi
+            { selector: '#nav-trending-board', key: 'Trending Board' },
+            { selector: '#nav-for-u a', key: 'For U' }, 
+            { selector: '#nav-about', key: 'About' },
             { selector: '#dropdown-sign-out span:last-child', key: 'Sign Out' },
-            { selector: '.demo-banner h2', key: 'Welcome to TrendPulse' }, { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' },
-            { selector: '#trending-header-text', key: 'Trending Now' }, { selector: '#clear-filter-btn', key: 'Show All Trends' },
-            { selector: '#load-more-btn', key: 'Load More' }, { selector: '#for-u-load-more-btn', key: 'Load More' },
+            { selector: '.demo-banner p', key: 'Discover what’s next. Act before the rest.' },
+            { selector: '#load-more-btn', key: 'Load More' }, 
+            { selector: '#for-u-load-more-btn', key: 'Load More' },
             { selector: '.for-u-container .trending-title-group span', key: 'For You' },
-            { selector: '#preferences-modal .modal-title', key: 'Welcome! Set Your Preferences' }, { selector: '#preferences-modal .modal-body', key: "Select the categories you're interested in in for a personalized experience." },
-            { selector: '#save-preferences-btn', key: 'Save Preferences' }, { selector: '#premium-modal .modal-title', key: 'Premium Access Required' },
-            { selector: '#premium-modal .modal-body', key: 'Please sign in with a company or school email to view the Trending Board.' }, 
-            { selector: '#premium-login-btn', key: 'Log In' }, // This button will now lead to nothing since login is removed
-            // REMOVED: login-choice-modal bindings
-            { selector: '#tb-main-title', key: 'Trending Board Dashboard' }, { selector: '#for-u-leaderboard-panel h3', key: 'Category Leaderboards' },
-            { selector: '#about-modal .modal-title', key: 'About TrendPulse' }, { selector: '#about-modal .modal-body', key: "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights." },
-            { selector: '.footer-section:nth-child(1) .footer-description', key: 'Footer Description' }, { selector: '.footer-section:nth-child(2) .footer-title', key: 'Quick Links' },
-            { selector: '#footer-top-trends', key: 'Top Trends' }, { selector: '#footer-trending-board', key: 'Trending Board' },
-            { selector: '#footer-about', key: 'About' }, { selector: '.footer-section:nth-child(3) .footer-title', key: 'Features' },
-            { selector: '#feat-ai-analysis', key: 'AI Analysis' }, { selector: '#feat-trend-prediction', key: 'Trend Prediction' },
-            { selector: '#feat-leaderboards', key: 'Leaderboards' }, { selector: '#feat-personal-recommendations', key: 'Personal Recommendations' },
-            { selector: '.footer-section:nth-child(4) .footer-title', key: 'Contact' }, { selector: '#contact-email', key: 'Email: info@trendpulse.com' },
-            { selector: '#contact-support', key: 'Support: support@trendpulse.com' }, { selector: '#ai-insight-title', key: 'AI Insight for' },
-            { selector: '#search-filter-title', key: 'Find Trends' }, { selector: '#hashtag-filter h4', key: 'Popular Tags' },
+            { selector: '#preferences-modal .modal-title', key: 'Welcome! Set Your Preferences' }, 
+            { selector: '#preferences-modal .modal-body', key: "Select the categories you're interested in in for a personalized experience." },
+            { selector: '#save-preferences-btn', key: 'Save Preferences' },
+            { selector: '#tb-main-title', key: 'Trending Board Dashboard' },
+            { selector: '#about-modal .modal-body', key: "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights." },
+            { selector: '.footer-section:nth-child(1) .footer-description', key: 'Footer Description' }, 
+            { selector: '.footer-section:nth-child(2) .footer-title', key: 'Quick Links' },
+            { selector: '#footer-trending-board', key: 'Trending Board' },
+            { selector: '#footer-about', key: 'About' }, 
+            { selector: '.footer-section:nth-child(3) .footer-title', key: 'Features' },
+            { selector: '#feat-ai-analysis', key: 'AI Analysis' },
+            { selector: '#feat-leaderboards', key: 'Leaderboards' }, 
+            { selector: '#feat-personal-recommendations', key: 'Personal Recommendations' },
+            { selector: '.footer-section:nth-child(4) .footer-title', key: 'Contact' }, 
+            { selector: '#contact-email', key: 'Email: info@trendpulse.com' },
+            { selector: '#contact-support', key: 'Support: support@trendpulse.com' }, 
+            { selector: '#ai-insight-title', key: 'AI Insight for' },
+            { selector: '#hashtag-filter h4', key: 'Popular Tags' },
             { selector: '#tb-search-input', attr: 'placeholder', key: 'Add search term' },
             { selector: '#tb-compare-input', attr: 'placeholder', key: '+ Compare' },
             { selector: '#search-input', attr: 'placeholder', key: 'Search by keyword...' },
-            { selector: '#user-trends-chart-title', key: 'Your Favorite Trends - Interest Over Time' },
             { selector: '#tb-status-select option[value="hottest"]', key: 'Hottest' },
             { selector: '#tb-status-select option[value="latest"]', key: 'Latest' },
             { selector: '#tb-status-select option[value="outdated"]', key: 'Outdated' },
@@ -882,15 +901,15 @@
             { selector: '#main-filter-title-region', key: 'Region' },
             { selector: '#main-filter-title-timeframe', key: 'Timeframe' },
             { selector: '#main-filter-title-source', key: 'Source' },
-            { selector: '#main-source-filter option[value="All"]', key: 'All Sources' }, // NEW
-            { selector: '#main-timeframe-filter option[value="1h"]', key: 'Last 1 hour' }, // NEW
-            { selector: '#main-timeframe-filter option[value="6h"]', key: 'Last 6 hours' }, // NEW
-            { selector: '#main-timeframe-filter option[value="24h"]', key: 'Last 24 hours' }, // NEW
-            { selector: '#main-timeframe-filter option[value="3d"]', key: 'Last 3 days' }, // NEW
-            { selector: '#main-timeframe-filter option[value="7d"]', key: 'Last 7 days' }, // NEW
-            { selector: '#main-timeframe-filter option[value="1m"]', key: 'Last 30 days' }, // NEW
-            { selector: '#main-timeframe-filter option[value="3m"]', key: 'Last 90 days' }, // NEW
-            { selector: '#main-timeframe-filter option[value="12m"]', key: 'Last 1 year' } // NEW
+            { selector: '#main-source-filter option[value="All"]', key: 'All Sources' },
+            { selector: '#main-timeframe-filter option[value="1h"]', key: 'Last 1 hour' },
+            { selector: '#main-timeframe-filter option[value="6h"]', key: 'Last 6 hours' },
+            { selector: '#main-timeframe-filter option[value="24h"]', key: 'Last 24 hours' },
+            { selector: '#main-timeframe-filter option[value="3d"]', key: 'Last 3 days' },
+            { selector: '#main-timeframe-filter option[value="7d"]', key: 'Last 7 days' },
+            { selector: '#main-timeframe-filter option[value="1m"]', key: 'Last 30 days' },
+            { selector: '#main-timeframe-filter option[value="3m"]', key: 'Last 90 days' },
+            { selector: '#main-timeframe-filter option[value="12m"]', key: 'Last 1 year' }
         ];
 
         const DOM = {
@@ -2694,6 +2713,7 @@
     </script>
 </body>
 </html>
+
 
 
 
