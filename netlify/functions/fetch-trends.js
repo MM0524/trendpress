@@ -24,7 +24,6 @@ function normalizeNewsApiArticle(article) {
     if (!title || title === "[Removed]" || !url) return null;
 
     const stableId = crypto.createHash('md5').update(url).digest('hex');
-    const baseVotes = Math.floor(Math.random() * 500) + 200;
     
     return {
         id: stableId,
@@ -34,10 +33,6 @@ function normalizeNewsApiArticle(article) {
         description_vi: null,
         category: "Search",
         tags: [source.name.replace(/\s/g, '')],
-        votes: baseVotes,
-        views: Math.floor(baseVotes * (Math.random() * 10 + 15)),
-        interactions: Math.floor(baseVotes * (Math.random() * 3 + 4)),
-        searches: Math.floor(baseVotes * (Math.random() * 1 + 1.5)),
         source: url,
         date: toDateStr(publishedAt),
         sortKey: toSortValue(publishedAt),
@@ -47,33 +42,28 @@ function normalizeNewsApiArticle(article) {
     };
 }
 
-// Hàm tổng hợp các bài báo thành một chuỗi dữ liệu thời gian (hỗ trợ cả ngày và giờ)
+// Hàm tổng hợp các bài báo thành một chuỗi dữ liệu thời gian
 function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
     if (!articles || articles.length === 0) return [];
     
     const counts = new Map();
     const isHourly = hoursAgo > 0;
 
-    // Bước 1: Đếm số lượng bài báo theo ngày hoặc giờ
     articles.forEach(article => {
         const date = new Date(article.publishedAt);
         let key;
         if (isHourly) {
-            // Tạo key dạng "YYYY-MM-DDTHH:00:00.000Z" (làm tròn xuống giờ)
             key = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).toISOString();
         } else {
-            // Tạo key dạng "YYYY-MM-DD"
             key = date.toISOString().split('T')[0];
         }
         counts.set(key, (counts.get(key) || 0) + 1);
     });
 
-    // Bước 2: Tạo chuỗi thời gian hoàn chỉnh
     const timelineData = [];
     const now = new Date();
 
     if (isHourly) {
-        // Tạo timeline theo giờ
         for (let i = hoursAgo; i >= 0; i--) {
             const date = new Date(now);
             date.setHours(date.getHours() - i);
@@ -81,12 +71,11 @@ function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
             const value = (counts.get(key) || 0) * (Math.random() * 50 + 50);
             
             timelineData.push({
-                time: Math.floor(date.getTime() / 1000), // Unix timestamp (giây)
-                value: [Math.round(value)] // Giữ cấu trúc giống Google Trends
+                time: Math.floor(date.getTime() / 1000),
+                value: [Math.round(value)]
             });
         }
     } else {
-        // Tạo timeline theo ngày
         for (let i = daysAgo; i >= 0; i--) {
             const date = new Date(now);
             date.setDate(date.getDate() - i);
@@ -108,4 +97,93 @@ exports.handler = async (event) => {
     
     try {
         const { searchTerm, timeframe: rawTimeframe = '7d' } = event.queryStringParameters;
-        if (!searchTerm || !se
+        if (!searchTerm || !searchTerm.trim()) {
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "searchTerm is required." }) };
+        }
+        
+        const TIMEFRAME_MAP = {
+            '1h': { hours: 1 }, '6h': { hours: 6 }, '24h': { hours: 24 },
+            '3d': { days: 3 }, '7d': { days: 7 }, '1m': { days: 30 },
+            '3m': { days: 30 }, '12m': { days: 30 },
+        };
+
+        const timeConfig = TIMEFRAME_MAP[rawTimeframe] || { days: 7 };
+        const startTime = new Date();
+        let hoursAgo = 0, daysAgo = 0;
+
+        if (timeConfig.hours) {
+            startTime.setHours(startTime.getHours() - timeConfig.hours);
+            hoursAgo = timeConfig.hours;
+        } else {
+            startTime.setDate(startTime.getDate() - timeConfig.days);
+            daysAgo = timeConfig.days;
+        }
+
+        const interestPromise = googleTrends.interestOverTime({ keyword: searchTerm, startTime: startTime });
+        const newsPromise = newsapi.v2.everything({ q: searchTerm, from: startTime.toISOString(), sortBy: 'relevancy', pageSize: 100, language: 'en' });
+        const relatedQueriesPromise = googleTrends.relatedQueries({ keyword: searchTerm, startTime: startTime });
+
+        const [interestResult, newsResult, relatedQueriesResult] = await Promise.allSettled([interestPromise, newsPromise, relatedQueriesPromise]);
+
+        let timelineData = null;
+        let topArticles = [];
+        let relatedQueries = [];
+        let sourceApi = "Google Trends";
+
+        if (newsResult.status === 'fulfilled' && newsResult.value.status === 'ok' && newsResult.value.articles.length > 0) {
+            const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
+            topArticles = allArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)).slice(0, 5);
+        }
+
+        if (interestResult.status === 'fulfilled') {
+            try {
+                const parsed = JSON.parse(interestResult.value);
+                if (parsed.default.timelineData && parsed.default.timelineData.length > 0) {
+                    timelineData = parsed.default.timelineData.map(p => ({ ...p, value: [p.value[0] * 1000] }));
+                }
+            } catch (e) { console.error("Parsing interestOverTime failed:", e.message); }
+        }
+        
+        if (!timelineData && newsResult.status === 'fulfilled' && newsResult.value.articles.length > 0) {
+            sourceApi = "NewsAPI";
+            const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
+            timelineData = aggregateArticlesToTimeline(allArticles, daysAgo, hoursAgo);
+        }
+
+        if (relatedQueriesResult.status === 'fulfilled') {
+            try {
+                const parsed = JSON.parse(relatedQueriesResult.value);
+                const risingQueries = parsed.default.rankedKeyword.find(k => k.rankedKeyword.every(q => q.value > 0));
+                if (risingQueries) relatedQueries = risingQueries.rankedKeyword.slice(0, 5);
+            } catch (e) { console.error("Parsing related queries failed:", e.message); }
+        }
+
+        if (!timelineData && topArticles.length === 0 && relatedQueries.length === 0) {
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [] }) };
+        }
+
+        const aggregatedTrend = {
+            id: `aggregated-${searchTerm.replace(/\s/g, '-')}-${rawTimeframe}`,
+            title_en: searchTerm,
+            isAggregated: true,
+            submitter: sourceApi,
+            timelineData: timelineData || [],
+            topArticles: topArticles,
+            relatedQueries: relatedQueries,
+        };
+        
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ success: true, trends: [aggregatedTrend] }),
+        };
+
+    } catch (err) {
+        console.error("fetch-trends handler critical error:", err);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ success: false, message: err.message }),
+        };
+    }
+}; // <-- ĐÂY LÀ DẤU NGOẶC QUAN TRỌNG NHẤT, CÓ THỂ ĐÃ BỊ THIẾU
