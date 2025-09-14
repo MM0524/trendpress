@@ -219,95 +219,108 @@
         #login-choice-modal .btn-social:hover { border-color: var(--primary-color); background-color: #21233a; }
         #login-choice-modal .btn-social svg { position: absolute; left: 1.5rem; stroke: var(--text-muted-color); width: 20px; height: 20px; }
         .preferences-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: left; margin-bottom: 1.5rem; }
-        #ai-insight-modal .modal-content { max-width: 550px; width: 90%; text-align: left; }
-        #ai-insight-modal .modal-body { 
-            max-height: 70vh; 
-            overflow-y: auto; 
-            padding-right: 15px; 
-            line-height: 1.8; /* Dễ đọc hơn */
-            text-align: left; /* Đảm bảo căn trái */
-        }
-        #ai-insight-modal h4 { 
-            color: var(--primary-light); 
-            margin-top: 1.5rem; /* Khoảng cách trên lớn hơn cho các phần chính */
-            margin-bottom: 0.75rem;
-            font-size: 1.25rem;
-            font-weight: 600;
-            border-bottom: 1px solid var(--border-color); /* Đường kẻ dưới tiêu đề */
-            padding-bottom: 0.5rem;
-        }
-
-        /* NEW: Styles for AI Deep Dive content */
-        #ai-insight-modal h5 { /* For sub-sections */
-            color: var(--text-color);
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-
-        #ai-insight-modal p {
-            margin-bottom: 1rem;
-            color: var(--text-muted-color);
-        }
-
-        #ai-insight-modal ul {
-            list-style-type: disc; /* Kiểu dấu đầu dòng */
-            padding-left: 25px;
-            margin-bottom: 1rem;
-            color: var(--text-color); /* Màu chữ cho danh sách */
-        }
-
-        #ai-insight-modal li {
-            margin-bottom: 0.5rem;
-            color: var(--text-muted-color); /* Màu chữ cho item trong danh sách */
-        }
-
-        #ai-insight-modal strong {
-            color: var(--primary-light); /* Làm nổi bật văn bản in đậm */
-        }
-
-        /* Specific styles for AI Insight Sections */
-        .ai-section {
-            background-color: var(--bg-color); /* Nền nhẹ nhàng cho từng phần */
+        #ai-insight-modal .modal-content {
+            max-width: 650px; /* Tăng chiều rộng để dễ đọc hơn */
+            width: 90%;
+            text-align: left;
+            padding: 0; /* Xóa padding cũ để tạo layout header/body/footer */
+            background-color: var(--bg-color); /* Nền tối hơn modal thường */
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1.5rem;
         }
 
-        .ai-highlight {
-            color: var(--primary-light);
+        #ai-insight-modal .modal-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #ai-insight-modal .modal-title {
+            font-size: 1.5rem;
             font-weight: 700;
-        }
-
-        .ai-metric-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-            margin-bottom: 1.5rem;
-            /* NEW: Center the grid items horizontally */
-            justify-content: center; 
-        }
-
-        .ai-metric-item {
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.75rem;
-            text-align: center;
-        }
-
-        .ai-metric-item strong {
-            display: block;
-            font-size: 1.2rem;
+            margin-bottom: 0;
             color: var(--text-color);
         }
 
-        .ai-metric-item span {
-            font-size: 0.8rem;
+        #ai-insight-modal .modal-body { 
+            max-height: 65vh; 
+            overflow-y: auto;
+            padding: 2rem; 
+            line-height: 1.7;
             color: var(--text-muted-color);
+        }
+        
+        /* Custom Scrollbar cho Modal Body */
+        #ai-insight-modal .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        #ai-insight-modal .modal-body::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        #ai-insight-modal .modal-body::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 10px;
+            border: 2px solid var(--bg-color);
+        }
+        #ai-insight-modal .modal-body::-webkit-scrollbar-thumb:hover {
+            background-color: var(--primary-color);
+        }
+
+        /* Style cho từng phần phân tích của AI */
+        .ai-section {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--primary-color); /* Thêm một dải màu nhấn */
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .ai-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .ai-section h4 { 
+            color: var(--primary-light); 
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-bottom: none; /* Bỏ gạch chân cũ */
+            padding-bottom: 0;
+        }
+
+        .ai-section p {
+            margin-bottom: 1rem;
+            color: var(--text-muted-color);
+        }
+        .ai-section p:last-child {
+            margin-bottom: 0;
+        }
+
+        .ai-section ul {
+            list-style-type: none; /* Bỏ dấu chấm đầu dòng mặc định */
+            padding-left: 0;
+            margin-bottom: 1rem;
+        }
+
+        .ai-section li {
+            margin-bottom: 0.75rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        /* Tạo dấu check hoặc mũi tên tùy chỉnh cho list item */
+        .ai-section li::before {
+            content: '✓'; /* Hoặc '→' */
+            color: var(--primary-color);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+            top: 1px;
+        }
+
+        .ai-section strong {
+            color: var(--text-color); /* Làm chữ đậm nổi bật hơn */
+            font-weight: 600;
         }
         /* End NEW AI Deep Dive styles */
 
@@ -713,7 +726,17 @@
 
     <div class="modal-overlay" id="preferences-modal"><div class="modal-content"><button class="modal-close" data-close="preferences-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="preferences-grid" id="preferences-grid"></div><div class="modal-actions"><button class="btn btn-primary" id="save-preferences-btn"></button></div></div></div>
     <div class="modal-overlay" id="premium-modal"><div class="modal-content"><button class="modal-close" data-close="premium-modal">&times;</button><h3 class="modal-title"></h3><p class="modal-body"></p><div class="modal-actions"><button class="btn btn-primary" id="premium-login-btn"></button></div></div></div>
-    <div class="modal-overlay" id="ai-insight-modal"><div class="modal-content"><button class="modal-close" data-close="ai-insight-modal">&times;</button><h3 class="modal-title" id="ai-insight-title"></h3><div id="ai-insight-body" class="modal-body"></div></div></div>
+    <div class="modal-overlay" id="ai-insight-modal">
+        <div class="modal-content">
+            <button class="modal-close" data-close="ai-insight-modal">&times;</button>
+            <div class="modal-header">
+                <h3 class="modal-title" id="ai-insight-title"></h3>
+            </div>
+            <div class="modal-body" id="ai-insight-body">
+                <!-- Nội dung AI sẽ được chèn vào đây -->
+            </div>
+        </div>
+    </div>
     
     <!-- NEW: Trend Overview Modal -->
     <div class="modal-overlay" id="trend-overview-modal">
@@ -1653,38 +1676,64 @@
 
         // NEW: Function to open the AI Insight modal
         async function openAIInsightModal(trend, analysisType) {
-            // No longer need login check here, as user is always 'work'
-            
-            const isSummary = (analysisType === 'summary');
-            const titleKey = isSummary ? 'AI Analysis Summary for' : 'AI Deep Dive for';
+            let titleIcon = '';
+            let titleKey = '';
+
+            // Bước 1: Chọn icon và key dịch thuật phù hợp với loại phân tích
+            if (analysisType === 'prediction') {
+                titleIcon = '🔮 ';
+                // Key 'AI Analysis Summary for' đã được đổi giá trị thành 'Dự đoán AI cho' trong translations
+                titleKey = 'AI Analysis Summary for'; 
+            } else if (analysisType === 'detailed') {
+                titleIcon = '🔍 ';
+                titleKey = 'AI Deep Dive for';
+            } else {
+                // Fallback cho 'summary' hoặc các loại khác không xác định
+                titleIcon = '💡 ';
+                titleKey = 'AI Insight for';
+            }
             
             const { title: localizedTrendTitle } = getLocalizedTrendText(trend);
-            document.getElementById('ai-insight-title').textContent = `${t(titleKey)} "${truncateText(localizedTrendTitle, 20)}"`;
-            const modalBody = document.getElementById('ai-insight-body');
-            if (!modalBody) return;
+            const modalTitleEl = document.getElementById('ai-insight-title');
+            if(modalTitleEl) {
+                // Cập nhật tiêu đề modal với icon và văn bản đã dịch
+                modalTitleEl.textContent = `${titleIcon} ${t(titleKey)} "${truncateText(localizedTrendTitle, 20)}"`;
+            }
             
+            const modalBody = document.getElementById('ai-insight-body');
+            if (!modalBody) {
+                console.error("AI Insight modal body not found!");
+                return;
+            }
+            
+            // Bước 2: Hiển thị trạng thái tải và mở modal
             modalBody.classList.remove('error-message');
-            modalBody.innerHTML = `<div class="loading-spinner"></div><p style="text-align:center; margin-top:1rem;">${t('Analyzing trend...')}</p>`;
+            modalBody.innerHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">
+                                       <div class="loading-spinner"></div>
+                                       <p style="text-align:center; margin-top:1rem;">${t('Analyzing trend...')}</p>
+                                   </div>`;
             openModal('ai-insight-modal');
-            closeModal('trend-overview-modal'); // Close the overview modal if it's open
+            closeModal('trend-overview-modal'); // Đóng modal tổng quan nếu nó đang mở
 
+            // Bước 3: Gọi API back-end để lấy phân tích
             try {
                 const data = await analyzeTrendSecurely(trend, analysisType);
-                // CẬP NHẬT: result.data bây giờ là một JSON object { successScore: X, summary: "<html>" }
-                // Cần truy cập các thuộc tính của object đó
-                if (isSummary) { 
-                    const parsedSummaryData = data; // data đã là object { successScore, summary }
-                    // CẬP NHẬT: Không hiển thị Success Score trong summary view
-                    modalBody.innerHTML = `
-                        <div style="margin-bottom: 1rem;"><h4>${t('Summary')}</h4>${DOMPurify.sanitize(parsedSummaryData.summary, { USE_PROFILES: { html: true } })}</div>
-                        <div><h4>${t('Interest Over Time')}</h4></div>`;
-                    renderAnalysisChart(generateChartDataFromScore(parsedSummaryData.successScore).historicalData, generateChartDataFromScore(parsedSummaryData.successScore).futureProjection);
-                }
-                else { renderDetailedAnalysis(DOMPurify.sanitize(data, { USE_PROFILES: { html: true } })); } // Đối với detailed vẫn là markdown string, cần sanitize sau khi chuyển đổi từ Markdown sang HTML
+                
+                // Bước 4: Hiển thị kết quả thành công
+                // Dữ liệu trả về từ back-end (cho 'prediction' và 'detailed') đã là HTML
+                // Chúng ta chỉ cần làm sạch và hiển thị nó.
+                // Hàm `analyzeTrendSecurely` đã bao gồm DOMPurify.
+                modalBody.innerHTML = data;
+
             } catch (err) {
+                // Bước 5: Hiển thị thông báo lỗi nếu API thất bại
+                console.error("AI analysis failed:", err);
                 if (modalBody) {
                     modalBody.classList.add('error-message');
-                    modalBody.innerHTML = `<p style="text-align: center;">${t('Unable to analyze trend.')}<br><small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small></p>`;
+                    modalBody.innerHTML = `<div style="text-align: center;">
+                                               <p>${t('Unable to analyze trend.')}</p>
+                                               <small style="color: var(--text-muted-color);">${DOMPurify.sanitize(err.message)}</small>
+                                           </div>`;
                 }
             }
         }
@@ -2816,6 +2865,7 @@
     </script>
 </body>
 </html>
+
 
 
 
