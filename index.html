@@ -131,23 +131,22 @@
         .btn-follow.followed { background-color: var(--primary-color); color: white; }
 
         /* NEW: Style for the new Summary button - CẬP NHẬT để giống .btn-outline */
-        .btn-summary { 
-            background: transparent; /* Nền trong suốt */
-            color: var(--primary-light); /* Màu chữ tím nhạt */
-            border: 1px solid var(--primary-light); /* Viền tím nhạt */
-            padding: 0.3rem 0.8rem; /* Match btn-outline padding */
-            border-radius: 8px; /* Match btn padding */
+        .btn-predict { 
+            background: transparent;
+            color: var(--primary-light);
+            border: 1px solid var(--primary-light);
+            padding: 0.3rem 0.8rem;
+            border-radius: 8px;
             cursor: pointer; 
-            font-weight: 600; /* Match btn-outline font-weight */
-            transition: all 0.3s ease; /* Match btn-outline transition */
-            font-size: 0.8rem; /* Match btn-outline font-size */
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
         }
-        .btn-summary:hover {
-            /* Hiệu ứng hover giống hệt .btn-outline */
+        .btn-predict:hover {
             background: var(--primary-light); 
             color: white; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Giữ bóng đổ nếu muốn */
-            transform: translateY(-1px); /* Nâng nhẹ hơn để subtle hơn */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
         }
 
         #trends-footer { text-align: center; margin-top: 1.5rem; }
@@ -817,7 +816,8 @@
                 // --- Các key còn lại ---
                 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign Out': 'Đăng xuất',
                 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.',
-                'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': 'Phân tích', 'Summary': 'Tóm tắt',
+                'Load More': 'Tải thêm', 'View Source': 'Xem nguồn', 'Following': 'Đang theo dõi', '❤️ Follow': '❤️ Theo dõi', '🔍 Analyze': 'Phân tích', 'Summary': '🔮 Dự đoán', 
+                'AI Analysis Summary for': 'Dự đoán AI cho',
                 'Welcome! Set Your Preferences': 'Chào mừng! Thiết lập sở thích của bạn', "Select the categories you're interested in in for a personalized experience.": 'Chọn các danh mục bạn quan tâm để có trải nghiệm cá nhân hóa.', 'Save Preferences': 'Lưu sở thích',
                 'Trending Board Dashboard': 'Bảng điều khiển Trending Board', 'Category Leaderboards': 'Bảng xếp hạng danh mục',
                 "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "Nền tảng cộng đồng để dự đoán, trực quan hóa và phân tích xu hướng mới nổi. Nhấp vào tiêu đề tin tức để có thông tin chi tiết từ AI.",
@@ -856,7 +856,8 @@
                 // --- Các key còn lại ---
                 'Trending Board': 'Trending Board', 'For U': 'For U', 'About': 'About', 'Sign Out': 'Sign Out',
                 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.',
-                'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': 'Analyze', 'Summary': 'Summary',
+                'Load More': 'Load More', 'View Source': 'View Source', 'Following': 'Following', '❤️ Follow': '❤️ Follow', '🔍 Analyze': 'Analyze', 'Summary': '🔮 Predict',
+                'AI Analysis Summary for': 'AI Prediction for',
                 'Welcome! Set Your Preferences': 'Welcome! Set Your Preferences', "Select the categories you're interested in in for a personalized experience.": "Select the categories you're interested in for a personalized experience.", 'Save Preferences': 'Save Preferences',
                 'Trending Board Dashboard': 'Trending Board Dashboard', 'Category Leaderboards': 'Category Leaderboards',
                 "A crowdsourced platform to predict, visualize, and analyze emerging trends. Click a trend's title to get AI-powered insights.": "A crowdsourced platform to predict, visualize, and analyze emerging news. Click a news title to get AI-powered insights.",
@@ -1137,13 +1138,15 @@
                     </div>
                     <div class="trend-actions">
                         <a href="${DOMPurify.sanitize(trend.source || '#')}" target="_blank" rel="noopener noreferrer" class="btn btn-outline view-source-btn">${t('View Source')}</a>
-                        <button class="btn btn-outline btn-summary" data-trend-id="${trend.id}" data-analysis-type="summary">${t('Summary')}</button> <!-- NEW: Summary button -->
-                        <button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}" data-analysis-type="detailed">${t('🔍 Analyze')}</button> <!-- Changed text to 'Analyze' -->
+                        
+                        <!-- **** NÚT SUMMARY ĐÃ ĐƯỢC THAY THẾ BẰNG NÚT PREDICT **** -->
+                        <button class="btn btn-outline btn-predict" data-trend-id="${trend.id}" data-analysis-type="prediction">${t('Summary')}</button>
+                        
+                        <button class="btn btn-outline analyze-trend-btn" data-trend-id="${trend.id}" data-analysis-type="detailed">${t('🔍 Analyze')}</button>
                         <button class="btn btn-follow ${isFollowed ? 'followed' : ''}" data-trend-id="${trend.id}">${isFollowed ? t('Following') : t('❤️ Follow')}</button>
                     </div>
                 </div>`;
         }
-
         // MODIFY: Update createTrendCard to use createTrendCardContent
         function createTrendCard(trend, delay = 0) {
             const trendCard = document.createElement('div');
@@ -2826,6 +2829,7 @@
     </script>
 </body>
 </html>
+
 
 
 
