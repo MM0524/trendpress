@@ -187,9 +187,20 @@ exports.handler = async (event) => {
         if (relatedQueriesResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(relatedQueriesResult.value);
-                const risingQueries = parsed.default.rankedKeyword.find(k => k.rankedKeyword && Array.isArray(k.rankedKeyword) && k.rankedKeyword.every(q => q.value > 0));
-                if (risingQueries) relatedQueries = risingQueries.rankedKeyword.slice(0, 5);
-            } catch (e) { console.error("Parsing related queries failed:", e.message); }
+                
+                const rankedKeywords = parsed.default && parsed.default.rankedKeyword;
+                
+                if (Array.isArray(rankedKeywords)) {
+                    const risingQueries = rankedKeywords.find(k => k.rankedKeyword && Array.isArray(k.rankedKeyword) && k.rankedKeyword.every(q => q.value > 0));
+                    if (risingQueries) {
+                        relatedQueries = risingQueries.rankedKeyword.slice(0, 5);
+                    }
+                }
+            } catch (e) { 
+                console.warn(`Parsing related queries failed for "${searchTerm}". It might be a CAPTCHA page or have no data. Error: ${e.message}`);
+            }
+        } else {
+             console.error(`Google Trends relatedQueries promise rejected for "${searchTerm}":`, relatedQueriesResult.reason);
         }
 
         if (mode === 'predictive' && timelineData && timelineData.length > 0) {
