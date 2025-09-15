@@ -3,21 +3,17 @@ const NewsAPI = require('newsapi');
 const crypto = require('crypto');
 const googleTrends = require('google-trends-api');
 
-// Khởi tạo NewsAPI client với API key từ biến môi trường
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
 // --- CÁC HÀM HELPER ---
-
 function toDateStr(d) {
     const dt = d ? new Date(d) : new Date();
     return isNaN(dt.getTime()) ? new Date().toISOString().split("T")[0] : dt.toISOString().split("T")[0];
 }
-
 function toSortValue(d) {
     const dt = d ? new Date(d) : null;
     return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0;
 }
-
 function normalizeNewsApiArticle(article) {
     const { title, description, url, publishedAt, source } = article;
     if (!title || title === "[Removed]" || !url) return null;
@@ -32,7 +28,6 @@ function normalizeNewsApiArticle(article) {
         publishedAt: publishedAt
     };
 }
-
 function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
     if (!articles || articles.length === 0) return [];
     const counts = new Map();
@@ -63,7 +58,6 @@ function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
     }
     return timelineData;
 }
-
 function predictFutureTrends(timelineData, daysToPredict = 7) {
     if (!timelineData || timelineData.length < 2) return [];
     const recentData = timelineData.slice(-14);
@@ -93,13 +87,11 @@ function predictFutureTrends(timelineData, daysToPredict = 7) {
 // --- HANDLER CHÍNH ---
 exports.handler = async (event) => {
     const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
-    
     try {
         const { searchTerm, timeframe: rawTimeframe = '7d', mode } = event.queryStringParameters;
         if (!searchTerm || !searchTerm.trim()) {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "searchTerm is required." }) };
         }
-        
         let startTime, hoursAgo = 0, daysAgo = 0;
         if (mode === 'predictive') {
             startTime = new Date(); startTime.setDate(startTime.getDate() - 90);
@@ -115,17 +107,12 @@ exports.handler = async (event) => {
             if (timeConfig.hours) { startTime.setHours(startTime.getHours() - timeConfig.hours); hoursAgo = timeConfig.hours; }
             else { startTime.setDate(startTime.getDate() - timeConfig.days); daysAgo = timeConfig.days; }
         }
-        
         const newsApiStartTime = new Date(); newsApiStartTime.setDate(newsApiStartTime.getDate() - 28);
-
         const interestPromise = googleTrends.interestOverTime({ keyword: searchTerm, startTime: startTime });
         const newsPromise = newsapi.v2.everything({ q: searchTerm, from: newsApiStartTime.toISOString(), sortBy: 'relevancy', pageSize: 100, language: 'en' });
         const relatedQueriesPromise = googleTrends.relatedQueries({ keyword: searchTerm, startTime: startTime });
-
         const [interestResult, newsResult, relatedQueriesResult] = await Promise.allSettled([interestPromise, newsPromise, relatedQueriesPromise]);
-
         let timelineData = null, topArticles = [], relatedQueries = [], sourceApi = "Google Trends";
-
         if (interestResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(interestResult.value);
@@ -134,7 +121,6 @@ exports.handler = async (event) => {
                 }
             } catch (e) { console.error("Parsing interestOverTime failed:", e.message); }
         }
-
         if (newsResult.status === 'fulfilled' && newsResult.value.status === 'ok' && newsResult.value.articles.length > 0) {
             const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
             topArticles = allArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)).slice(0, 5);
@@ -143,7 +129,6 @@ exports.handler = async (event) => {
                 timelineData = aggregateArticlesToTimeline(allArticles, daysAgo, hoursAgo);
             }
         }
-        
         if (relatedQueriesResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(relatedQueriesResult.value);
@@ -151,17 +136,12 @@ exports.handler = async (event) => {
                 if (risingQueries) relatedQueries = risingQueries.rankedKeyword.slice(0, 5);
             } catch (e) { console.error("Parsing related queries failed:", e.message); }
         }
-
         if (mode === 'predictive' && timelineData && timelineData.length > 0) {
             const predictions = predictFutureTrends(timelineData);
             timelineData.push(...predictions);
         }
-
-        // Tính toán các chỉ số tổng hợp
-        let totalEngagement = 0;
-        let peakEngagement = 0;
+        let totalEngagement = 0, peakEngagement = 0;
         if (timelineData && timelineData.length > 0) {
-            // Chỉ tính toán trên dữ liệu lịch sử, không tính phần dự đoán
             const historicalTimeline = timelineData.filter(p => !p.isPrediction);
             if (historicalTimeline.length > 0) {
                 const values = historicalTimeline.map(p => p.value[0]);
@@ -169,29 +149,20 @@ exports.handler = async (event) => {
                 peakEngagement = Math.max(...values);
             }
         }
-
         if (!timelineData && topArticles.length === 0 && relatedQueries.length === 0) {
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [] }) };
         }
-
         const aggregatedTrend = {
             id: `aggregated-${searchTerm.replace(/\s/g, '-')}-${rawTimeframe}-${mode || 'historical'}`,
-            title_en: searchTerm,
-            isAggregated: true,
-            submitter: sourceApi,
-            timelineData: timelineData || [],
-            topArticles: topArticles,
-            relatedQueries: relatedQueries,
-            totalEngagement: totalEngagement,
-            peakEngagement: peakEngagement,
+            title_en: searchTerm, isAggregated: true, submitter: sourceApi,
+            timelineData: timelineData || [], topArticles: topArticles, relatedQueries: relatedQueries,
+            totalEngagement: totalEngagement, peakEngagement: peakEngagement,
         };
-        
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({ success: true, trends: [aggregatedTrend] }),
         };
-
     } catch (err) {
         console.error("fetch-trends handler critical error:", err);
         return {
