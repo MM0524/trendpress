@@ -922,6 +922,7 @@
                 'Total Engagement': 'Tổng Tương tác',
                 'Peak Engagement': 'Tương tác Đỉnh điểm',
                 'Data Source': 'Nguồn Dữ liệu',
+                'AI Aggregated Analysis for': 'Phân tích AI Tổng hợp cho',
                 // --- Các key còn lại ---
                 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign Out': 'Đăng xuất',
                 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.',
@@ -968,6 +969,7 @@
                 'Total Engagement': 'Total Engagement',
                 'Peak Engagement': 'Peak Engagement',
                 'Data Source': 'Data Source',
+                'AI Aggregated Analysis for': 'AI Aggregated Analysis for',
                 // --- Các key còn lại ---
                 'Trending Board': 'Trending Board', 'For U': 'For U', 'About': 'About', 'Sign Out': 'Sign Out',
                 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.',
@@ -1785,10 +1787,9 @@
             } else if (analysisType === 'detailed') {
                 titleIcon = '🔍 ';
                 titleKey = 'AI Deep Dive for';
-            } else {
-                // Fallback cho 'summary' hoặc các loại khác không xác định
-                titleIcon = '💡 ';
-                titleKey = 'AI Insight for';
+            } else if (analysisType === 'aggregated') {
+                titleIcon = '📊 ';
+                titleKey = 'AI Aggregated Analysis for';
             }
             
             const { title: localizedTrendTitle } = getLocalizedTrendText(trend);
@@ -2501,10 +2502,22 @@
                                 onHover: (event) => { event.native.target.style.cursor = 'pointer'; },
                                 onLeave: (event) => { event.native.target.style.cursor = 'default'; },
                                 onClick: (e, legendItem, legend) => {
+                                    // **** LOGIC ONCLICK MỚI ****
                                     if (user.tbSearchTerms.length > 0) {
-                                        console.log("Legend clicked for term:", legendItem.text);
-                                        return;
+                                        const clickedLabel = legendItem.text.replace(` (${t('Predictive')})`, '');
+                                        // Tìm đúng trend tổng hợp của từ khóa được click
+                                        const trendData = currentSearchResults.find(t => t.title_en === clickedLabel);
+                                        
+                                        if (trendData) {
+                                            // Mở modal với type mới là 'aggregated'
+                                            openAIInsightModal(trendData, 'aggregated');
+                                        } else {
+                                            console.error("Could not find aggregated data for term:", clickedLabel);
+                                        }
+                                        return; // Dừng lại sau khi xử lý
                                     }
+                                    
+                                    // Logic cũ cho chế độ duyệt
                                     const index = legendItem.datasetIndex;
                                     const trendIdFromLegend = legend.chart.data.datasets[index].trendId;
                                     if (trendIdFromLegend) {
@@ -2980,4 +2993,5 @@
     </script>
 </body>
 </html>
+
 
