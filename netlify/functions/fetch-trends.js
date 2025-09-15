@@ -177,6 +177,7 @@ exports.handler = async (event) => {
         if (newsResult.status === 'fulfilled' && newsResult.value.status === 'ok' && newsResult.value.articles.length > 0) {
             const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
             topArticles = allArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)).slice(0, 5);
+            contextArticles = allArticles.slice(0, 20);
             if (!timelineData) {
                 sourceApi = "NewsAPI";
                 timelineData = aggregateArticlesToTimeline(allArticles, daysAgo, hoursAgo);
@@ -224,6 +225,7 @@ exports.handler = async (event) => {
             // Thêm lại 2 thuộc tính này
             totalEngagement: totalEngagement,
             peakEngagement: peakEngagement,
+            contextArticles: contextArticles
         };
         
         return {
