@@ -137,6 +137,50 @@ function createPredictionPrompt(trend, language) {
     }
 }
 
+function createAggregatedAnalysisPrompt(trendData, language) {
+    const searchTerm = trendData.title_en;
+    // Lấy tối đa 10 tiêu đề để prompt không quá dài
+    const articleTitles = trendData.contextArticles.slice(0, 10).map(a => `- "${a.title_en}"`).join('\n');
+    const peakValue = trendData.peakEngagement;
+    const totalValue = trendData.totalEngagement;
+
+    if (language === 'vi') {
+        return `
+            Bạn là một nhà phân tích dữ liệu thị trường chuyên nghiệp. Chủ đề cần phân tích là "${searchTerm}".
+
+            Dữ liệu có sẵn:
+            - Mức độ quan tâm đỉnh điểm (Peak Engagement): ${peakValue}
+            - Tổng mức độ quan tâm (Total Engagement): ${totalValue}
+            - Một số tiêu đề bài báo liên quan gần đây:
+            ${articleTitles}
+
+            Dựa vào tất cả dữ liệu trên, hãy đưa ra một bản phân tích tổng hợp súc tích, trả lời 3 câu hỏi sau:
+            1. **Giải thích Điểm số:** Tại sao chủ đề này lại đạt được mức độ quan tâm như vậy? Các sự kiện hoặc bài báo nào trong danh sách trên có thể là động lực chính thúc đẩy sự quan tâm này?
+            2. **Phân tích Xu hướng Phát triển:** Dựa trên các tiêu đề bài báo, xu hướng của chủ đề này đang phát triển theo hướng nào (ví dụ: một sản phẩm mới, một sự kiện văn hóa, một vấn đề kinh tế)? Nó đang ở giai roạn nào (mới nổi, đỉnh điểm, hay suy thoái)?
+            3. **Phân tích Đối tượng Quan tâm:** Dựa trên nội dung các tiêu đề, tệp khách hàng hoặc nhóm người nào đang quan tâm nhất đến chủ đề này? (Ví dụ: game thủ, nhà đầu tư, tín đồ thời trang, phụ huynh, v.v.)
+
+            QUAN TRỌNG: Chỉ trả lời bằng HTML hợp lệ. Mỗi câu trả lời cho 3 điểm trên phải được gói trong một thẻ <div class="ai-section">...</div> với tiêu đề tương ứng nằm trong thẻ <h4>.
+        `;
+    } else {
+        return `
+            You are a professional market data analyst. The topic to analyze is "${searchTerm}".
+
+            Available data:
+            - Peak Engagement Score: ${peakValue}
+            - Total Engagement Score: ${totalValue}
+            - Sample of recent related article headlines:
+            ${articleTitles}
+
+            Based on all the data above, provide a concise, aggregated analysis answering the following three questions:
+            1. **Score Explanation:** Why did this topic achieve this level of interest? Which events or articles from the list might be the main drivers behind this engagement?
+            2. **Development Trend Analysis:** Based on the article headlines, in which direction is this topic's trend developing (e.g., a new product, a cultural event, an economic issue)? What stage is it in (emerging, peaking, or declining)?
+            3. **Audience Analysis:** Based on the content of the headlines, what customer segment or group of people is most interested in this topic? (e.g., gamers, investors, fashion enthusiasts, parents, etc.)
+
+            IMPORTANT: Respond ONLY with valid HTML. Each answer to the three points must be wrapped in its own <div class="ai-section">...</div> tag with a corresponding <h4> title.
+        `;
+    }
+}
+
 
 // --- HANDLER CHÍNH ---
 exports.handler = async (event) => {
@@ -154,17 +198,11 @@ exports.handler = async (event) => {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "News data is missing." }) };
         }
 
-        if (analysisType === 'summary') {
-            const successScore = trend.hotnessScore ? (Math.min(99, Math.max(20, trend.hotnessScore * 100))) : (Math.floor(Math.random() * 40) + 60);
-            const sentiment = successScore > 75 ? (language === 'vi' ? "tích cực" : "positive") : "neutral";
-            const growthPotential = successScore > 80 ? (language === 'vi' ? "tiềm năng tăng trưởng cao" : "high potential for growth") : (language === 'vi' ? "tăng trưởng vừa phải" : "moderate growth");
-            const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || trend.title_en || trend.title_vi || "N/A";
-            const htmlSummary = language === 'vi' 
-                ? `<ul style="list-style-type: disc; padding-left: 20px; text-align: left;"><li><strong>Tin tức:</strong> "${trendTitle}" (Lĩnh vực: ${trend.category}).</li><li><strong>Điểm liên quan:</strong> <strong>${successScore.toFixed(0)}%</strong> (tâm lý ${sentiment}).</li><li><strong>Triển vọng:</strong> Tin tức này cho thấy ${growthPotential}.</li></ul>` 
-                : `<ul style="list-style-type: disc; padding-left: 20px; text-align: left;"><li><strong>News:</strong> "${trendTitle}" (Domain: ${trend.category}).</li><li><strong>Relevance Score:</strong> <strong>${successScore.toFixed(0)}%</strong> (${sentiment} sentiment).</li><li><strong>Outlook:</strong> This news shows ${growthPotential}.</li></ul>`;
-            
-            const analysisResult = { successScore: parseFloat(successScore.toFixed(0)), summary: htmlSummary };
-            return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: analysisResult }) };
+        if (analysisType === 'aggregated') {
+            if (!geminiApiKey) throw new Error("Gemini API key is not configured.");
+            const prompt = createAggregatedAnalysisPrompt(trend, language);
+            const aggregatedContent = await geminiManager.generateContent(prompt);
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: aggregatedContent }) };
         }
         
         else if (analysisType === 'prediction') {
