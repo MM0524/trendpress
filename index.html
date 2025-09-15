@@ -941,7 +941,9 @@
                 'What is Engagement Score?': 'Điểm Tương tác là gì?', 'Engagement Score': 'Điểm Tương tác', 'Engagement Score Explanation': 'Đây là một chỉ số tổng hợp dựa trên lượt xem, lượt tìm kiếm và các tương tác khác để đo lường mức độ phổ biến của một xu hướng.',
                 'Hottest': 'Hot nhất', 'Latest': 'Mới nhất', 'Outdated': 'Lỗi thời', 'Predictive': 'Dự đoán',
                 'Last 1 hour': '1 giờ qua', 'Last 6 hours': '6 giờ qua', 'Last 24 hours': '24 giờ qua', 'Last 3 days': '3 ngày qua', 'Last 7 days': '7 ngày qua', 'Last 30 days': '30 ngày qua', 'Last 90 days': '90 ngày qua', 'Last 1 year': '1 năm qua',
-                'Next 3 days': '3 ngày tới', 'Next 5 days': '5 ngày tới', 'Next 7 days': '7 ngày tới',
+                'Next 3 Months': '3 Tháng Tới',
+                'Next 6 Months': '6 Tháng Tới',
+                'Next 1 Year': '1 Năm Tới',
                 'Region': 'Khu vực', 'Timeframe': 'Khung thời gian', 'Source': 'Nguồn', 'All Sources': 'Tất cả nguồn',
                 'Germany': 'Đức', 'France': 'Pháp', 'Europe': 'Châu Âu', 'China': 'Trung Quốc', 'South Korea': 'Hàn Quốc', 'India': 'Ấn Độ', 'Australia': 'Úc', 'Japan': 'Nhật Bản'
             },
@@ -985,7 +987,9 @@
                 'What is Engagement Score?': 'What is Engagement Score?', 'Engagement Score': 'Engagement Score', 'Engagement Score Explanation': 'This is a composite metric based on views, searches, and other interactions to measure a trend\'s popularity.',
                 'Hottest': 'Hottest', 'Latest': 'Latest', 'Outdated': 'Outdated', 'Predictive': 'Predictive',
                 'Last 1 hour': 'Last 1 hour', 'Last 6 hours': 'Last 6 hours', 'Last 24 hours': 'Last 24 hours', 'Last 3 days': 'Last 3 days', 'Last 7 days': 'Last 7 days', 'Last 30 days': 'Last 30 days', 'Last 90 days': 'Last 90 days', 'Last 1 year': 'Last 1 year',
-                'Next 3 days': 'Next 3 days', 'Next 5 days': 'Next 5 days', 'Next 7 days': 'Next 7 days',
+                'Next 3 Months': 'Next 3 Months',
+                'Next 6 Months': 'Next 6 Months',
+                'Next 1 Year': 'Next 1 Year',
                 'Region': 'Region', 'Timeframe': 'Timeframe', 'Source': 'Source', 'All Sources': 'All Sources',
                 'de': 'Germany', 'fr': 'France', 'eu': 'Europe', 'cn': 'China', 'kr': 'South Korea', 'in': 'India', 'au': 'Australia', 'jp': 'Japan'
             }
@@ -2565,8 +2569,8 @@
                     defaultSelection = '7d';
                     break;
                 case 'predictive':
-                    options = [ { value: 'next3d', textKey: 'Next 3 days' }, { value: 'next5d', textKey: 'Next 5 days' }, { value: 'next7d', textKey: 'Next 7 days' } ];
-                    defaultSelection = 'next7d';
+                    options = [ { value: 'next3m', textKey: 'Next 3 Months' }, { value: 'next6m', textKey: 'Next 6 Months' }, { value: 'next1y', textKey: 'Next 1 Year' } ];
+                    defaultSelection = 'next3m';
             }
             select.innerHTML = options.map(opt => `<option value="${opt.value}">${t(opt.textKey)}</option>`).join('');
             select.value = currentTrendStatus.customTimeframe;
@@ -2976,3 +2980,4 @@
     </script>
 </body>
 </html>
+
