@@ -96,7 +96,6 @@ function predictFutureTrends(timelineData, daysToPredict = 7) {
 }
 
 // --- HANDLER CHÍNH ---
-// --- HANDLER CHÍNH ĐÃ ĐƯỢC SỬA LỖI ---
 exports.handler = async (event) => {
     const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
     
@@ -106,10 +105,10 @@ exports.handler = async (event) => {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "searchTerm is required." }) };
         }
         
+        // ... (phần logic tính toán startTime giữ nguyên) ...
         let startTime, hoursAgo = 0, daysAgo = 0;
         if (mode === 'predictive') {
-            startTime = new Date();
-            startTime.setDate(startTime.getDate() - 90);
+            startTime = new Date(); startTime.setDate(startTime.getDate() - 90);
             daysAgo = 90;
         } else {
             const TIMEFRAME_MAP = {
@@ -119,17 +118,11 @@ exports.handler = async (event) => {
             };
             const timeConfig = TIMEFRAME_MAP[rawTimeframe] || { days: 7 };
             startTime = new Date();
-            if (timeConfig.hours) {
-                startTime.setHours(startTime.getHours() - timeConfig.hours);
-                hoursAgo = timeConfig.hours;
-            } else {
-                startTime.setDate(startTime.getDate() - timeConfig.days);
-                daysAgo = timeConfig.days;
-            }
+            if (timeConfig.hours) { startTime.setHours(startTime.getHours() - timeConfig.hours); hoursAgo = timeConfig.hours; }
+            else { startTime.setDate(startTime.getDate() - timeConfig.days); daysAgo = timeConfig.days; }
         }
         
-        const newsApiStartTime = new Date();
-        newsApiStartTime.setDate(newsApiStartTime.getDate() - 28);
+        const newsApiStartTime = new Date(); newsApiStartTime.setDate(newsApiStartTime.getDate() - 28);
 
         const interestPromise = googleTrends.interestOverTime({ keyword: searchTerm, startTime: startTime });
         const newsPromise = newsapi.v2.everything({ q: searchTerm, from: newsApiStartTime.toISOString(), sortBy: 'relevancy', pageSize: 100, language: 'en' });
@@ -139,6 +132,7 @@ exports.handler = async (event) => {
 
         let timelineData = null, topArticles = [], relatedQueries = [], sourceApi = "Google Trends";
 
+        // ... (logic xử lý interestResult và newsResult giữ nguyên) ...
         if (interestResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(interestResult.value);
@@ -147,7 +141,6 @@ exports.handler = async (event) => {
                 }
             } catch (e) { console.error("Parsing interestOverTime failed:", e.message); }
         }
-
         if (newsResult.status === 'fulfilled' && newsResult.value.status === 'ok' && newsResult.value.articles.length > 0) {
             const allArticles = newsResult.value.articles.map(normalizeNewsApiArticle).filter(Boolean);
             topArticles = allArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)).slice(0, 5);
@@ -157,20 +150,32 @@ exports.handler = async (event) => {
             }
         }
         
+        // --- XỬ LÝ KẾT QUẢ RELATED QUERIES (ĐÃ SỬA LỖI) ---
         if (relatedQueriesResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(relatedQueriesResult.value);
-                const risingQueries = parsed.default.rankedKeyword.find(k => k.rankedKeyword && Array.isArray(k.rankedKeyword) && k.rankedKeyword.every(q => q.value > 0));
-                if (risingQueries) relatedQueries = risingQueries.rankedKeyword.slice(0, 5);
-            } catch (e) { console.error("Parsing related queries failed:", e.message); }
+                const rankedKeywords = parsed.default.rankedKeyword;
+                
+                // **** BẮT ĐẦU SỬA LỖI ****
+                // Thêm kiểm tra an toàn: chỉ thực hiện .find() nếu rankedKeywords là một mảng
+                if (Array.isArray(rankedKeywords)) {
+                    const risingQueries = rankedKeywords.find(k => k.rankedKeyword && Array.isArray(k.rankedKeyword) && k.rankedKeyword.every(q => q.value > 0));
+                    if (risingQueries) {
+                        relatedQueries = risingQueries.rankedKeyword.slice(0, 5);
+                    }
+                }
+                // **** KẾT THÚC SỬA LỖI ****
+
+            } catch (e) { 
+                console.error("Parsing related queries failed:", e.message); 
+            }
         }
 
+        // ... (phần còn lại của hàm giữ nguyên) ...
         if (mode === 'predictive' && timelineData && timelineData.length > 0) {
             const predictions = predictFutureTrends(timelineData);
             timelineData.push(...predictions);
         }
-
-        // **** BẮT ĐẦU KHỐI CODE ĐƯỢC THÊM LẠI ****
         let totalEngagement = 0;
         let peakEngagement = 0;
         if (timelineData && timelineData.length > 0) {
@@ -181,12 +186,9 @@ exports.handler = async (event) => {
                 peakEngagement = Math.max(...values);
             }
         }
-        // **** KẾT THÚC KHỐI CODE ĐƯỢC THÊM LẠI ****
-
         if (!timelineData && topArticles.length === 0 && relatedQueries.length === 0) {
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [] }) };
         }
-
         const aggregatedTrend = {
             id: `aggregated-${searchTerm.replace(/\s/g, '-')}-${rawTimeframe}-${mode || 'historical'}`,
             title_en: searchTerm,
@@ -195,17 +197,14 @@ exports.handler = async (event) => {
             timelineData: timelineData || [],
             topArticles: topArticles,
             relatedQueries: relatedQueries,
-            // Thêm lại 2 thuộc tính này
             totalEngagement: totalEngagement,
             peakEngagement: peakEngagement,
         };
-        
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({ success: true, trends: [aggregatedTrend] }),
         };
-
     } catch (err) {
         console.error("fetch-trends handler critical error:", err);
         return {
