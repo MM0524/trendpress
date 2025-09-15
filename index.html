@@ -2219,11 +2219,15 @@
             const canvas = document.getElementById('hot-trends-chart');
             const clearSearchBtn = document.getElementById('tb-clear-search-btn');
             const searchDetailsWrapper = document.getElementById('tb-search-details-wrapper');
-            const comparisonContainer = document.getElementById('tb-comparison-table-container');
             const chartTitleEl = document.getElementById('tb-chart-title');
             
-            if (!canvas) { return; }
-            if (hotTrendsChart) { hotTrendsChart.destroy(); }
+            if (!canvas) { 
+                console.error("Chart canvas 'hot-trends-chart' not found!");
+                return; 
+            }
+            if (hotTrendsChart) {
+                hotTrendsChart.destroy();
+            }
 
             if (chartTitleEl && !chartTitleEl.dataset.listenerAttached) {
                 chartTitleEl.dataset.listenerAttached = 'true';
@@ -2251,18 +2255,14 @@
                 DOM.tbSearchChipsContainer.innerHTML = user.tbSearchTerms.map(term => `<span class="tb-search-chip">${truncateText(term, 20)}<button class="tb-search-chip-remove" data-term="${term}">&times;</button></span>`).join('');
                 DOM.tbSearchChipsContainer.classList.toggle('hidden', !isInSearchMode);
             }
+            
             if (clearSearchBtn) {
                 clearSearchBtn.classList.toggle('hidden', !isInSearchMode);
             }
             
-            if (searchTermsChanged) {
-                if (searchDetailsWrapper) {
-                    searchDetailsWrapper.innerHTML = '';
-                    searchDetailsWrapper.classList.add('hidden');
-                }
-                if (comparisonContainer) {
-                    comparisonContainer.classList.add('hidden');
-                }
+            if (searchTermsChanged && searchDetailsWrapper) {
+                searchDetailsWrapper.innerHTML = '';
+                searchDetailsWrapper.classList.add('hidden');
                 currentSearchResults = [];
             }
 
@@ -2270,6 +2270,7 @@
             let chartLabels = [];
 
             if (isInSearchMode) {
+                // --- CHẾ ĐỘ TÌM KIẾM ---
                 if (DOM.tbDefaultView) DOM.tbDefaultView.classList.add('hidden');
                 if (chartTitleEl) chartTitleEl.innerHTML = `<div class="loading-spinner" style="display: inline-block; vertical-align: middle; margin-right: 10px;"></div> ${t('Searching for')}...`;
                 
@@ -2285,51 +2286,54 @@
                     
                     const processedResults = results.map(res => (res.success && res.trends.length > 0) ? res.trends[0] : null).filter(Boolean);
 
+                    // --- LOGIC RENDER CHI TIẾT CÓ ĐIỀU KIỆN (ĐÃ SỬA LỖI) ---
                     if (searchTermsChanged) {
                         processedResults.forEach(searchData => {
                             currentSearchResults.push(...searchData.topArticles);
+                            
                             const articlesHTML = `
                                 <div class="tb-details-panel">
                                     <h4>${t('Top Articles for')} "${searchData.title_en}"</h4>
                                     <ul class="tb-article-list">
                                         ${searchData.topArticles.length > 0
-                                            ? searchData.topArticles.map(article => `<li class="tb-article-item" data-trend-id="${article.id}"><div class="tb-article-title">${article.title_en}</div><div class="tb-article-source">${article.submitter}</div></li>`).join('')
-                                            : `<li>${t('No articles found.')}</li>`}
+                                            ? searchData.topArticles.map(article => `
+                                                <li class="tb-article-item" data-trend-id="${article.id}">
+                                                    <div class="tb-article-title">${article.title_en}</div>
+                                                    <div class="tb-article-source">${article.submitter}</div>
+                                                </li>`).join('')
+                                            : `<li>${t('No articles found.')}</li>`
+                                        }
                                     </ul>
                                 </div>`;
+                            
                             const queriesHTML = `
                                 <div class="tb-details-panel">
                                     <h4>${t('Related Queries')}</h4>
                                     <ul class="tb-related-list">
                                         ${searchData.relatedQueries.length > 0
-                                            ? searchData.relatedQueries.map(q => `<li class="tb-related-item" data-query="${q.query}"><span class="tb-related-query">${q.query}</span><span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span></li>`).join('')
-                                            : `<li>${t('No related queries.')}</li>`}
+                                            ? searchData.relatedQueries.map(q => `
+                                                <li class="tb-related-item" data-query="${q.query}">
+                                                    <span class="tb-related-query">${q.query}</span>
+                                                    <span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span>
+                                                </li>`).join('')
+                                            : `<li>${t('No related queries.')}</li>`
+                                        }
                                     </ul>
                                 </div>`;
+
                             const container = document.createElement('div');
                             container.className = 'tb-search-details-container';
                             container.innerHTML = articlesHTML + queriesHTML;
-                            if (searchDetailsWrapper) searchDetailsWrapper.appendChild(container);
+                            
+                            if (searchDetailsWrapper) {
+                                searchDetailsWrapper.appendChild(container);
+                            }
                         });
 
-                        if (searchDetailsWrapper && searchDetailsWrapper.innerHTML.trim() !== '') {
+                        if (searchDetailsWrapper && processedResults.length > 0) {
                             searchDetailsWrapper.classList.remove('hidden');
                         }
                         
-                        // Render Bảng So Sánh
-                        if (processedResults.length > 1 && comparisonContainer) {
-                            const comparisonBody = document.getElementById('tb-comparison-body');
-                            comparisonBody.innerHTML = '';
-                            const palette = getColorPalette(processedResults.length);
-                            processedResults.forEach((data, index) => {
-                                const row = document.createElement('tr');
-                                const color = palette[index % palette.length].stroke;
-                                row.innerHTML = `<td><div class="comparison-term-cell"><span class="term-color-swatch" style="background-color: ${color};"></span>${data.title_en}</div></td><td class="comparison-value">${formatNumber(data.totalEngagement)}</td><td class="comparison-value">${formatNumber(data.peakEngagement)}</td><td><span class="comparison-source">${data.submitter}</span></td>`;
-                                comparisonBody.appendChild(row);
-                            });
-                            comparisonContainer.classList.remove('hidden');
-                        }
-
                         lastRenderedSearchTerms = [...user.tbSearchTerms];
                     }
                     // --- KẾT THÚC LOGIC RENDER CHI TIẾT ---
@@ -2962,6 +2966,7 @@
     </script>
 </body>
 </html>
+
 
 
 
