@@ -1113,10 +1113,9 @@
                     throw new Error(data.message || "Failed to fetch trends from builder.");
                 }
                 
-                let fetchedTrends = Array.isArray(data.trends) ? data.trends : [];
-                
-                fetchedTrends.sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0));
+                const fetchedTrends = Array.isArray(data.trends) ? data.trends : [];
                 masterTrendsList = fetchedTrends;
+                applyTrendOrdering();
                 
                 return fetchedTrends;
             } catch (e) {
@@ -1280,20 +1279,13 @@
         function getVisibleTrends() {
             let sourceList = [...masterTrendsList];
 
-            if (currentLanguage === 'en') {
-                sourceList = sourceList.filter(trend => trend && trend.title_en);
-            }
-            
+            // Apply main view filters
             if (currentFilter.type === 'category' && currentFilter.value !== 'All') {
                 sourceList = sourceList.filter(trendItem => trendItem && trendItem.category === currentFilter.value);
             }
-            
-            // Lọc theo hashtag
             if (currentFilter.hashtag) {
                 sourceList = sourceList.filter(trendItem => trendItem && (trendItem.tags || []).includes(currentFilter.hashtag));
             }
-            
-            // Lọc theo từ khóa tìm kiếm
             if (currentFilter.searchTerm) {
                 const term = currentFilter.searchTerm.toLowerCase();
                 sourceList = sourceList.filter(trendItem => trendItem && (
@@ -1303,37 +1295,29 @@
                     (trendItem.description_en && trendItem.description_en.toLowerCase().includes(term))
                 ));
             }
-            
-            // Lọc theo khu vực
             if (currentFilter.region && currentFilter.region !== 'global') {
                 sourceList = sourceList.filter(trend => trend.region === currentFilter.region);
             }
-            
-            // Lọc theo khung thời gian
-            if (currentFilter.timeframe && currentFilter.timeframe !== 'all') {
+            if (currentFilter.timeframe && currentFilter.timeframe !== 'all') { // Use currentFilter.timeframe
                 sourceList = sourceList.filter(trend => isTrendRelevantForTimeframe(trend, currentFilter.timeframe));
             }
-            
-            // Lọc theo nguồn tin
             if (currentFilter.source && currentFilter.source !== 'All') {
                 sourceList = sourceList.filter(trend => trend.submitter === currentFilter.source);
             }
 
+            // For 'forU' view, apply user-specific filters on top of already filtered sourceList
             if (currentView === 'forU') {
+                // Since accountType is always 'work', this check simplifies
                 const preferenceTrends = sourceList.filter(trendItem => trendItem && user.preferences.includes(trendItem.category));
                 const followedTrendsData = sourceList.filter(trendItem => trendItem && user.followedTrends.includes(trendItem.id));
-                
-
                 const combined = [...followedTrendsData, ...preferenceTrends];
                 const uniqueTrendIds = new Set(combined.map(trendItem => trendItem.id));
-                
-
                 return Array.from(uniqueTrendIds)
                     .map(id => sourceList.find(trendItem => trendItem.id === id))
                     .filter(Boolean)
                     .sort((a,b) => b.hotnessScore - a.hotnessScore);
             }
-
+            
             return sourceList.filter(Boolean);
         }
 
@@ -1830,10 +1814,16 @@
                 // Lấy dữ liệu thô từ server
                 let rawData = await analyzeTrendSecurely(trend, analysisType);
                 
+                // **** BẮT ĐẦU SỬA LỖI ****
+                // Dọn dẹp các khối mã Markdown mà AI có thể trả về
                 if (typeof rawData === 'string') {
+                    // Loại bỏ ```html ở đầu và ``` ở cuối, cùng với các khoảng trắng
                     rawData = rawData.trim().replace(/^```html\s*/, '').replace(/\s*```$/, '').trim();
                 }
-
+                // **** KẾT THÚC SỬA LỖI ****
+                
+                // Bước 4: Hiển thị kết quả thành công
+                // DOMPurify sẽ đảm bảo HTML còn lại là an toàn trước khi render
                 modalBody.innerHTML = DOMPurify.sanitize(rawData, { USE_PROFILES: { html: true } });
 
             } catch (err) {
@@ -2781,7 +2771,7 @@
             if (DOM.navAbout) DOM.navAbout.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); updateActiveNav('about'); });
             if (DOM.navTrendingBoard) DOM.navTrendingBoard.addEventListener('click', (e) => { e.preventDefault(); /* Không cần kiểm tra login/premium nữa */ switchView('trendingBoard'); });
             // REMOVED: premium-login-btn, login-google-btn, login-work-btn event listeners
-        document.getElementById('premium-login-btn')?.addEventListener('click', (e) => { e.preventDefault(); closeModal('premium-modal'); /* openModal('login-choice-modal'); */ }); // Nút này bây giờ có thể vô tác dụng hoặc cần định tuyến lại
+            document.getElementById('premium-login-btn')?.addEventListener('click', (e) => { e.preventDefault(); closeModal('premium-modal'); /* openModal('login-choice-modal'); */ }); // Nút này bây giờ có thể vô tác dụng hoặc cần định tuyến lại
             DOM.modalCloses.forEach(btn => btn.addEventListener('click', () => {
                 closeModal(btn.closest('.modal-overlay').id);
                 const modalId = btn.closest('.modal-overlay').id;
@@ -2939,12 +2929,9 @@
         }
 
             document.getElementById('language-toggle')?.addEventListener('click', async (e) => {
-                e.preventDefault();
+                e.preventDefault(); // Ngăn chặn hành vi mặc định
                 currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi';
                 localStorage.setItem('lang', currentLanguage);
-            
-                await fetchLiveTrends();
-
                 applyTranslations();
                 updateLanguageToggleUI();
                 
@@ -2989,34 +2976,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
