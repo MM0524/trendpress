@@ -160,11 +160,18 @@ exports.handler = async (event) => {
 
         if (interestResult.status === 'fulfilled') {
             try {
+                // Thử parse JSON. Nếu thất bại, khối catch sẽ xử lý.
                 const parsed = JSON.parse(interestResult.value);
-                if (parsed.default.timelineData && parsed.default.timelineData.length > 0) {
+                if (parsed.default && parsed.default.timelineData && parsed.default.timelineData.length > 0) {
                     timelineData = parsed.default.timelineData.map(p => ({ ...p, value: [p.value[0] * 1000] }));
                 }
-            } catch (e) { console.error("Parsing interestOverTime failed:", e.message); }
+            } catch (e) {
+                // Ghi log lỗi để biết nguyên nhân, nhưng không làm sập function
+                console.warn(`Parsing interestOverTime failed for "${searchTerm}". It might be a CAPTCHA page. Error: ${e.message}`);
+                // Để timelineData vẫn là null, luồng fallback sẽ được kích hoạt
+            }
+        } else {
+            console.error(`Google Trends interestOverTime promise rejected for "${searchTerm}":`, interestResult.reason);
         }
 
         if (newsResult.status === 'fulfilled' && newsResult.value.status === 'ok' && newsResult.value.articles.length > 0) {
