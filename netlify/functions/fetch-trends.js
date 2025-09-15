@@ -3,17 +3,21 @@ const NewsAPI = require('newsapi');
 const crypto = require('crypto');
 const googleTrends = require('google-trends-api');
 
+// Khởi tạo NewsAPI client với API key từ biến môi trường
 const newsapi = new NewsAPI(process.env.NEWS_API_KEY);
 
 // --- CÁC HÀM HELPER ---
+
 function toDateStr(d) {
     const dt = d ? new Date(d) : new Date();
     return isNaN(dt.getTime()) ? new Date().toISOString().split("T")[0] : dt.toISOString().split("T")[0];
 }
+
 function toSortValue(d) {
     const dt = d ? new Date(d) : null;
     return dt && !isNaN(dt.getTime()) ? dt.getTime() : 0;
 }
+
 function normalizeNewsApiArticle(article) {
     const { title, description, url, publishedAt, source } = article;
     if (!title || title === "[Removed]" || !url) return null;
@@ -28,6 +32,7 @@ function normalizeNewsApiArticle(article) {
         publishedAt: publishedAt
     };
 }
+
 function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
     if (!articles || articles.length === 0) return [];
     const counts = new Map();
@@ -58,6 +63,7 @@ function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
     }
     return timelineData;
 }
+
 function predictFutureTrends(timelineData, daysToPredict = 7) {
     if (!timelineData || timelineData.length < 2) return [];
     const recentData = timelineData.slice(-14);
@@ -87,7 +93,6 @@ function predictFutureTrends(timelineData, daysToPredict = 7) {
 // --- HANDLER CHÍNH ---
 exports.handler = async (event) => {
     const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
-    
     try {
         const { searchTerm, timeframe: rawTimeframe = '7d', mode } = event.queryStringParameters;
         if (!searchTerm || !searchTerm.trim()) {
@@ -140,9 +145,18 @@ exports.handler = async (event) => {
         if (relatedQueriesResult.status === 'fulfilled') {
             try {
                 const parsed = JSON.parse(relatedQueriesResult.value);
-                const risingQueries = parsed.default.rankedKeyword.find(k => k.rankedKeyword.every(q => q.value > 0));
-                if (risingQueries) relatedQueries = risingQueries.rankedKeyword.slice(0, 5);
-            } catch (e) { console.error("Parsing related queries failed:", e.message); }
+                const rankedKeywords = parsed.default.rankedKeyword;
+                
+                // Thêm kiểm tra an toàn: chỉ thực hiện .find() nếu rankedKeywords là một mảng
+                if (Array.isArray(rankedKeywords)) {
+                    const risingQueries = rankedKeywords.find(k => k.rankedKeyword && Array.isArray(k.rankedKeyword) && k.rankedKeyword.every(q => q.value > 0));
+                    if (risingQueries) {
+                        relatedQueries = risingQueries.rankedKeyword.slice(0, 5);
+                    }
+                }
+            } catch (e) { 
+                console.error("Parsing related queries failed:", e.message); 
+            }
         }
 
         if (mode === 'predictive' && timelineData && timelineData.length > 0) {
@@ -150,12 +164,8 @@ exports.handler = async (event) => {
             timelineData.push(...predictions);
         }
 
-        // **** BẮT ĐẦU KHỐI CODE BỊ THIẾU ****
-        // Tính toán các chỉ số tổng hợp
-        let totalEngagement = 0;
-        let peakEngagement = 0;
+        let totalEngagement = 0, peakEngagement = 0;
         if (timelineData && timelineData.length > 0) {
-            // Chỉ tính toán trên dữ liệu lịch sử, không tính phần dự đoán
             const historicalTimeline = timelineData.filter(p => !p.isPrediction);
             if (historicalTimeline.length > 0) {
                 const values = historicalTimeline.map(p => p.value[0]);
@@ -163,7 +173,6 @@ exports.handler = async (event) => {
                 peakEngagement = Math.max(...values);
             }
         }
-        // **** KẾT THÚC KHỐI CODE BỊ THIẾU ****
 
         if (!timelineData && topArticles.length === 0 && relatedQueries.length === 0) {
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, trends: [] }) };
