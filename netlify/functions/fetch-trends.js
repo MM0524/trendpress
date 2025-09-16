@@ -150,7 +150,7 @@ exports.handler = async (event) => {
 
         const [interestResult, newsResult, relatedQueriesResult] = await Promise.allSettled([interestPromise, newsPromise, relatedQueriesPromise]);
 
-        let timelineData = null, topArticles = [], relatedQueries = [], sourceApi = "Google Trends";
+        let timelineData = null, topArticles = [], relatedQueries = [], sourceApi = "Google Trends", contextArticles = [];
 
         if (interestResult.status === 'fulfilled') {
             try {
