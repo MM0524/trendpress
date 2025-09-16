@@ -324,6 +324,47 @@
         }
         /* End NEW AI Deep Dive styles */
 
+        #tb-ai-suggestions-container {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        #tb-ai-suggestions-container h4 {
+            color: var(--text-muted-color);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ai-suggestions-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .ai-suggestion-btn {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--primary-light);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .ai-suggestion-btn:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-light);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(161, 0, 255, 0.3);
+        }
 
         .tb-header { border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem; }
         .tb-search-container { display: flex; gap: 1rem; margin-bottom: 1rem; }
@@ -749,6 +790,15 @@
                 </select>
             </div>
         </div>
+        <div id="tb-ai-suggestions-container" class="hidden">
+                <h4 id="tb-ai-suggestions-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                    <span></span>
+                </h4>
+                <div class="ai-suggestions-list" id="ai-suggestions-list">
+                    <!-- AI suggestions will be inserted here -->
+                </div>
+        </div>
         <div id="tb-default-view">
             <div class="tb-leaderboards-grid">
                 <div class="tb-leaderboard">
@@ -922,6 +972,8 @@
                 'Total Engagement': 'Tổng Tương tác',
                 'Peak Engagement': 'Tương tác Đỉnh điểm',
                 'Data Source': 'Nguồn Dữ liệu',
+                'AI Suggested Comparisons': 'Gợi ý So sánh từ AI',
+                'Generating suggestions...': 'Đang tạo gợi ý...',
                 // --- Các key còn lại ---
                 'Trending Board': 'Trending Board', 'For U': 'Dành cho bạn', 'For You': 'Dành cho bạn', 'About': 'Giới thiệu', 'Sign Out': 'Đăng xuất',
                 'Discover what’s next. Act before the rest.': 'Khám phá tương lai. Hành động trước đối thủ.',
@@ -968,6 +1020,8 @@
                 'Total Engagement': 'Total Engagement',
                 'Peak Engagement': 'Peak Engagement',
                 'Data Source': 'Data Source',
+                'AI Suggested Comparisons': 'AI Suggested Comparisons',
+                'Generating suggestions...': 'Generating suggestions...',
                 // --- Các key còn lại ---
                 'Trending Board': 'Trending Board', 'For U': 'For U', 'About': 'About', 'Sign Out': 'Sign Out',
                 'Discover what’s next. Act before the rest.': 'Discover what’s next. Act before the rest.',
@@ -1011,6 +1065,7 @@
             { selector: '#th-total-engagement', key: 'Total Engagement' },
             { selector: '#th-peak-engagement', key: 'Peak Engagement' },
             { selector: '#th-source', key: 'Data Source' },
+            { selector: '#tb-ai-suggestions-title span', key: 'AI Suggested Comparisons' },
             
             // Các binding không thay đổi
             { selector: '#nav-trending-board', key: 'Trending Board' },
@@ -2218,6 +2273,39 @@
                 }
             });
         }
+
+        async function fetchAiSuggestions(searchTerm) {
+            const suggestionsContainer = document.getElementById('tb-ai-suggestions-container');
+            const suggestionsList = document.getElementById('ai-suggestions-list');
+            if (!suggestionsContainer || !suggestionsList) return;
+
+            suggestionsContainer.classList.remove('hidden');
+            suggestionsList.innerHTML = `<span style="color: var(--text-muted-color);">${t('Generating suggestions...')}</span>`;
+            
+            try {
+                const response = await fetch('/.netlify/functions/analyze-trend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        analysisType: 'suggest_comparisons',
+                        searchTerm: searchTerm,
+                        language: currentLanguage
+                    })
+                });
+                const result = await response.json();
+
+                if (result.success && Array.isArray(result.data)) {
+                    suggestionsList.innerHTML = result.data.map(term => 
+                        `<button class="ai-suggestion-btn" data-term="${term}">${term}</button>`
+                    ).join('');
+                } else {
+                    throw new Error(result.message || 'Failed to fetch suggestions.');
+                }
+            } catch (error) {
+                console.error("Failed to fetch AI suggestions:", error);
+                suggestionsList.innerHTML = `<span style="color: var(--danger-color);">Could not load suggestions.</span>`;
+            }
+        }
         
         async function createHotTrendsChart(newSearchTerm = null, compareTerm = null) {
             const canvas = document.getElementById('hot-trends-chart');
@@ -2225,6 +2313,7 @@
             const searchDetailsWrapper = document.getElementById('tb-search-details-wrapper');
             const comparisonContainer = document.getElementById('tb-comparison-table-container');
             const chartTitleEl = document.getElementById('tb-chart-title');
+            const suggestionsContainer = document.getElementById('tb-ai-suggestions-container');
             
             if (!canvas) { 
                 console.error("Chart canvas 'hot-trends-chart' not found!");
@@ -2265,7 +2354,8 @@
                 clearSearchBtn.classList.toggle('hidden', !isInSearchMode);
             }
             
-            if (searchTermsChanged) {
+            if (searchTermsChanged || !isInSearchMode) {
+                if (suggestionsContainer) suggestionsContainer.classList.add('hidden');
                 if (searchDetailsWrapper) {
                     searchDetailsWrapper.innerHTML = '';
                     searchDetailsWrapper.classList.add('hidden');
@@ -2273,7 +2363,7 @@
                 if (comparisonContainer) {
                     comparisonContainer.classList.add('hidden');
                 }
-                currentSearchResults = [];
+                allContextArticles = [];
             }
 
             let datasets = [];
@@ -2295,64 +2385,72 @@
                     const results = await Promise.all(searchPromises);
                     
                     const processedResults = results.map(res => (res.success && res.trends.length > 0) ? res.trends[0] : null).filter(Boolean);
+                    currentAggregatedResults = processedResults;
 
-                    // --- LOGIC RENDER CHI TIẾT (Top Articles & Related Queries) ---
+                    if (searchTermsChanged && user.tbSearchTerms.length === 1) {
+                        fetchAiSuggestions(user.tbSearchTerms[0]);
+                    }
+
                     if (searchTermsChanged) {
+                        allContextArticles = [];
                         processedResults.forEach(searchData => {
-                            currentSearchResults.push(...searchData.topArticles);
-                            const articlesHTML = `
+                            allContextArticles.push(...searchData.topArticles);
+                            
+                            const articlesHTML = (searchData.topArticles && searchData.topArticles.length > 0) ? `
                                 <div class="tb-details-panel">
                                     <h4>${t('Top Articles for')} "${searchData.title_en}"</h4>
                                     <ul class="tb-article-list">
-                                        ${searchData.topArticles.length > 0
-                                            ? searchData.topArticles.map(article => `<li class="tb-article-item" data-trend-id="${article.id}"><div class="tb-article-title">${article.title_en}</div><div class="tb-article-source">${article.submitter}</div></li>`).join('')
-                                            : `<li>${t('No articles found.')}</li>`}
+                                        ${searchData.topArticles.map(article => `
+                                            <li class="tb-article-item" data-trend-id="${article.id}">
+                                                <div class="tb-article-title">${article.title_en}</div>
+                                                <div class="tb-article-source">${article.submitter}</div>
+                                            </li>`).join('')}
                                     </ul>
-                                </div>`;
-                            const queriesHTML = `
+                                </div>` : '';
+                            
+                            const queriesHTML = (searchData.relatedQueries && searchData.relatedQueries.length > 0) ? `
                                 <div class="tb-details-panel">
                                     <h4>${t('Related Queries')}</h4>
                                     <ul class="tb-related-list">
-                                        ${searchData.relatedQueries.length > 0
-                                            ? searchData.relatedQueries.map(q => `<li class="tb-related-item" data-query="${q.query}"><span class="tb-related-query">${q.query}</span><span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span></li>`).join('')
-                                            : `<li>${t('No related queries.')}</li>`}
+                                        ${searchData.relatedQueries.map(q => `
+                                            <li class="tb-related-item" data-query="${q.query}">
+                                                <span class="tb-related-query">${q.query}</span>
+                                                <span class="tb-related-value">${q.value > 100 ? `+${q.value}%` : 'Hot'}</span>
+                                            </li>`).join('')}
                                     </ul>
-                                </div>`;
-                            const container = document.createElement('div');
-                            container.className = 'tb-search-details-container';
-                            container.innerHTML = articlesHTML + queriesHTML;
-                            if (searchDetailsWrapper) searchDetailsWrapper.appendChild(container);
+                                </div>` : '';
+
+                            if (articlesHTML || queriesHTML) {
+                                const container = document.createElement('div');
+                                container.className = 'tb-search-details-container';
+                                container.innerHTML = articlesHTML + queriesHTML;
+                                if (searchDetailsWrapper) searchDetailsWrapper.appendChild(container);
+                            }
                         });
 
                         if (searchDetailsWrapper && searchDetailsWrapper.innerHTML.trim() !== '') {
                             searchDetailsWrapper.classList.remove('hidden');
                         }
                         
+                        const palette = getColorPalette(processedResults.length);
+                        if (processedResults.length > 1 && comparisonContainer) {
+                            const comparisonBody = document.getElementById('tb-comparison-body');
+                            if (comparisonBody) {
+                                comparisonBody.innerHTML = '';
+                                processedResults.forEach((data, index) => {
+                                    const row = document.createElement('tr');
+                                    const color = palette[index % palette.length].stroke;
+                                    row.innerHTML = `<td><div class="comparison-term-cell"><span class="term-color-swatch" style="background-color: ${color};"></span>${data.title_en}</div></td><td class="comparison-value">${formatNumber(data.totalEngagement)}</td><td class="comparison-value">${formatNumber(data.peakEngagement)}</td><td><span class="comparison-source">${data.submitter}</span></td>`;
+                                    comparisonBody.appendChild(row);
+                                });
+                                comparisonContainer.classList.remove('hidden');
+                            }
+                        }
+
                         lastRenderedSearchTerms = [...user.tbSearchTerms];
                     }
 
                     const palette = getColorPalette(processedResults.length);
-                    
-                    // --- LOGIC RENDER BẢNG SO SÁNH (ĐÃ THÊM LẠI) ---
-                    if (searchTermsChanged && processedResults.length > 1 && comparisonContainer) {
-                        const comparisonBody = document.getElementById('tb-comparison-body');
-                        if (comparisonBody) {
-                            comparisonBody.innerHTML = '';
-                            processedResults.forEach((data, index) => {
-                                const row = document.createElement('tr');
-                                const color = palette[index % palette.length].stroke;
-                                row.innerHTML = `
-                                    <td><div class="comparison-term-cell"><span class="term-color-swatch" style="background-color: ${color};"></span>${data.title_en}</div></td>
-                                    <td class="comparison-value">${formatNumber(data.totalEngagement)}</td>
-                                    <td class="comparison-value">${formatNumber(data.peakEngagement)}</td>
-                                    <td><span class="comparison-source">${data.submitter}</span></td>
-                                `;
-                                comparisonBody.appendChild(row);
-                            });
-                            comparisonContainer.classList.remove('hidden');
-                        }
-                    }
-
                     let masterTimeline = new Map();
                     processedResults.forEach(trendData => {
                         if (trendData.timelineData) {
@@ -2368,11 +2466,10 @@
                     chartLabels = sortedTimeline.map(entry => entry[1].label);
 
                     datasets = processedResults.flatMap((trendData, i) => {
-                        const dataMap = new Map(trendData.timelineData.map(p => [new Date(p.time * 1000).toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }), p]));
+                        const dataMap = new Map((trendData.timelineData || []).map(p => [new Date(p.time * 1000).toLocaleDateString(currentLanguage, { day: 'numeric', month: 'short' }), p]));
                         const historicalData = new Array(chartLabels.length).fill(null);
                         const predictionData = new Array(chartLabels.length).fill(null);
                         let lastHistoricalIndex = -1;
-
                         chartLabels.forEach((label, index) => {
                             if (dataMap.has(label)) {
                                 const point = dataMap.get(label);
@@ -2384,15 +2481,12 @@
                                 }
                             }
                         });
-
                         if (lastHistoricalIndex !== -1 && predictionData.some(p => p !== null)) {
                             predictionData[lastHistoricalIndex] = historicalData[lastHistoricalIndex];
                         }
-                        
                         const color = palette[i % palette.length].stroke;
                         const baseDataset = {
-                            label: trendData.title_en,
-                            borderColor: color,
+                            label: trendData.title_en, borderColor: color,
                             backgroundColor: (context) => {
                                 const {ctx, chartArea} = context.chart;
                                 if (!chartArea) return null;
@@ -2406,20 +2500,9 @@
                             pointHoverRadius: 6, pointHoverBorderWidth: 2, pointHoverBorderColor: 'white',
                             trendId: trendData.id
                         };
-
                         const datasetsForTerm = [];
-                        if (historicalData.some(p => p !== null)) {
-                            datasetsForTerm.push({ ...baseDataset, data: historicalData });
-                        }
-                        if (predictionData.some(p => p !== null)) {
-                            datasetsForTerm.push({
-                                ...baseDataset,
-                                label: `${trendData.title_en} (${t('Predictive')})`,
-                                borderDash: [5, 5],
-                                data: predictionData,
-                                fill: false
-                            });
-                        }
+                        if (historicalData.some(p => p !== null)) datasetsForTerm.push({ ...baseDataset, data: historicalData });
+                        if (predictionData.some(p => p !== null)) datasetsForTerm.push({ ...baseDataset, label: `${trendData.title_en} (${t('Predictive')})`, borderDash: [5, 5], data: predictionData, fill: false });
                         return datasetsForTerm;
                     });
                     
@@ -2431,14 +2514,13 @@
             } else {
                 // --- CHẾ ĐỘ DUYỆT MẶC ĐỊNH ---
                 lastRenderedSearchTerms = [];
+                if (suggestionsContainer) suggestionsContainer.classList.add('hidden');
                 const status = DOM.tbStatusSelect.value;
                 const customTimeframe = DOM.tbCustomTimeframeSelect.value;
                 chartLabels = generateChartLabels(customTimeframe);
-                
                 const titleKeyMap = { hottest: 'Hottest News', latest: 'Latest News', outdated: 'Outdated News', predictive: 'Predictive News' };
                 const titleKey = titleKeyMap[status] || (status.charAt(0).toUpperCase() + status.slice(1));
                 if (chartTitleEl) chartTitleEl.textContent = `${t(titleKey)} - ${t('Interest Over Time')}`;
-
                 const selectedCategory = DOM.tbCategoryFilter.value;
                 const selectedRegion = DOM.tbRegionFilter.value;
                 let filteredTrends = masterTrendsList.filter(trend => (selectedRegion === 'global' || trend.region === selectedRegion) && (selectedCategory === 'All' || trend.category === selectedCategory));
@@ -2458,7 +2540,6 @@
                 const trendsToDraw = sortedTrends.slice(0, 5);
                 const trendsForLeaderboard = sortedTrends;
                 const palette = getColorPalette(trendsToDraw.length || 5);
-
                 datasets = trendsToDraw.map((trend, i) => {
                     const color = palette[i % palette.length].stroke;
                     return {
@@ -2485,24 +2566,27 @@
             
             const allDataPoints = datasets.flatMap(ds => ds.data.filter(p => p !== null));
             const maxDataValue = Math.max(...allDataPoints, 0);
-
             if (datasets.length > 0 && allDataPoints.length > 0) {
                 hotTrendsChart = new Chart(canvas.getContext('2d'), {
-                    type: 'line', 
-                    data: { labels: chartLabels, datasets },
+                    type: 'line', data: { labels: chartLabels, datasets },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                        responsive: true, maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
                         plugins: {
-                            legend: { 
+                            legend: {
                                 position: 'bottom', align: 'center',
                                 labels: { color: '#8a8da0', usePointStyle: true, boxWidth: 10, padding: 25 },
                                 onHover: (event) => { event.native.target.style.cursor = 'pointer'; },
                                 onLeave: (event) => { event.native.target.style.cursor = 'default'; },
                                 onClick: (e, legendItem, legend) => {
-                                    if (user.tbSearchTerms.length > 0) {
-                                        console.log("Legend clicked for term:", legendItem.text);
+                                    if (isInSearchMode) {
+                                        const clickedLabel = legendItem.text.replace(` (${t('Predictive')})`, '');
+                                        const trendData = currentAggregatedResults.find(t => t.title_en === clickedLabel);
+                                        if (trendData) {
+                                            openAIInsightModal(trendData, 'aggregated');
+                                        } else {
+                                            console.error("Could not find aggregated data for term:", clickedLabel);
+                                        }
                                         return;
                                     }
                                     const index = legendItem.datasetIndex;
@@ -2517,8 +2601,7 @@
                                 enabled: true, backgroundColor: 'var(--surface-color)', titleColor: 'var(--text-color)',
                                 titleFont: { weight: '600', size: 14 }, bodyColor: 'var(--text-color)',
                                 borderColor: 'var(--border-color)', borderWidth: 1, padding: 12,
-                                displayColors: true, boxPadding: 4,
-                                filter: (tooltipItem) => tooltipItem.raw > 0,
+                                displayColors: true, boxPadding: 4, filter: (tooltipItem) => tooltipItem.raw > 0,
                                 callbacks: {
                                     label: (context) => {
                                         const label = context.dataset.label || '';
@@ -2533,15 +2616,11 @@
                             y: { 
                                 grid: { color: 'rgba(255, 255, 255, 0.05)'},
                                 ticks: { color: '#8a8da0', callback: (v) => formatNumber(v) }, 
-                                beginAtZero: true,
-                                min: 0,
+                                beginAtZero: true, min: 0,
                                 suggestedMax: maxDataValue * 1.2 || 1000,
                                 title: {
-                                    display: true,
-                                    text: t('Engagement Score'),
-                                    color: 'var(--text-muted-color)',
-                                    font: { size: 14, weight: '500' },
-                                    padding: { top: 0, left: 0, right: 0, bottom: 10 }
+                                    display: true, text: t('Engagement Score'), color: 'var(--text-muted-color)',
+                                    font: { size: 14, weight: '500' }, padding: { top: 0, left: 0, right: 0, bottom: 10 }
                                 }
                             }
                         }
@@ -2551,7 +2630,6 @@
                 canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
                 if (chartTitleEl) chartTitleEl.textContent = t('No trends found.');
             }
-            
             if (isInSearchMode) {
                 if (DOM.userTrendsChartContainer) DOM.userTrendsChartContainer.classList.add('hidden');
             } else {
@@ -2932,6 +3010,13 @@
             });
         }
 
+        document.getElementById('ai-suggestions-list')?.addEventListener('click', async (e) => {
+            if (e.target.matches('.ai-suggestion-btn')) {
+                const term = e.target.dataset.term;
+                await createHotTrendsChart(null, term);
+            }
+        });
+
             document.getElementById('language-toggle')?.addEventListener('click', async (e) => {
                 e.preventDefault(); // Ngăn chặn hành vi mặc định
                 currentLanguage = currentLanguage === 'vi' ? 'en' : 'vi';
@@ -2980,3 +3065,4 @@
     </script>
 </body>
 </html>
+
