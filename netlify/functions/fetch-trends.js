@@ -66,19 +66,20 @@ function aggregateArticlesToTimeline(articles, daysAgo, hoursAgo = 0) {
     return timelineData;
 }
 
-// Hàm thực hiện hồi quy tuyến tính để dự đoán xu hướng
-function predictFutureTrends(timelineData, predictionConfig = { unit: 'day', value: 7 }) {
+function predictFutureTrends(timelineData, daysToPredict = 7) {
     if (!timelineData || timelineData.length < 2) return [];
     
-    // Sử dụng nhiều dữ liệu hơn để dự đoán dài hạn
-    const recentData = timelineData.slice(-30); 
+    // Sử dụng tối đa 90 ngày dữ liệu gần nhất để tính toán xu hướng
+    const recentData = timelineData.slice(-90); 
     const n = recentData.length;
+
     let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
     recentData.forEach((point, i) => {
         const x = i;
         const y = point.value[0];
         sumX += x; sumY += y; sumXY += x * y; sumX2 += x * x;
     });
+
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX) || 0;
     const intercept = (sumY - slope * sumX) / n;
     
@@ -86,27 +87,20 @@ function predictFutureTrends(timelineData, predictionConfig = { unit: 'day', val
     const lastDate = new Date(lastPoint.time * 1000);
     const predictions = [];
 
-    for (let i = 1; i <= predictionConfig.value; i++) {
+    // Lặp theo số ngày cần dự đoán
+    for (let i = 1; i <= daysToPredict; i++) {
         const predictedValue = slope * (n - 1 + i) + intercept;
         const futureDate = new Date(lastDate);
-
-        // Thay đổi ngày/tháng/năm dựa trên đơn vị
-        if (predictionConfig.unit === 'day') {
-            futureDate.setDate(futureDate.getDate() + i);
-        } else if (predictionConfig.unit === 'month') {
-            futureDate.setMonth(futureDate.getMonth() + i);
-        } else if (predictionConfig.unit === 'year') {
-            futureDate.setFullYear(futureDate.getFullYear() + i);
-        }
+        futureDate.setDate(futureDate.getDate() + i); // Luôn tăng theo ngày
         
         predictions.push({
             time: Math.floor(futureDate.getTime() / 1000),
-            value: [Math.max(0, Math.round(predictedValue * (1 + (Math.random() - 0.5) * 0.2)))], // Tăng độ biến động cho dự đoán dài hạn
+            value: [Math.max(0, Math.round(predictedValue * (1 + (Math.random() - 0.5) * 0.2)))],
             isPrediction: true
         });
     }
     return predictions;
-}
+} 
 
 // --- HANDLER CHÍNH ---
 exports.handler = async (event) => {
@@ -121,14 +115,14 @@ exports.handler = async (event) => {
         let startTime, hoursAgo = 0, daysAgo = 0;
         if (mode === 'predictive') {
             startTime = new Date();
-            startTime.setDate(startTime.getDate() - 90);
-            daysAgo = 90;
-            const PREDICTION_TIMEFRAME_MAP = {
-                'next3m': { unit: 'month', value: 3 }, // 3 ngày -> 3 tháng
-                'next6m': { unit: 'month', value: 6 }, // 5 ngày -> 6 tháng
-                'next1y': { unit: 'year', value: 1 },  // 7 ngày -> 1 năm
+            startTime.setDate(startTime.getDate() - 1);
+            daysAgo = 365;
+            const PREDICTION_DAYS_MAP = {
+                'next3m': 90,   // 3 tháng
+                'next6m': 180,  // 6 tháng
+                'next1y': 365,  // 1 năm
             };
-            predictionConfig = PREDICTION_TIMEFRAME_MAP[rawTimeframe] || { unit: 'month', value: 3 };
+            daysToPredict = PREDICTION_DAYS_MAP[rawTimeframe] || 90; // Mặc định là 90 ngày
 
         } else {
             const TIMEFRAME_MAP = {
@@ -204,7 +198,8 @@ exports.handler = async (event) => {
         }
 
         if (mode === 'predictive' && timelineData && timelineData.length > 0) {
-            const predictions = predictFutureTrends(timelineData, predictionConfig);
+            // Truyền số ngày cần dự đoán vào hàm
+            const predictions = predictFutureTrends(timelineData, daysToPredict);
             timelineData.push(...predictions);
         }
 
