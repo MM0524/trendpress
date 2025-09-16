@@ -181,8 +181,32 @@ function createAggregatedAnalysisPrompt(trendData, language) {
     }
 }
 
+function createSuggestionPrompt(searchTerm, language) {
+    if (language === 'vi') {
+        return `
+            Bạn là một chuyên gia phân tích thị trường. Tôi đang nghiên cứu xu hướng cho từ khóa: "${searchTerm}".
+            Hãy đề xuất 5 thuật ngữ so sánh có liên quan và sâu sắc. Bao gồm:
+            - 1-2 đối thủ cạnh tranh trực tiếp.
+            - 1-2 sản phẩm hoặc xu hướng con cụ thể trong lĩnh vực đó.
+            - 1 xu hướng vĩ mô hoặc ngành công nghiệp có liên quan.
+
+            QUAN TRỌNG: Chỉ trả về một mảng JSON chứa 5 chuỗi. Ví dụ: ["Đối thủ A", "Sản phẩm B", "Xu hướng C", "Đối thủ D", "Ngành E"]
+        `;
+    } else {
+        return `
+            You are an expert market analyst. I am researching the trend for the keyword: "${searchTerm}".
+            Please suggest 5 insightful comparison terms. Include:
+            - 1-2 direct competitors.
+            - 1-2 specific products or sub-trends within that field.
+            - 1 related macro-trend or industry.
+
+            IMPORTANT: Respond ONLY with a single JSON array of 5 strings. Example: ["Competitor A", "Product B", "Trend C", "Competitor D", "Industry E"]
+        `;
+    }
+}
 
 // --- HANDLER CHÍNH ---
+// --- HANDLER CHÍNH ĐÃ ĐƯỢC NÂNG CẤP ---
 exports.handler = async (event) => {
     const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
     
@@ -192,12 +216,42 @@ exports.handler = async (event) => {
 
     try {
         const body = JSON.parse(event.body);
-        const { trend, analysisType, language = 'en' } = body;
+        const { trend, analysisType, language = 'en', searchTerm } = body;
 
-        if (!trend) {
-            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "News data is missing." }) };
+        // **** BẮT ĐẦU THAY ĐỔI ****
+
+        // 1. Xử lý yêu cầu gợi ý TRƯỚC TIÊN, vì nó không cần `trend` object
+        if (analysisType === 'suggest_comparisons') {
+            if (!searchTerm) {
+                return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "searchTerm is required for suggestions." }) };
+            }
+            if (!geminiApiKey) throw new Error("Gemini API key is not configured.");
+            
+            const prompt = createSuggestionPrompt(searchTerm, language);
+            const suggestionJsonString = await geminiManager.generateContent(prompt);
+            
+            // Dọn dẹp các ký tự ```json mà AI có thể trả về
+            const cleanedJson = suggestionJsonString.trim().replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+            
+            try {
+                // Parse chuỗi JSON thành một mảng JavaScript thực sự
+                const suggestions = JSON.parse(cleanedJson);
+                return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: suggestions }) };
+            } catch(e) {
+                console.error("Failed to parse AI suggestion JSON:", cleanedJson);
+                throw new Error("AI returned invalid JSON format for suggestions.");
+            }
         }
 
+        // 2. Di chuyển khối kiểm tra `trend` xuống đây.
+        // Các loại phân tích còn lại đều yêu cầu `trend` object.
+        if (!trend) {
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "News data is missing for this analysis type." }) };
+        }
+
+        // **** KẾT THÚC THAY ĐỔI ****
+        
+        // Các khối `else if` còn lại giữ nguyên
         if (analysisType === 'aggregated') {
             if (!geminiApiKey) throw new Error("Gemini API key is not configured.");
             const prompt = createAggregatedAnalysisPrompt(trend, language);
