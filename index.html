@@ -3060,7 +3060,7 @@
         }
             
             // ƯU TIÊN 2: KIỂM TRA CÁC HÀNH ĐỘNG MỞ MODAL HOẶC ĐIỀU HƯỚNG
-            else if (targetElement.closest('.trend-title')) {
+            if (targetElement.closest('.trend-title')) {
                 trendId = targetElement.closest('.trend-title')?.dataset.trendId;
                 analysisType = 'detailed';
             } else if (leaderboardItem) {
@@ -3471,8 +3471,7 @@
             }
         
             initializeApp();
-        });
+        }});
     </script>
 </body>
 </html>
-
