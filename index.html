@@ -2058,11 +2058,15 @@
             });
             saveUser();
             updateFollowButtons(trend.id, true);
+            if (currentView === 'forU') {
+                generateCategoryLeaderboards('for-u-leaderboards', user.preferences);
         }
         function unfollowTrend(trendId) {
             user.followedTrends = user.followedTrends.filter(t => t.id !== trendId);
             saveUser();
             updateFollowButtons(trendId, false);
+            if (currentView === 'forU') {
+                generateCategoryLeaderboards('for-u-leaderboards', user.preferences);
         }
         function updateFollowButtons(trendId, isFollowed) {
              document.querySelectorAll(`[data-trend-id="${trendId}"] .btn-follow`).forEach(btn => {
@@ -2986,19 +2990,74 @@
                 trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
                 if (!trendId) return;
 
-                // Sử dụng hàm mới để xử lý logic follow/unfollow
                 const isFollowed = user.followedTrends.some(t => t.id === trendId);
+                
                 if (isFollowed) {
                     unfollowTrend(trendId);
                 } else {
-                    // Tìm đối tượng trend đầy đủ để lưu lại
+                    // Tìm đối tượng trend đầy đủ từ tất cả các nguồn có thể để lưu lại
                     const trend = masterTrendsList.find(t => t.id === trendId) || allContextArticles.find(t => t.id === trendId);
                     if (trend) {
                         followTrend(trend);
+                    } else {
+                        console.error("Could not find trend to follow with ID:", trendId);
                     }
                 }
-                return; // Kết thúc hành động
+                return; // Kết thúc hành động sau khi xử lý follow/unfollow
             } 
+            
+            // ƯU TIÊN 2: KIỂM TRA CÁC HÀNH ĐỘNG MỞ MODAL HOẶC ĐIỀU HƯỚNG
+            else if (targetElement.closest('.trend-title')) {
+                trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
+                analysisType = 'detailed';
+            } else if (leaderboardItem) {
+                trendId = leaderboardItem.dataset.trendId;
+                analysisType = 'detailed';
+            } else if (articleItem) {
+                e.preventDefault();
+                trendId = articleItem.dataset.trendId;
+                const trend = allContextArticles.find(t => t.id === trendId);
+                if (trend) {
+                    openTrendOverviewModal(trend);
+                }
+                return;
+            } else if (targetElement.matches('.tag.hashtag')) {
+                e.preventDefault();
+                currentFilter.type = 'hashtag';
+                currentFilter.value = 'All';
+                currentFilter.hashtag = targetElement.dataset.tag;
+                currentFilter.searchTerm = '';
+                switchView('main');
+                closeModal('trend-overview-modal');
+                return; 
+            } else if (trendCard && !targetElement.closest('a, button')) {
+                // ƯU TIÊN 3: CHỈ mở modal nếu click vào nền card
+                e.preventDefault();
+                trendId = trendCard.dataset.trendId;
+                const trend = masterTrendsList.find(t => t.id === trendId) || allContextArticles.find(t => t.id === trendId);
+                if (trend) {
+                    openTrendOverviewModal(trend);
+                }
+                return;
+            }
+
+            // Nếu không có trendId hoặc không phải hành động phân tích, dừng lại
+            if (!trendId || !analysisType) {
+                return;
+            }
+
+            e.preventDefault();
+            
+            // Tìm kiếm dữ liệu trend cuối cùng để gửi cho AI
+            const trend = allContextArticles.find(t => t.id === trendId) || masterTrendsList.find(t => t.id === trendId);
+            if (!trend) {
+                console.error("Trend data not found for ID:", trendId);
+                return;
+            }
+
+            // Gọi hàm mở modal AI
+            openAIInsightModal(trend, analysisType);
+        }
             
             // ƯU TIÊN 2: KIỂM TRA CÁC HÀNH ĐỘNG MỞ MODAL HOẶC ĐIỀU HƯỚNG
             else if (targetElement.closest('.trend-title')) {
@@ -3416,3 +3475,4 @@
     </script>
 </body>
 </html>
+
