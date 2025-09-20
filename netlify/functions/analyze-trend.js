@@ -205,6 +205,32 @@ function createSuggestionPrompt(searchTerm, language) {
     }
 }
 
+function createMyTrendUpdatePrompt(trend, changePercent, language) {
+    const trendTitle = (language === 'vi' ? trend.title_vi : trend.title_en) || trend.title_en || trend.title_vi;
+    const changeText = changePercent > 0 ? `tăng ${changePercent.toFixed(1)}%` : `giảm ${Math.abs(changePercent).toFixed(1)}%`;
+    const changeTextEn = changePercent > 0 ? `increased by ${changePercent.toFixed(1)}%` : `decreased by ${Math.abs(changePercent).toFixed(1)}%`;
+
+    if (language === 'vi') {
+        return `
+            Bạn là một trợ lý phân tích xu hướng cá nhân. Một xu hướng mà người dùng đang theo dõi, "${trendTitle}", vừa có sự thay đổi về mức độ tương tác khoảng ${changeText}.
+            Dựa vào thông tin này, hãy đưa ra một bản phân tích ngắn gọn:
+            1. **Phân tích thay đổi:** Lý do khả dĩ cho sự thay đổi này là gì?
+            2. **Dự báo ngắn hạn:** Xu hướng này có thể diễn biến thế nào trong vài ngày tới?
+            3. **Gợi ý hành động:** Người dùng nên chú ý điều gì hoặc có thể làm gì lúc này?
+            QUAN TRỌNG: Chỉ trả lời bằng HTML hợp lệ. Mỗi điểm phải được gói trong thẻ <div class="ai-section">...</div> với tiêu đề là <h4>.
+        `;
+    } else {
+        return `
+            You are a personal trend analysis assistant. A trend the user is following, "${trendTitle}", has just seen its engagement change by approximately ${changeTextEn}.
+            Based on this, provide a brief analysis:
+            1. **Change Analysis:** What are the likely reasons for this change?
+            2. **Short-term Forecast:** How might this trend evolve over the next few days?
+            3. **Actionable Insight:** What should the user pay attention to or do now?
+            IMPORTANT: Respond ONLY with valid HTML. Each point must be wrapped in its own <div class="ai-section">...</div> tag with an <h4> title.
+        `;
+    }
+}
+
 // --- HANDLER CHÍNH ---
 // --- HANDLER CHÍNH ĐÃ ĐƯỢC NÂNG CẤP ---
 exports.handler = async (event) => {
@@ -216,7 +242,7 @@ exports.handler = async (event) => {
 
     try {
         const body = JSON.parse(event.body);
-        const { trend, analysisType, language = 'en', searchTerm } = body;
+        const { trend, analysisType, language = 'en', searchTerm, changePercent } = body;
 
         // **** BẮT ĐẦU THAY ĐỔI ****
 
@@ -271,6 +297,15 @@ exports.handler = async (event) => {
             const prompt = createDetailedAnalysisPrompt(trend, language);
             const detailedAnalysisContent = await geminiManager.generateContent(prompt);
             return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: detailedAnalysisContent }) };
+        }
+
+        else if (analysisType === 'my_trend_update') {
+            if (!trend) return { statusCode: 400, body: JSON.stringify({ success: false, message: "Trend data is missing." }) };
+            if (!geminiApiKey) throw new Error("Gemini API key is not configured.");
+            
+            const prompt = createMyTrendUpdatePrompt(trend, changePercent, language);
+            const updateContent = await geminiManager.generateContent(prompt);
+            return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: updateContent }) };
         }
 
         return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: "Invalid analysisType specified." }) };
