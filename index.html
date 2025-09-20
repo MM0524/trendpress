@@ -2058,16 +2058,26 @@
             });
             saveUser();
             updateFollowButtons(trend.id, true);
-            if (currentView === 'forU') {
-                generateCategoryLeaderboards('for-u-leaderboards', user.preferences);
-            }
+            updateFollowRelatedUI();
         }
         function unfollowTrend(trendId) {
             user.followedTrends = user.followedTrends.filter(t => t.id !== trendId);
             saveUser();
             updateFollowButtons(trendId, false);
-            if (currentView === 'forU') {
+            updateFollowRelatedUI();
+        }
+        function updateFollowRelatedUI() {
+            // 1. Cập nhật lại sidebar ở trang "For U"
+            if (currentView === 'forU' && document.getElementById('for-u-leaderboards')) {
                 generateCategoryLeaderboards('for-u-leaderboards', user.preferences);
+            }
+            // 2. Cập nhật lại trang "My Trends" nếu người dùng đang ở đó
+            if (currentView === 'myTrends') {
+                renderMyTrendsPage();
+            }
+            // 3. Cập nhật lại biểu đồ phụ trên Trending Board
+            if (currentView === 'trendingBoard') {
+                 renderUserTrendsChart(DOM.tbCustomTimeframeSelect.value);
             }
         }
         function updateFollowButtons(trendId, isFollowed) {
@@ -2996,6 +3006,15 @@
                 
                 if (isFollowed) {
                     unfollowTrend(trendId);
+                } else if (targetElement.closest('.btn-follow')) {
+                e.preventDefault();
+                trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
+                if (!trendId) return;
+
+                const isFollowed = user.followedTrends.some(t => t.id === trendId);
+                
+                if (isFollowed) {
+                    unfollowTrend(trendId);
                 } else {
                     // Tìm đối tượng trend đầy đủ từ tất cả các nguồn có thể để lưu lại
                     const trend = masterTrendsList.find(t => t.id === trendId) || allContextArticles.find(t => t.id === trendId);
@@ -3059,6 +3078,7 @@
 
             // Gọi hàm mở modal AI
             openAIInsightModal(trend, analysisType);
+            }
         }
 
         async function initializeApp() {
