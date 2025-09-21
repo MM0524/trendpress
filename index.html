@@ -2981,8 +2981,6 @@
 
         function handleInteraction(e) {
             const targetElement = e.target;
-            
-            // Tìm các phần tử cha có thể tương tác gần nhất
             const trendCard = targetElement.closest('.trend-card');
             const leaderboardItem = targetElement.closest('#tb-topic-list li, #tb-query-list li, #for-u-leaderboards li');
             const articleItem = targetElement.closest('.tb-article-item');
@@ -2990,7 +2988,6 @@
             let trendId = null;
             let analysisType = null;
 
-            // ƯU TIÊN 1: KIỂM TRA CÁC NÚT HÀNH ĐỘNG CỤ THỂ
             if (targetElement.closest('.btn-predict')) {
                 trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
                 analysisType = 'prediction';
@@ -3001,34 +2998,15 @@
                 e.preventDefault();
                 trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
                 if (!trendId) return;
-
                 const isFollowed = user.followedTrends.some(t => t.id === trendId);
-                
-                if (isFollowed) {
-                    unfollowTrend(trendId);
-                } else if (targetElement.closest('.btn-follow')) {
-                e.preventDefault();
-                trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
-                if (!trendId) return;
-
-                const isFollowed = user.followedTrends.some(t => t.id === trendId);
-                
                 if (isFollowed) {
                     unfollowTrend(trendId);
                 } else {
-                    // Tìm đối tượng trend đầy đủ từ tất cả các nguồn có thể để lưu lại
                     const trend = masterTrendsList.find(t => t.id === trendId) || allContextArticles.find(t => t.id === trendId);
-                    if (trend) {
-                        followTrend(trend);
-                    } else {
-                        console.error("Could not find trend to follow with ID:", trendId);
-                    }
+                    if (trend) followTrend(trend);
                 }
-                return; // Kết thúc hành động sau khi xử lý follow/unfollow
-            } 
-            
-            // ƯU TIÊN 2: KIỂM TRA CÁC HÀNH ĐỘNG MỞ MODAL HOẶC ĐIỀU HƯỚNG
-            else if (targetElement.closest('.trend-title')) {
+                return;
+            } else if (targetElement.closest('.trend-title')) {
                 trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
                 analysisType = 'detailed';
             } else if (leaderboardItem) {
@@ -3038,9 +3016,7 @@
                 e.preventDefault();
                 trendId = articleItem.dataset.trendId;
                 const trend = allContextArticles.find(t => t.id === trendId);
-                if (trend) {
-                    openTrendOverviewModal(trend);
-                }
+                if (trend) openTrendOverviewModal(trend);
                 return;
             } else if (targetElement.matches('.tag.hashtag')) {
                 e.preventDefault();
@@ -3052,90 +3028,56 @@
                 closeModal('trend-overview-modal');
                 return; 
             } else if (trendCard && !targetElement.closest('a, button')) {
-                // ƯU TIÊN 3: CHỈ mở modal nếu click vào nền card
                 e.preventDefault();
                 trendId = trendCard.dataset.trendId;
                 const trend = masterTrendsList.find(t => t.id === trendId) || allContextArticles.find(t => t.id === trendId);
-                if (trend) {
-                    openTrendOverviewModal(trend);
-                }
+                if (trend) openTrendOverviewModal(trend);
                 return;
             }
 
-            // Nếu không có trendId hoặc không phải hành động phân tích, dừng lại
-            if (!trendId || !analysisType) {
-                return;
-            }
-
+            if (!trendId || !analysisType) return;
             e.preventDefault();
             
-            // Tìm kiếm dữ liệu trend cuối cùng để gửi cho AI
             const trend = allContextArticles.find(t => t.id === trendId) || masterTrendsList.find(t => t.id === trendId);
             if (!trend) {
                 console.error("Trend data not found for ID:", trendId);
                 return;
             }
-
-            // Gọi hàm mở modal AI
             openAIInsightModal(trend, analysisType);
-            }
         }
 
         async function initializeApp() {
-            // Bước 1: Tải dữ liệu người dùng đã lưu từ localStorage (rất quan trọng, phải chạy đầu tiên)
             loadUser();
-            
-            // Bước 2: Áp dụng các chuỗi dịch thuật cho giao diện
             applyTranslations();
             updateLanguageToggleUI();
 
-            // Bước 3: Hiển thị đúng view (trang) mà người dùng đã xem lần cuối
             document.getElementById('main-view-container')?.classList.toggle('hidden', currentView !== 'main');
             document.getElementById('for-u-view-container')?.classList.toggle('hidden', currentView !== 'forU');
             document.getElementById('trending-board-view-container')?.classList.toggle('hidden', currentView !== 'trendingBoard');
             document.getElementById('my-trends-view-container')?.classList.toggle('hidden', currentView !== 'myTrends');
 
-            // Bước 4: Tải danh sách tin tức/xu hướng chính từ server
-            await fetchLiveTrends(); // Hàm này đã tự sắp xếp dữ liệu theo ngày mới nhất
-            
-            // Gộp cả masterTrendsList vào allContextArticles để dễ dàng tìm kiếm ở mọi nơi
+            await fetchLiveTrends();
             allContextArticles = [...masterTrendsList];
             
-            // LƯU Ý: Vô hiệu hóa applyTrendOrdering() để ưu tiên sắp xếp theo ngày mới nhất
-            // applyTrendOrdering();
-
-            // Bước 5: Populate (điền dữ liệu) cho tất cả các bộ lọc
             regions = [...new Set(masterTrendsList.map(item => item.region))].filter(Boolean).sort();
             populateRegionsFilter(document.getElementById('main-region-filter'));
             populateRegionsFilter(document.getElementById('tb-region-filter'));
-            
             categories = [...new Set(masterTrendsList.map(item => item.category))].sort();
             populateCategoryFilters();
-            
             populateMainTimeframeFilter();
             populateSourceFilter();
             populateHashtagFilters();
             
-            // Bước 6: Cập nhật giao diện người dùng (ví dụ: hiển thị email)
             updateAuthUI();
-            
-            // Bước 7: Kiểm tra trạng thái của dịch vụ AI
             checkAIStatus();
-            
-            // Bước 8: Đánh dấu nav link đang hoạt động và các nút filter
             updateActiveNav(currentView);
             updateClearFilterButtonVisibility();
 
-            // Bước 9: Xử lý logic hiển thị ban đầu
-            // Nếu người dùng chưa bao giờ thiết lập sở thích, ưu tiên hiển thị modal
             if (!user.hasSetPreferences) {
                 populatePreferenceCheckboxes();
                 openModal('preferences-modal');
-            } 
-            // Ngược lại, hiển thị nội dung của view hiện tại
-            else {
+            } else {
                 if (currentView === 'trendingBoard') {
-                    // Thiết lập trạng thái ban đầu cho các bộ lọc của Trending Board
                     currentTrendStatus.status = DOM.tbStatusSelect ? DOM.tbStatusSelect.value : 'hottest';
                     currentTrendStatus.customTimeframe = DOM.tbCustomTimeframeSelect ? DOM.tbCustomTimeframeSelect.value : '7d';
                     populateCustomTimeframeOptions(currentTrendStatus.status); 
@@ -3143,20 +3085,27 @@
                 } else if (currentView === 'myTrends') {
                     renderMyTrendsPage();
                 } else {
-                    // Mặc định cho 'main' và 'forU'
                     displayTrends();
                 }
             }
-
-            // Bước 10: Ẩn màn hình tải trang
             document.getElementById('loader')?.classList.add('loader-hidden');
         }
 
-        document.getElementById('nav-my-trends')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            switchView('myTrends');
+        document.getElementById('logo')?.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
+        document.getElementById('nav-top-trends')?.addEventListener('click', (e) => { e.preventDefault(); switchView('main'); });
+        document.getElementById('nav-trending-board')?.addEventListener('click', (e) => { e.preventDefault(); switchView('trendingBoard'); });
+        document.getElementById('nav-my-trends')?.addEventListener('click', (e) => { e.preventDefault(); switchView('myTrends'); });
+        document.getElementById('nav-for-u')?.addEventListener('click', (e) => { e.preventDefault(); switchView('forU'); });
+        document.getElementById('nav-about')?.addEventListener('click', (e) => { e.preventDefault(); openModal('about-modal'); });
+
+        [document.getElementById('trends-list'), document.getElementById('for-u-trends-list'), document.getElementById('for-u-leaderboards')].forEach(list => {
+            if (list) list.addEventListener('click', handleInteraction);
         });
 
+        [document.getElementById('tb-topic-list'), document.getElementById('tb-query-list')].forEach(list => {
+            if (list) list.addEventListener('click', handleInteraction);
+        });
+        
         // Listener cho các nút trên trang My Trends
         document.getElementById('my-trends-list')?.addEventListener('click', (e) => {
             const trendId = e.target.closest('[data-trend-id]')?.dataset.trendId;
