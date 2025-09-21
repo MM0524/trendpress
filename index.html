@@ -2049,32 +2049,48 @@
         }
 
         // --- HÀM MỚI ĐỂ FOLLOW/UNFOLLOW ---
-        function followTrend(trend) {
-            if (!trend || !trend.id) return;
-            // Kiểm tra xem trend đã được follow chưa
-            if (user.followedTrends.some(t => t.id === trend.id)) return;
+        function followTrend(trend, targetButton) {
+            if (!trend || !trend.id || user.followedTrends.some(t => t.id === trend.id)) return;
 
-            // Tạo snapshot
-            const snapshotData = {
-                views: trend.views || Math.floor(Math.random() * 5000),
-                interactions: trend.interactions || Math.floor(Math.random() * 1000),
-                searches: trend.searches || Math.floor(Math.random() * 500),
-                hotnessScore: trend.hotnessScore,
-                total: getCombinedMetric(trend)
+            // Tạo một bản sao sạch của trend để lưu trữ
+            const trendToSave = {
+                id: trend.id,
+                title_en: trend.title_en,
+                title_vi: trend.title_vi,
+                description_en: trend.description_en,
+                description_vi: trend.description_vi,
+                category: trend.category,
+                tags: trend.tags,
+                source: trend.source,
+                submitter: trend.submitter,
+                date: trend.date,
+                // Tạo snapshot với các giá trị mặc định nếu thiếu
+                snapshotData: {
+                    views: trend.views || 0,
+                    interactions: trend.interactions || 0,
+                    searches: trend.searches || 0,
+                    total: getCombinedMetric(trend)
+                },
+                dateFollowed: new Date().toISOString()
             };
-            
-            user.followedTrends.push({ ...trend, snapshotData, dateFollowed: new Date().toISOString() });
-            saveUser();
-            updateFollowButtons(trend.id, true);
-            updateFollowRelatedUI();
-            switchView('myTrends');
 
+            user.followedTrends.push(trendToSave);
+            saveUser();
+
+            // Cập nhật tất cả các nút follow cho trend này
+            updateFollowButtons(trend.id, true);
+            
+            // Chuyển trang ngay lập tức
+            switchView('myTrends');
         }
         function unfollowTrend(trendId) {
             user.followedTrends = user.followedTrends.filter(t => t.id !== trendId);
             saveUser();
             updateFollowButtons(trendId, false);
-            updateFollowRelatedUI();
+            // Cập nhật lại UI nếu đang ở trang liên quan
+            if (currentView === 'myTrends') {
+                renderMyTrendsPage();
+            }
         }
         function updateFollowRelatedUI() {
             // 1. Cập nhật lại sidebar ở trang "For U"
@@ -2100,21 +2116,26 @@
         // --- HÀM MỚI ĐỂ RENDER TRANG MY TRENDS ---
         function renderMyTrendsPage() {
             const listEl = document.getElementById('my-trends-list');
-            if (!listEl) return;
+            const alertsContainer = document.getElementById('alerts-container');
+            if (!listEl || !alertsContainer) return;
+            
             listEl.innerHTML = '';
+            alertsContainer.innerHTML = ''; // Xóa cảnh báo cũ
             const alerts = [];
 
             if (user.followedTrends.length === 0) {
                 listEl.innerHTML = `<p>${t('You are not following any news yet.')}</p>`;
                 return;
             }
+            
+            const sortedFollowedTrends = [...user.followedTrends].sort((a, b) => new Date(b.dateFollowed) - new Date(a.dateFollowed));
 
-            user.followedTrends.forEach(trend => {
-                // Mô phỏng dữ liệu mới
+            sortedFollowedTrends.forEach(trend => {
+                const snapshotTotal = trend.snapshotData?.total || 0;
                 const newData = {
-                    total: trend.snapshotData.total * (1 + (Math.random() - 0.45) * 0.2) // Biến động +/- 5%
+                    total: snapshotTotal * (1 + (Math.random() - 0.45) * 0.2)
                 };
-                const changePercent = ((newData.total - trend.snapshotData.total) / trend.snapshotData.total) * 100;
+                const changePercent = snapshotTotal > 0 ? ((newData.total - snapshotTotal) / snapshotTotal) * 100 : 0;
                 
                 let statusClass = 'stable';
                 let statusIcon = '';
@@ -2137,21 +2158,21 @@
                     <div class="my-trend-card-header">
                         <h3 class="my-trend-card-title">${getLocalizedTrendText(trend).title}</h3>
                         <div class="my-trend-card-meta">
-                            <span>Followed on: ${new Date(trend.dateFollowed).toLocaleDateString()}</span>
-                            <span>Source: ${trend.submitter}</span>
+                            <span>Followed on: ${new Date(trend.dateFollowed).toLocaleDateString(currentLanguage)}</span>
+                            <span>Source: ${trend.submitter || 'N/A'}</span>
                         </div>
                     </div>
                     <div class="my-trend-stats">
                         <div class="my-trend-stat-item">
-                            <strong>${formatNumber(trend.snapshotData.views)}</strong>
+                            <strong>${formatNumber(trend.snapshotData?.views || 0)}</strong>
                             <span>Views</span>
                         </div>
                         <div class="my-trend-stat-item">
-                            <strong>${formatNumber(trend.snapshotData.interactions)}</strong>
+                            <strong>${formatNumber(trend.snapshotData?.interactions || 0)}</strong>
                             <span>Interactions</span>
                         </div>
                         <div class="my-trend-stat-item">
-                            <strong>${formatNumber(trend.snapshotData.searches)}</strong>
+                            <strong>${formatNumber(trend.snapshotData?.searches || 0)}</strong>
                             <span>Searches</span>
                         </div>
                     </div>
@@ -2167,8 +2188,7 @@
                     </div>
                 `;
                 listEl.appendChild(card);
-                // Vẽ biểu đồ mini sau khi card đã được thêm vào DOM
-                setTimeout(() => drawMiniChart(canvasId, trend.snapshotData.total, newData.total), 0);
+                setTimeout(() => drawMiniChart(canvasId, snapshotTotal, newData.total), 0);
             });
             renderAlerts(alerts);
         }
@@ -3023,17 +3043,25 @@
                 analysisType = 'detailed';
             } else if (targetElement.closest('.btn-follow')) {
                 e.preventDefault();
-                trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
+                const trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
                 if (!trendId) return;
+
                 const isFollowed = user.followedTrends.some(t => t.id === trendId);
+                
                 if (isFollowed) {
                     unfollowTrend(trendId);
                 } else {
+                    // Tìm đối tượng trend đầy đủ từ tất cả các nguồn có thể
                     const trend = masterTrendsList.find(t => t.id === trendId) || allContextArticles.find(t => t.id === trendId);
-                    if (trend) followTrend(trend);
+                    if (trend) {
+                        // Truyền cả nút đã click vào hàm followTrend
+                        followTrend(trend, targetElement);
+                    } else {
+                        console.error("Could not find trend to follow with ID:", trendId);
+                    }
                 }
-                return;
-            } else if (targetElement.closest('.trend-title')) {
+                return; // Kết thúc hành động
+            }  else if (targetElement.closest('.trend-title')) {
                 trendId = targetElement.closest('[data-trend-id]')?.dataset.trendId;
                 analysisType = 'detailed';
             } else if (leaderboardItem) {
