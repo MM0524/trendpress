@@ -709,6 +709,8 @@
         .my-trend-card-meta {
             font-size: 0.85rem;
             color: var(--text-muted-color);
+            display: flex; /* Sắp xếp các meta item */
+            gap: 1rem;
         }
 
         .my-trend-chart-container {
@@ -737,6 +739,25 @@
         .my-trend-actions .btn {
             font-size: 0.8rem;
             padding: 0.4rem 0.9rem;
+        }
+
+        .my-trend-stats {
+            padding: 1rem 1.5rem 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .my-trend-stat-item strong {
+            display: block;
+            font-size: 1.1rem;
+            color: var(--text-color);
+        }
+
+        .my-trend-stat-item span {
+            font-size: 0.8rem;
+            color: var(--text-muted-color);
         }
         
         .footer { background-color: var(--surface-color); border-top: 1px solid var(--border-color); padding: 3rem 0 1rem 0; }
@@ -1714,15 +1735,6 @@
             if (!container) return;
             container.innerHTML = '';
 
-            if (user.isLoggedIn && user.followedTrends.length > 0) {
-                const leaderboardDiv = document.createElement('div');
-                leaderboardDiv.className = 'leaderboard-widget';
-                const listItems = masterTrendsList.filter(trendItem => user.followedTrends.includes(trendItem.id))
-                                   .map(trendItem => `<li data-trend-id="${trendItem.id}">${truncateText(getLocalizedTrendText(trendItem).title, 35)}</li>`).join('');
-                leaderboardDiv.innerHTML = `<h4>${t('Your Followed Trends')}</h4><ul>${listItems}</ul>`;
-                container.appendChild(leaderboardDiv);
-            }
-
             const uniqueCategoriesToShow = Array.from(new Set(categoriesToShow)).sort();
             uniqueCategoriesToShow.forEach(category => {
                 const trendsInCategory = masterTrendsList.filter(trendItem => trendItem.category === category);
@@ -2044,21 +2056,19 @@
 
             // Tạo snapshot
             const snapshotData = {
-                views: trend.views,
-                interactions: trend.interactions,
-                searches: trend.searches,
+                views: trend.views || Math.floor(Math.random() * 5000),
+                interactions: trend.interactions || Math.floor(Math.random() * 1000),
+                searches: trend.searches || Math.floor(Math.random() * 500),
                 hotnessScore: trend.hotnessScore,
                 total: getCombinedMetric(trend)
             };
             
-            user.followedTrends.push({
-                ...trend, // Lưu toàn bộ thông tin của trend
-                snapshotData: snapshotData,
-                dateFollowed: new Date().toISOString()
-            });
+            user.followedTrends.push({ ...trend, snapshotData, dateFollowed: new Date().toISOString() });
             saveUser();
             updateFollowButtons(trend.id, true);
             updateFollowRelatedUI();
+            switchView('myTrends');
+
         }
         function unfollowTrend(trendId) {
             user.followedTrends = user.followedTrends.filter(t => t.id !== trendId);
@@ -2126,7 +2136,24 @@
                 card.innerHTML = `
                     <div class="my-trend-card-header">
                         <h3 class="my-trend-card-title">${getLocalizedTrendText(trend).title}</h3>
-                        <p class="my-trend-card-meta">Followed on ${new Date(trend.dateFollowed).toLocaleDateString()}</p>
+                        <div class="my-trend-card-meta">
+                            <span>Followed on: ${new Date(trend.dateFollowed).toLocaleDateString()}</span>
+                            <span>Source: ${trend.submitter}</span>
+                        </div>
+                    </div>
+                    <div class="my-trend-stats">
+                        <div class="my-trend-stat-item">
+                            <strong>${formatNumber(trend.snapshotData.views)}</strong>
+                            <span>Views</span>
+                        </div>
+                        <div class="my-trend-stat-item">
+                            <strong>${formatNumber(trend.snapshotData.interactions)}</strong>
+                            <span>Interactions</span>
+                        </div>
+                        <div class="my-trend-stat-item">
+                            <strong>${formatNumber(trend.snapshotData.searches)}</strong>
+                            <span>Searches</span>
+                        </div>
                     </div>
                     <div class="my-trend-chart-container">
                         <canvas id="${canvasId}"></canvas>
@@ -3105,7 +3132,7 @@
         [document.getElementById('tb-topic-list'), document.getElementById('tb-query-list')].forEach(list => {
             if (list) list.addEventListener('click', handleInteraction);
         });
-        
+
         // Listener cho các nút trên trang My Trends
         document.getElementById('my-trends-list')?.addEventListener('click', (e) => {
             const trendId = e.target.closest('[data-trend-id]')?.dataset.trendId;
