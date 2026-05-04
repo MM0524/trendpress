@@ -7,7 +7,7 @@ class GeminiAPIManager {
             throw new Error("Gemini API key is required.");
         }
         this.apiKey = apiKey;
-        this.baseURL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${this.apiKey}`;
+        this.baseURL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`;
         this.maxRetries = 3;
         this.retryDelay = 1000;
     }
